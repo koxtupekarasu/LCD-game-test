@@ -1,0 +1,81 @@
+﻿<!-- index.html -->
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0f14" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="stylesheet" href="./style.css?v=20260226-1" />
+  <title>DOTMON</title>
+</head>
+
+<body>
+  <main class="app" role="main">
+    <header class="topbar">
+      <div class="brand">DOTMON</div>
+      <div class="meta">
+        <span id="uiClock">--:--</span>
+        <span class="sep">/</span>
+        <span id="uiDay">DAY 1</span>
+      </div>
+    </header>
+
+    <section class="device">
+      <section class="lcd" aria-label="LCD Screen">
+        <!-- ゲーム画面（Canvas） -->
+        <canvas id="game" width="320" height="240" aria-label="Game Canvas"></canvas>
+        <div id="overlayRoot" class="overlay-root" aria-hidden="true">
+          <div id="overlayLog" class="overlay-log hidden">
+            <div id="overlayLogTitle" class="overlay-log-title"></div>
+            <div id="overlayLogBody" class="overlay-log-body"></div>
+            <div id="overlayLogHint" class="overlay-log-hint"></div>
+          </div>
+        </div>
+
+        <!-- HUD -->
+        <div class="hud" aria-hidden="true">
+          <div class="hud-row" id="hudRow">
+            <div class="hud-left" id="hudTitle">MENU</div>
+            <div class="hud-center" id="hudHint">←→↑↓ 選択 / A 決定 / B BACK</div>
+            <div class="hud-clock" id="hudClock">--:--</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="controls" aria-label="Controls">
+        <div class="dpad" aria-label="Direction buttons">
+          <button class="btn" id="btnUp" type="button">↑</button>
+          <div class="dpad-row">
+            <button class="btn" id="btnLeft" type="button">←</button>
+            <button class="btn" id="btnDown" type="button">↓</button>
+            <button class="btn" id="btnRight" type="button">→</button>
+          </div>
+        </div>
+        <div class="abpad" aria-label="Action buttons">
+          <button class="btn" id="btnA" type="button">A</button>
+          <button class="btn" id="btnB" type="button">B</button>
+          <button class="btn" id="btnC" type="button">C</button>
+        </div>
+        <div class="legend">EDIT時は画面をタップ/ドラッグで直接描画（右クリックで消去）</div>
+      </section>
+    </section>
+
+    <p class="note">まずはUIと挙動の土台。次で「ゲームロジック」と「保存機能」を足していく。</p>
+  </main>
+
+  <script src="./src/core/spriteSpec.js?v=20260227-1" defer></script>
+  <script src="./src/core/spriteCodec.js?v=20260227-1" defer></script>
+  <script src="./src/core/saveMigrator.js?v=20260227-1" defer></script>
+  <script src="./src/ui/bitmapFontSpec.js?v=20260227-1" defer></script>
+  <script src="./src/ui/bitmapFontData.js?v=20260227-1" defer></script>
+  <script src="./src/ui/bitmapTextRenderer.js?v=20260227-1" defer></script>
+  <script src="./src/ui/uiText.js?v=20260301-1" defer></script>
+  <script src="./src/ui/uiCursor.js?v=20260301-1" defer></script>
+  <script src="./src/ui/i18n.js?v=20260301-1" defer></script>
+  <script src="./src/model/monster.js?v=20260227-2" defer></script>
+  <script src="./src/runtime/runtime.js?v=20260227-2" defer></script>
+  <script src="./src/editor/editorAdapter.js?v=20260227-2" defer></script>
+  <script src="./app.js?v=20260227-4" defer></script>
+</body>
+</html>

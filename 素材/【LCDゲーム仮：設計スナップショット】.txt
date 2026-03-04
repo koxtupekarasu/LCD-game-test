@@ -1,0 +1,624 @@
+【LCDゲーム仮：設計スナップショット】
+■ 前提レイヤー：世界観設定（固定寄り・背骨）
+
+
+● 世界の大枠
+
+本作の舞台は、荒廃した地球に見えるが、
+実際には超巨大環境維持施設の内部世界である。
+
+荒野・都市群・自然地形に見える領域も含め、
+すべてはこの巨大施設の内部構造の一部である。
+
+環境は完全には維持されておらず、
+各所で静かな劣化・不安定化が進行している。
+
+人類は現在も存在する可能性があるが、
+ほとんど姿を見ない状態にある（理由は明言しない）。
+
+
+
+● AD（Artifact Disk）の正体
+
+ADは元来、環境維持施設を制御する
+**管理AIの記録媒体（データディスク）**であった。
+
+形状は、MD状の四角ケース内に円盤を収めた記憶媒体。
+
+本来は純粋なプログラム媒体であり、
+生命体を格納する目的のものではない。
+
+
+
+● 疑似生命体の発生
+
+現在AD内部に存在する個体は、
+
+元の管理AIそのものではない
+
+意図的に設計された存在でもない
+
+ADの記録領域内に未解明の形で発生した擬似生命体である。
+
+発生機序は不明。
+AIの変質なのか、外部要因なのかも断定されていない。
+
+このため、個体の本質は世界内でも完全には理解されていない。
+
+
+
+● 主人公（プレイヤー）の立場
+
+主人公は、かつて存在した管理体制の
+末端継承者／観測者的立場の人間である。
+
+明確な全容は把握しておらず、
+現在の役割理解は断片的理解にとどまる。
+
+重要方針：
+
+プレイヤーの理解度 ＝ 主人公の理解度
+
+主人公は「観測している」認識だが、
+実態としては環境維持システムの安定に
+部分的に関与している可能性がある。
+
+
+
+● なぜ育成・管理するのか
+
+AD内個体の安定度は、
+環境維持システムの挙動に間接的影響を与えている。
+
+そのため主人公は、
+
+観測
+
+安定化
+
+管理補助
+
+の行為を継続している。
+
+ただし、この因果関係は作中で完全には明示しない。
+
+
+
+● ネットワーク世界（探索領域）
+
+AD内個体が活動・探索する領域は、
+環境維持施設の内部ネットワーク空間である。
+
+特徴：
+
+有機的に見えるが完全生物ではない
+
+機械構造と自然様構造が融合
+
+ケーブル様の有機管が各所に存在
+
+半物質的なデータ空間
+
+いわゆる“デジタル世界”に近いが、
+より施設内部寄りの解釈を採用する。
+
+
+
+● 視覚劣化ルール
+
+信号品質やAD状態の悪化に応じて、
+探索空間には軽度の異常が発生する。
+
+基本方針：
+
+プレイ不能にはしない
+
+視覚的不安を与えるレベル
+
+静かな異常演出
+
+主な変化：
+
+軽度グリッチ
+
+ノイズ走査
+
+彩度低下
+
+発光減衰
+
+
+
+● 色彩支配ルール
+
+通常層：色彩豊富（基準色温は今後微調整可）
+
+異常域：軽度異常色＋ノイズ
+
+高信号域：発光増加＋ノイズ増大
+
+劣化域：彩度低下＋発光なし
+
+
+
+■ レイヤー1：体験の芯
+
+（← 変更慎重）
+
+一体を長く観測・育成する体験
+
+静かな不安と長期変化
+
+管理と見守りのあいだの立ち位置
+
+リアル時間経過によるじわじわした差
+
+決断（移行／維持／喪失）の重み
+
+■ レイヤー2：現在の実装仕様
+
+■ レイヤー2：現在の実装仕様（現状の真実）
+2-1. メニューUI（2段化）
+
+上段メニュー：STAT / FEED / TRN / BTTL / ADV
+
+下段メニュー：WC / SLEEP / HEAL / EDIT
+
+active/inactive（フェード）対応
+
+行・列の保持（カーソル位置保持）あり
+
+段切替：clamp対応（段移動で無効位置に飛ばない）
+
+枠線なし・行ベースラインあり
+
+上段：下線
+
+下段：上線
+
+下段Yは +12px
+
+上段のみ左安全マージン：TOP_MENU_CURSOR_SAFE_INSET_PX = 10
+
+参照：app.js:34/36/37/1093
+
+2-2. 入力（物理Cボタン追加）
+
+A：決定／描画
+
+B：戻る
+
+C：モード切替／編集コマンド入口
+
+Cは Press/Release を持ち、LongPressフックあり（導入済み）
+
+2-3. エディタ基盤（差分管理型）
+
+カテゴリ：FACE / ACTION / ICON
+
+スロット：3×4（12枠）
+
+ページ管理あり
+
+固定ロールあり
+
+空枠は -- 表示
+
+dirty は (*) 表示
+
+選択強調あり
+
+2-4. エディタモード（導入済み）
+
+モード：BROWSE / EDIT / SELECT / PASTE
+
+画面下に MODE: ... 表示
+
+2-5. SELECT（矩形選択＋コンテキストメニュー）
+
+矩形選択：始点／終点で確定
+
+選択枠表示あり
+
+コンテキストメニュー：
+
+COPY / CUT / PASTE / FLIPH / FLIPV / SHL / SHR / SHU / SHD / CANCEL
+
+2-6. COPY / CUT / PASTE（実装済み）
+
+clipboard形式：{ w, h, bits }
+
+Pasteゴースト表示あり
+
+範囲外クリップあり
+
+貼り付け合成：OVR / OR 切替
+
+COPY：非破壊
+
+CUT/PASTE：1操作=1Undo
+
+2-7. 反転／1ドットシフト（実装済み）
+
+選択範囲があれば優先
+
+未選択時：16×16全体対象
+
+Shift：空きは0埋め／はみ出し破棄（ラップなし）
+
+2-8. Undo / Redo（実装済み）
+
+ショートカット：
+
+Undo：Ctrl+Z / U
+
+Redo：Ctrl+Shift+Z / Ctrl+Y / I
+
+キーボード描画／ポインタ描画双方で有効
+
+2-9. 長押し連続移動（エディタ時）
+
+方向押下後：待機→高速連続移動
+
+現設定：
+
+待機：450ms
+
+連続間隔：45ms
+
+2-10. 画面調整（UI改善）
+
+PRV プレビュー復活
+
+左編集ペイン内に収まる位置へ調整
+
+SELECTメニュー視認性改善（位置／背景／ハイライト）
+
+2-11. 旧機能・開発固定
+
+旧「うんち」機能は削除済み
+
+睡眠は開発中固定OFF（寝ない設定）
+
+2-12. 永続化／キャッシュ
+
+モンスター本体スプライト：localStorage dotmon_sprite_v3
+
+詳細状態：localStorage dotmon_detail_v1
+
+app.js キャッシュ回避：app.js?v=20260226-7
+
+2-13. ファイル構成（現行）
+対象ファイル
+
+app.js
+
+index.html
+
+style.css
+
+変更済みファイル（現行スナップショット）
+
+app.js
+
+index.html
+
+style.css
+
+src/ui/uiText.js（新規）
+
+src/ui/uiCursor.js（新規）
+
+src/ui/i18n.js（新規）
+
+src/ui/bitmapFontSpec.js
+
+src/ui/bitmapFontData.js
+
+src/ui/bitmapTextRenderer.js
+
+src/model/monster.js
+
+src/runtime/runtime.js
+
+src/editor/editorAdapter.js
+
+src/core/spriteSpec.js
+
+src/core/spriteCodec.js
+
+src/core/saveMigrator.js
+
+主要ファイル（参照用）
+
+app.js / style.css / index.html
+
+src/ui/i18n.js / uiText.js / uiCursor.js
+
+src/runtime/runtime.js / src/editor/editorAdapter.js
+
+src/model/monster.js / src/core/saveMigrator.js
+
+assets/fonts/PixelMplus12-.ttf / PixelMplus10-.ttf
+
+2-14. 実装アーキテクチャ要点
+monster固定スキーマ
+
+createDefaultMonster / normalizeMonster / validateMonster で固定運用
+
+参照：monster.js:145 / 185 / 231
+
+セーブ移行
+
+versionラップ前提
+
+旧形式フォールバックあり（saveMigrator経由）
+
+Runtime/Editor境界
+
+DotmonRuntime / DotmonEditorAdapter の分離（必須依存）
+
+UI文字・カーソル
+
+UI文字：DotmonUiText経由（renderer直呼びなし）
+
+カーソル：DotmonUiCursor（点滅＋移動フラッシュ）
+
+2-15. Overlay基盤（ログ/STAT共通）
+
+DOM overlay：#overlayRoot / #overlayLog 使用（Canvasログ廃止）
+
+overlay種別：state.ui.overlayMode
+
+null | "log" | "stat"
+
+showOverlayShell(mode) で矩形切替
+
+log：OVERLAY_LOG_RECT
+
+stat：OVERLAY_STAT_RECT
+
+互換：state.ui.isLogOpen も保持（overlayMode==="log"と同期）
+
+2-16. フォント
+
+overlay文字：PixelMplus12
+
+@font-face：ローカルTTF参照（CDN未使用）
+
+フォールバック：monospace系
+
+font-smoothing/text-rendering のガビり誘発設定は overlay-log に未適用
+
+2-17. scanline制御
+
+clearLCD() の scanline は overlay表示中に停止
+
+条件：uiState.overlayMode == null のときのみ描画
+→ log/stat どちらのoverlay中も scanline停止
+
+2-18. ログ仕様（FEED/SLEEP/HEAL）
+
+差分0は sanitizeDelta() で除外（+0/-0無し）
+
+statLine組み立て順：
+
+充足値 → スタミナ → HP → 損傷 → 安定度
+
+差分なし文言（アクション別）：
+
+feed：反応なし。
+
+sleep：変化なし。
+
+heal：効果なし。
+
+差分なし時は *_nochange テンプレ優先
+
+用語は「安定度」に統一（情動ノイズ減衰は不使用）
+
+2-19. STAT画面（Overlay）
+操作
+
+メニューから STAT、Aで開く
+
+STAT中：
+
+→ 次ページ、← 前ページ（ループ）
+
+↑↓ 無効
+
+A/Bで閉じる
+
+開くたび statPage=0 リセット
+
+ヘッダ：STAT 1/2 / STAT 2/2
+
+Page1（主要5指標）
+
+3列：ラベル／バー／数値
+
+対象：HP / スタミナ / 充足値 / 損傷 / 安定度
+
+数値右揃え、バー領域は全行統一幅
+
+Page2（詳細指標）
+
+表示順固定：
+
+DAY / AD / 信号品質+矢印 / コンディション / 気質 / 体重 / 変質度 / 同調率 / 戦闘数 / 勝率 / 罫線 / 直近変化
+
+DOM分離：
+
+.overlay-stat-page2-main（本文）
+
+.overlay-stat-page2-footer（罫線＋直近変化）
+
+フッター下固定（flex縦）
+
+直近変化表記：「直近変化 ...」（コロン無し）
+
+視認性微調整：
+
+先頭3行に letter-spacing
+
+罫線上余白6px／罫線→直近変化 4px
+
+2-20. 詳細状態（AD/信号品質/睡眠連動）
+
+detailedは別管理：localStorage dotmon_detail_v1
+
+パラメータ：
+
+adIntegrity（0..100）
+
+signalQuality（0..100、常にadIntegrity以下にキャップ）
+
+signalTrend（↑/→/↓）
+
+リアル時間更新：
+
+updateDetailedMetricsRealtime(Date.now())
+
+lastUpdateAt差分で劣化/回復（オフライン経過も反映）
+
+自然睡眠：
+
+chronotype別の睡眠帯で isSleeping 判定
+
+寝かしつけ：
+
+睡眠中にSLEEP実行で isTuckedIn=true
+
+覚醒時 isTuckedIn=false リセット
+
+効果強度：
+
+自然睡眠のみ=半減
+
+寝かしつけ済み=フル
+
+2-21. SLEEPコマンド制約
+
+SLEEPは isSleeping=true のときのみ実行可能
+
+睡眠中は stat/sleep 以外アクションを抑制
+
+2-22. i18n＋ログテンプレ
+
+i18n：DotmonI18n必須
+
+DOMオーバーレイ表示（Canvasログ廃止）
+
+overlayRoot/overlayLog 必須
+
+ログテンプレ命名：
+
+log.normal.* / log.corrupted.*
+
+解決：
+
+log.${style}.${action} → log.normal.${action} フォールバック
+
+参照：app.js:189 / i18n.js:5
+
+2-23. SLEEP/HEAL内部更新（導入済み）
+
+SLEEP/HEALは内部値更新＋差分ログ算出まで実装済み
+
+applySleep：スタミナ回復、空腹変化、安定度回復
+
+applyHeal：HP回復、damage軽減、stamina消費
+
+参照：app.js:277 / 316 / 1838
+
+2-24. 検証状況
+
+node --check：
+
+app.js：OK
+
+src/ui/i18n.js：OK
+
+src/ui/uiText.js：OK
+
+未実施：
+
+ブラウザ実機での最終目視（Page2の行収まり・可読性最終確認）
+
+2-25. ステータス定義（戦闘・行動における意味づけ：暫定）
+基本方針
+
+本作の勝敗・結果は「ATK/DEF/SPD」等の戦闘専用ステータスではなく、既存の状態値を主軸に揺らす。
+
+プレイヤーに数値を直接見せるより、ログの短文で「理由」を返し、想像させる（説明過多にしない）。
+
+戦闘はデジモンワールド的な オート進行＋プレイヤーの介入 を将来方針として検討（UIは文字／グラフィカル未確定でもロジックは共通化可能）。
+
+戦闘の3軸（固定）
+
+攻勢（当たる／通る）＝信号品質
+
+信号品質が高いほど攻撃が通りやすく、戦況が優勢になりやすい。
+
+持久（崩れにくさ）＝安定度
+
+安定度が高いほど崩れにくく、被害や不利展開に耐えやすい。
+
+上振れ／下振れ（補正）＝同調率
+
+同調率は戦闘中の揺れ（補正）として作用し、上振れ・下振れを生む。
+
+※変質度は常時主軸にせず、将来的に「特殊な偏り」「事故要因」「例外的効果」等のスパイス枠として扱う方向（暫定）。
+
+ログ方針（理解の導線）
+
+戦闘や行動結果は、数値説明を避けつつ「原因」を短文で返す。
+
+例（テンプレ方向性）：
+
+「信号が澄んでいる。攻撃が通った」
+
+「ノイズが走る。入力が乱れた」
+
+「安定している。崩れなかった」
+
+「同調が跳ねた。動きが冴えた」
+
+TRN（トレーニング）の役割（暫定）
+
+TRNは主に信号品質を整える（上昇させる）行動として位置づける。
+
+戦闘の「攻勢」軸を日常行動で整える意味づけになり、観測・管理の世界観とも整合。
+
+TRNの詳細仕様（確実上昇型／上振れ型などの味付け）は今後チューニング対象。
+
+補足：ATK/DEF/SPDの扱い（現状）
+
+現時点ではSTATのメイン5指標（HP/スタミナ/充足値/損傷/安定度）にATK/DEF/SPDを追加する方針は未採用。
+
+状態値主軸の戦闘設計を優先し、必要性が明確になった段階で再検討。
+
+
+■ レイヤー3：未確定／調整予定
+
+（← 自由に動かす）
+
+AD崩壊の予兆フェーズ詳細
+
+移行（転生）条件の最終数値
+
+危険域滞在時間
+
+個体ロジック（コンディション等）
+
+探索パート具体仕様
+
+異常域バリエーション
+
+通常層の基準色温微調整
+
+演出強度チューニング
+
+サウンド設計
+
