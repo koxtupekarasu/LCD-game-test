@@ -128,6 +128,9 @@
   });
   const BTTL_INIT_MS = 420;
   const BTTL_ACTION_POST_RESOLVE_MS = 90;
+  const BTTL_MAIN_PANE_RATIO = 0.76;
+  const BTTL_BOTTOM_PANE_RATIO = 0.30;
+  const BTTL_PANE_GAP = 6;
   const BTTL_PROJECTILE_SPEED = 88;
   const BTTL_PROJECTILE_SPEED_DEBUG = 88;
   const BTTL_PROJECTILE_MISS_EXTRA_PX = 24;
@@ -140,6 +143,7 @@
   const BTTL_KNOCK_MS = 90;
   const BTTL_LOG_KEEP_MAX = 24;
   const BTTL_LOG_DRAW_LINES = 10;
+  const BTTL_BOTTOM_JP_MAX_LINES = 5;
   const BTTL_MAX_TURNS = 24;
   const BTTL_DEBUG_SHOW_RING_POINTS = false;
   const BTTL_DEBUG_SLOW_PROJECTILES = false;
@@ -155,7 +159,7 @@
   const BTTL_ENEMY_HP_RATIO = 0.45;
   const BTTL_ENEMY_HP_MIN = 3;
   const BTTL_ENEMY_HP_MAX = 50;
-  const BTTL_SIGNAL_GAME_RESULT_HOLD_MS = 240;
+  const BTTL_SIGNAL_GAME_RESULT_HOLD_MS = 2200;
   const BTTL_SIGNAL_GAME_MAX_MS = 4200;
   const BTTL_SIGNAL_MENU_ITEMS = Object.freeze([
     Object.freeze({ id: "boost", label: "BOOST" }),
@@ -370,6 +374,10 @@
     w: W - 48,
     h: 194,
   });
+  const OVERLAY_FONT_BASE_PX = 16;
+  const OVERLAY_FONT_BASE_CANVAS_SCALE = 1.6;
+  const OVERLAY_FONT_MIN_PX = 16;
+  const OVERLAY_FONT_MAX_PX = 28;
   const LOG_DEFAULT_NO_CHANGE_TEXT = "変化なし。";
   const LOG_NO_CHANGE_TEXT_BY_ACTION = Object.freeze({
     feed: "反応なし。",
@@ -400,6 +408,7 @@
   const overlayLogTitle = document.getElementById("overlayLogTitle");
   const overlayLogBody = document.getElementById("overlayLogBody");
   const overlayLogHint = document.getElementById("overlayLogHint");
+  const overlayBottomPane = document.getElementById("overlayBottomPane");
   const uiState = {
     isLogOpen: false,
     overlayMode: null,
@@ -498,16 +507,60 @@
     const bounds = canvas.getBoundingClientRect();
     const sx = bounds.width / W;
     const sy = bounds.height / H;
+    const canvasScale = Math.max(0.01, Math.min(sx, sy));
+    const fontScale = canvasScale / OVERLAY_FONT_BASE_CANVAS_SCALE;
+    const nextFontPx = clamp(
+      Math.round(OVERLAY_FONT_BASE_PX * fontScale),
+      OVERLAY_FONT_MIN_PX,
+      OVERLAY_FONT_MAX_PX
+    );
     overlayLog.style.left = `${Math.floor(rect.x * sx)}px`;
     overlayLog.style.top = `${Math.floor(rect.y * sy)}px`;
     overlayLog.style.width = `${Math.floor(rect.w * sx)}px`;
     overlayLog.style.height = `${Math.floor(rect.h * sy)}px`;
+    overlayLog.style.fontSize = `${nextFontPx}px`;
+    overlayLog.style.lineHeight = "1.5";
   }
 
   function setOverlayMode(mode){
     const nextMode = (mode === "log" || mode === "stat") ? mode : null;
     uiState.overlayMode = nextMode;
     uiState.isLogOpen = nextMode === "log";
+  }
+
+  function setOverlayBottomPaneRect(rect){
+    if(!overlayBottomPane || !canvas) return;
+    const bounds = canvas.getBoundingClientRect();
+    const sx = bounds.width / W;
+    const sy = bounds.height / H;
+    const pxW = Math.max(1, Math.floor(rect.w * sx));
+    const pxH = Math.max(1, Math.floor(rect.h * sy));
+    const canvasScale = Math.max(0.01, Math.min(sx, sy));
+    const fitFontByHeight = Math.max(9, Math.floor((pxH - 6) / Math.max(1, BTTL_BOTTOM_JP_MAX_LINES)));
+    const fontScale = canvasScale / OVERLAY_FONT_BASE_CANVAS_SCALE;
+    const scaledFont = Math.round(OVERLAY_FONT_BASE_PX * fontScale);
+    const nextFontPx = clamp(Math.min(scaledFont, fitFontByHeight), 9, 16);
+    const linePx = Math.max(nextFontPx + 1, Math.floor((pxH - 4) / Math.max(1, BTTL_BOTTOM_JP_MAX_LINES)));
+    overlayBottomPane.style.left = `${Math.floor(rect.x * sx)}px`;
+    overlayBottomPane.style.top = `${Math.floor(rect.y * sy)}px`;
+    overlayBottomPane.style.width = `${pxW}px`;
+    overlayBottomPane.style.height = `${pxH}px`;
+    overlayBottomPane.style.fontSize = `${nextFontPx}px`;
+    overlayBottomPane.style.lineHeight = `${linePx}px`;
+  }
+
+  function showBttlBottomPaneOverlay(lines, rect){
+    if(!overlayBottomPane) return;
+    const safeLines = Array.isArray(lines) ? lines.slice(-BTTL_BOTTOM_JP_MAX_LINES) : [];
+    setOverlayBottomPaneRect(rect);
+    overlayBottomPane.textContent = safeLines.join("\n");
+    overlayBottomPane.classList.remove("hidden");
+  }
+
+  function hideBttlBottomPaneOverlay(){
+    if(!overlayBottomPane) return;
+    overlayBottomPane.classList.add("hidden");
+    overlayBottomPane.textContent = "";
   }
 
   function normalizeStatPage(value){
@@ -1308,6 +1361,74 @@
     }
   }
 
+  function clearBttlSignalSuccessFx(ctxBattle){
+    if(!ctxBattle) return;
+    ctxBattle.signalFxOkCenterUntilMs = 0;
+    ctxBattle.signalFxSuccessCenterUntilMs = 0;
+    ctxBattle.signalFxSuccessOuterRippleUntilMs = 0;
+  }
+
+  function triggerBttlSignalStopFx(ctxBattle, feedbackGrade, nowMs = performance.now()){
+    if(!ctxBattle) return;
+    clearBttlSignalSuccessFx(ctxBattle);
+    ctxBattle.signalFxBadShakeUntilMs = 0;
+    ctxBattle.signalFxBadShakeDir = 0;
+    const grade = String(feedbackGrade || "").toUpperCase();
+    if(grade === "SUCCESS"){
+      ctxBattle.signalFxSuccessCenterUntilMs = nowMs + TRN_SUCCESS_CENTER_FLASH_MS;
+      ctxBattle.signalFxSuccessOuterRippleUntilMs = nowMs + TRN_SUCCESS_OUTER_RIPPLE_MS;
+      return;
+    }
+    if(grade === "OK"){
+      ctxBattle.signalFxOkCenterUntilMs = nowMs + TRN_OK_CENTER_FLASH_MS;
+      return;
+    }
+    if(grade === "BAD" || grade === "TIMEOUT"){
+      ctxBattle.signalFxBadShakeUntilMs = nowMs + TRN_BAD_SHAKE_MS;
+      ctxBattle.signalFxBadShakeDir = Math.random() < 0.5 ? -1 : 1;
+    }
+  }
+
+  function drawBttlSignalStopFx(ctxBattle, nowMs, playRect, ringCx, ringCy, ringMinR, ringMaxR){
+    const okCenterRemain = toNumber(ctxBattle?.signalFxOkCenterUntilMs, 0) - nowMs;
+    const successCenterRemain = toNumber(ctxBattle?.signalFxSuccessCenterUntilMs, 0) - nowMs;
+    const successOuterRippleRemain = toNumber(ctxBattle?.signalFxSuccessOuterRippleUntilMs, 0) - nowMs;
+    const okCenterActive = okCenterRemain > 0;
+    const successCenterActive = successCenterRemain > 0;
+    const successOuterRippleActive = successOuterRippleRemain > 0;
+
+    function drawRipple(baseR, remainMs, totalMs, deltaPx, alphaPeak, lineWidth){
+      if(remainMs <= 0 || totalMs <= 0) return;
+      const remain01 = clamp(remainMs / totalMs, 0, 1);
+      const progress01 = 1 - remain01;
+      const expand = 1 - Math.pow(1 - progress01, 3);
+      const fade = Math.pow(remain01, 0.82);
+      const rippleR = baseR + (expand * deltaPx);
+      drawIdealRing(
+        ringCx,
+        ringCy,
+        rippleR,
+        lineWidth,
+        `rgba(14,20,15,${(alphaPeak * fade).toFixed(3)})`
+      );
+    }
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(playRect.x, playRect.y, playRect.w, playRect.h);
+    ctx.clip();
+    if(okCenterActive){
+      drawRipple(ringMinR, okCenterRemain, TRN_OK_CENTER_FLASH_MS, 8, 0.28, 2);
+    }
+    if(successCenterActive){
+      drawRipple(ringMinR, successCenterRemain, TRN_SUCCESS_CENTER_FLASH_MS, 10, 0.34, 2);
+    }
+    if(successOuterRippleActive){
+      drawRipple(ringMaxR, successOuterRippleRemain, TRN_SUCCESS_OUTER_RIPPLE_MS, TRN_SUCCESS_OUTER_RIPPLE_DELTA_PX, 0.22, 1);
+    }
+    ctx.restore();
+  }
+
   function clearTrnResultBuffer(){
     uiState.trnResultBuffer = [];
     uiState.trnLastFeedback = null;
@@ -2033,8 +2154,8 @@
   function showBootError(message){
     hudTitle.textContent = "BOOT ERROR";
     hudHint.textContent = "Required module missing";
-    uiClock.textContent = "--:--";
-    uiDay.textContent = "DAY --";
+    if(uiClock) uiClock.textContent = "--:--";
+    if(uiDay) uiDay.textContent = "DAY --";
 
     ctx.fillStyle = "#c8d6c2";
     ctx.fillRect(0, 0, W, H);
@@ -2133,6 +2254,7 @@
   const uiCursorShouldShow = UiCursorAPI.shouldShowCursor;
   const uiCursorOnMoved = UiCursorAPI.onCursorMoved;
   hideOverlayLog();
+  hideBttlBottomPaneOverlay();
 
   function createAppDefaultMonster(id){
     const mon = normalizeMonster(createDefaultMonster(id));
@@ -2665,6 +2787,48 @@
       colorMode,
       color,
     });
+  }
+
+  function drawTextJa(x, y, text, opts = {}){
+    const sizePx = clamp(Math.floor(toNumber(opts.size, 11)), 9, 24);
+    const align = String(opts.align || "left").toLowerCase();
+    const color = String(opts.color || "rgba(14,20,15,0.90)");
+    ctx.save();
+    ctx.fillStyle = color;
+    ctx.textBaseline = "top";
+    ctx.textAlign = (align === "center" || align === "right") ? align : "left";
+    ctx.font = `${sizePx}px "PixelMplus12", ui-monospace, monospace`;
+    ctx.fillText(String(text ?? ""), Math.round(x), Math.round(y));
+    ctx.restore();
+  }
+
+  function measureTextJa(text, size = 11){
+    const sizePx = clamp(Math.floor(toNumber(size, 11)), 9, 24);
+    ctx.save();
+    ctx.font = `${sizePx}px "PixelMplus12", ui-monospace, monospace`;
+    const width = Number(ctx.measureText(String(text ?? "")).width) || 0;
+    ctx.restore();
+    return width;
+  }
+
+  function fitJaText(text, maxWidth, size = 11){
+    const source = String(text ?? "");
+    const limit = Math.max(0, Math.floor(toNumber(maxWidth, 0)));
+    if(source.length <= 0 || limit <= 0) return "";
+    if(measureTextJa(source, size) <= limit) return source;
+    const ellipsis = "...";
+    const ellipsisW = measureTextJa(ellipsis, size);
+    if(ellipsisW >= limit){
+      return ".";
+    }
+    let out = source;
+    while(out.length > 0){
+      out = out.slice(0, -1);
+      if(measureTextJa(out, size) + ellipsisW <= limit){
+        return `${out}${ellipsis}`;
+      }
+    }
+    return ellipsis;
   }
 
   function drawBox(x, y, w, h){
@@ -4141,9 +4305,53 @@
     return next;
   }
 
-  function getBttlFieldGeometry(){
+  function getBttlPaneLayout(){
     const layout = getTrnLayout();
-    const { frame, left, right } = layout;
+    const frame = layout.frame;
+    const contentPadX = 8;
+    const contentPadY = 8;
+    const contentX = frame.x + contentPadX;
+    const contentY = frame.y + contentPadY;
+    const contentW = Math.max(24, frame.w - (contentPadX * 2));
+    const contentH = Math.max(24, frame.h - (contentPadY * 2));
+    const splitGap = BTTL_PANE_GAP;
+    const bottomH = clamp(
+      Math.floor(contentH * BTTL_BOTTOM_PANE_RATIO),
+      56,
+      Math.max(56, contentH - 80)
+    );
+    const topH = Math.max(72, contentH - bottomH - splitGap);
+    const topY = contentY;
+    const bottomY = topY + topH + splitGap;
+    const leftW = Math.max(
+      140,
+      Math.floor((contentW - splitGap) * clamp(BTTL_MAIN_PANE_RATIO, 0.55, 0.82))
+    );
+    const rightW = Math.max(64, contentW - splitGap - leftW);
+    const left = {
+      x: contentX,
+      y: topY,
+      w: leftW,
+      h: topH,
+    };
+    const right = {
+      x: left.x + left.w + splitGap,
+      y: topY,
+      w: rightW,
+      h: topH,
+    };
+    const bottom = {
+      x: contentX,
+      y: bottomY,
+      w: contentW,
+      h: Math.max(48, (contentY + contentH) - bottomY),
+    };
+    return { frame, left, right, bottom };
+  }
+
+  function getBttlFieldGeometry(){
+    const layout = getBttlPaneLayout();
+    const { frame, left, right, bottom } = layout;
     const innerRect = {
       x: left.x + 4,
       y: left.y + 4,
@@ -4198,6 +4406,7 @@
       frame,
       left,
       right,
+      bottom,
       innerRect,
       dividerY,
       topLaneRect,
@@ -4235,6 +4444,42 @@
       x: field.bottomBattleX1 - u,
       y: field.bottomLaneCenterY,
     };
+  }
+
+  function drawBttlHpPanel(x, y, w, hpNowRaw, hpMaxRaw, opts = {}){
+    const hpMax = Math.max(1, Math.floor(toNumber(hpMaxRaw, 1)));
+    const hpNow = clamp(Math.floor(toNumber(hpNowRaw, 0)), 0, hpMax);
+    const ratio = hpMax > 0 ? clamp(hpNow / hpMax, 0, 1) : 0;
+    const valueText = `${hpNow}/${hpMax}`;
+    const panelW = Math.max(36, Math.floor(toNumber(w, 0)));
+    const textScale = clamp(Math.floor(toNumber(opts.textScale, 1)), 1, 2);
+    const textH = BITMAP_GLYPH_H * textScale;
+    const textPos = String(opts.textPos || "above").toLowerCase();
+    const barX = Math.round(x);
+    const isTextBelow = textPos === "below";
+    const barY = isTextBelow ? Math.round(y) : Math.round(y + textH + 1);
+    const barW = panelW;
+    const barH = 4;
+    const valueY = isTextBelow ? Math.round(barY + barH + 1) : Math.round(y);
+    const fillW = Math.floor((barW - 2) * ratio);
+
+    drawText(Math.round(x + Math.floor(panelW / 2)), valueY, valueText, {
+      scale: textScale,
+      align: "center",
+      color: "rgba(14,20,15,0.92)",
+    });
+
+    ctx.save();
+    ctx.fillStyle = "rgba(14,20,15,0.12)";
+    ctx.fillRect(barX, barY, barW, barH);
+    ctx.strokeStyle = "rgba(14,20,15,0.38)";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(barX + 0.5, barY + 0.5, barW - 1, barH - 1);
+    if(fillW > 0){
+      ctx.fillStyle = "rgba(14,20,15,0.78)";
+      ctx.fillRect(barX + 1, barY + 1, fillW, Math.max(1, barH - 2));
+    }
+    ctx.restore();
   }
 
   function didRingSegmentHitRange(prevT, nextT, rangeStart, rangeEnd, ringLen){
@@ -4865,6 +5110,9 @@
       2,
       Math.max(2, bandW)
     );
+    clearBttlSignalSuccessFx(ctxBattle);
+    ctxBattle.signalFxBadShakeUntilMs = 0;
+    ctxBattle.signalFxBadShakeDir = 0;
     ctxBattle.signalSession = {
       cmd: commandId,
       mode,
@@ -4879,6 +5127,10 @@
       nearMargin: Math.max(1, Math.floor(toNumber(cfg.nearMargin, TRN_BASE_NEAR_MARGIN) * 0.8)),
       internalP: getTrnInternalSuccessBase(mode),
       costApplied,
+      wasInBand: false,
+      wasInCrit: false,
+      bandHitFlashUntilMs: 0,
+      critHitFlashUntilMs: 0,
     };
     ctxBattle.signalResult = null;
     ctxBattle.rightPaneMode = BTTL_RIGHTPANE_MODE.SIGNAL_GAME;
@@ -4894,6 +5146,7 @@
     const finalTier = resolveTrnFinalTier(gameTier, internalRoll);
     const timeout = Boolean(options?.timeout);
     const feedbackGrade = resolveTrnFeedbackGrade(finalTier, timeout);
+    triggerBttlSignalStopFx(ctxBattle, feedbackGrade, toNumber(nowMs, performance.now()));
     const cmd = normalizeBttlSignalCommand(session.cmd);
     const tier = getBttlSignalTierFromGrade(feedbackGrade);
     const hitChanceAdj = getBttlSignalHitBonus(cmd, tier);
@@ -4981,6 +5234,11 @@
       signalModeCooldownUntilByCmd: {},
       pendingEffect: null,
       lastSignalProc: null,
+      signalFxOkCenterUntilMs: 0,
+      signalFxSuccessCenterUntilMs: 0,
+      signalFxSuccessOuterRippleUntilMs: 0,
+      signalFxBadShakeUntilMs: 0,
+      signalFxBadShakeDir: 0,
       enemyAi: createBttlEnemyAiState(nowMs),
       projectiles: [],
       nextEnemyActAtMs: toNumber(nowMs, performance.now()) + BTTL_INIT_MS + 220,
@@ -5239,6 +5497,9 @@
           const holdUntil = toNumber(ctxBattle.signalResult?.untilMs, 0);
           if(holdUntil > 0 && nowMs >= holdUntil){
             ctxBattle.signalResult = null;
+            clearBttlSignalSuccessFx(ctxBattle);
+            ctxBattle.signalFxBadShakeUntilMs = 0;
+            ctxBattle.signalFxBadShakeDir = 0;
             ctxBattle.rightPaneMode = BTTL_RIGHTPANE_MODE.SIGNAL_MENU;
           }
         }
@@ -5309,26 +5570,157 @@
     drawBox(rightInner.x, rightInner.y, rightInner.w, rightInner.h);
     const headerX = right.x + 8;
     const headerY = right.y + 6;
-    drawText(headerX, headerY, "OBS LOG");
+    drawText(headerX, headerY, "OBS LOG", { scale: 1, color: "rgba(14,20,15,0.82)" });
     ctx.save();
     ctx.strokeStyle = "rgba(14,20,15,0.30)";
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(rightInner.x + 2, rightInner.y + 17.5);
-    ctx.lineTo(rightInner.x + rightInner.w - 3, rightInner.y + 17.5);
+    ctx.moveTo(rightInner.x + 2, rightInner.y + 13.5);
+    ctx.lineTo(rightInner.x + rightInner.w - 3, rightInner.y + 13.5);
     ctx.stroke();
     ctx.restore();
-    const logLines = (Array.isArray(ctxBattle.logs) ? ctxBattle.logs : []).slice(-BTTL_LOG_DRAW_LINES);
-    const logTopY = rightInner.y + 22;
+    const allLogs = Array.isArray(ctxBattle.logs) ? ctxBattle.logs : [];
+    const lineGap = 7;
+    const logTopY = rightInner.y + 16;
+    const maxLines = Math.max(1, Math.min(BTTL_LOG_DRAW_LINES, Math.floor((rightInner.h - 18) / lineGap)));
+    const logLines = allLogs.slice(-maxLines);
     if(logLines.length <= 0){
-      drawText(right.x + 8, logTopY, "---", { color: "rgba(14,20,15,0.52)" });
+      drawText(right.x + 8, logTopY, "---", { scale: 1, color: "rgba(14,20,15,0.52)" });
       return;
     }
     for(let i = 0; i < logLines.length; i++){
       const source = String(logLines[i] || "").trim();
-      const fitted = fitTrnRightPaneText(source, right.w - 16, { scale: 2 });
-      drawText(right.x + 8, logTopY + (i * 14), fitted, { color: "rgba(14,20,15,0.90)" });
+      const fitted = fitTrnRightPaneText(source, right.w - 16, { scale: 1 });
+      drawText(right.x + 8, logTopY + (i * lineGap), fitted, { scale: 1, color: "rgba(14,20,15,0.90)" });
     }
+    if(allLogs.length > maxLines){
+      const fadeH = Math.max(lineGap + 2, 10);
+      const fadeY = logTopY;
+      ctx.save();
+      const fade = ctx.createLinearGradient(0, fadeY, 0, fadeY + fadeH);
+      fade.addColorStop(0, "rgba(198,212,192,0.95)");
+      fade.addColorStop(1, "rgba(198,212,192,0.00)");
+      ctx.fillStyle = fade;
+      ctx.fillRect(rightInner.x + 1, fadeY, Math.max(2, rightInner.w - 2), fadeH);
+      ctx.restore();
+    }
+  }
+
+  function getBttlSignalCommandLabelJa(cmd){
+    const id = normalizeBttlSignalCommand(cmd);
+    if(id === "boost") return "強化同期";
+    if(id === "stabilize") return "安定化";
+    return "再較正";
+  }
+
+  function getBttlSignalGradeJa(grade){
+    const g = String(grade || "").trim().toUpperCase();
+    if(g === "SUCCESS") return "大成功";
+    if(g === "OK") return "成功";
+    if(g === "NEAR") return "惜しい";
+    if(g === "TIMEOUT") return "時間切れ";
+    return "失敗";
+  }
+
+  function toBttlJpLogLine(rawText){
+    const source = String(rawText ?? "").trim();
+    if(source.length <= 0) return "";
+    const repeatMatch = source.match(/\sx(\d+)$/i);
+    const repeatCount = repeatMatch ? clamp(Math.floor(toNumber(repeatMatch[1], 1)), 1, 99) : 1;
+    const base = repeatMatch ? source.slice(0, repeatMatch.index).trim() : source;
+    let out = "";
+    if(base === "BTTL START"){
+      out = "戦闘開始";
+    }else if(base === "EN SHOT"){
+      out = "敵が射出";
+    }else if(base === "AL SHOT"){
+      out = "味方が射出";
+    }else if(base === "EN MISS"){
+      out = "敵の攻撃は外れた";
+    }else if(base === "AL MISS"){
+      out = "味方の攻撃は外れた";
+    }else if(base === "NO STA"){
+      out = "スタミナ不足";
+    }else if(base === "ABORT"){
+      out = "手動中断";
+    }else if(base === "WIN"){
+      out = "敵を撃破";
+    }else if(base === "LOSE"){
+      out = "味方が停止";
+    }else{
+      let m = base.match(/^EN DMG (\d+)$/);
+      if(m){
+        out = `味方に ${Math.max(0, Math.floor(toNumber(m[1], 0)))} ダメージ`;
+      }else{
+        m = base.match(/^AL DMG (\d+)$/);
+        if(m){
+          out = `敵に ${Math.max(0, Math.floor(toNumber(m[1], 0)))} ダメージ`;
+        }else{
+          m = base.match(/^(BST|STB|CAL)\s+(BAD|NEAR|OK|SUC)$/);
+          if(m){
+            const cmd = m[1] === "BST" ? "boost" : (m[1] === "STB" ? "stabilize" : "calibrate");
+            const grade = m[2] === "SUC" ? "SUCCESS" : m[2];
+            out = `${getBttlSignalCommandLabelJa(cmd)} ${getBttlSignalGradeJa(grade)}`;
+          }else{
+            out = base;
+          }
+        }
+      }
+    }
+    if(repeatCount > 1){
+      out += ` x${repeatCount}`;
+    }
+    return out;
+  }
+
+  function getBttlBottomNarrativeLines(ctxBattle, paneMode){
+    const mode = String(paneMode || "");
+    if(mode === BTTL_RIGHTPANE_MODE.SIGNAL_GAME){
+      if(ctxBattle?.signalSession){
+        const cmdJa = getBttlSignalCommandLabelJa(ctxBattle.signalSession.cmd);
+        return [
+          `${cmdJa} 調整中`,
+          "Aで停止  Bで中断",
+        ];
+      }
+      if(ctxBattle?.signalResult){
+        const resultJa = getBttlSignalGradeJa(ctxBattle.signalResult.grade);
+        return [
+          `介入結果 ${resultJa}`,
+          "次の味方弾1発に反映",
+        ];
+      }
+    }
+    const allLogs = Array.isArray(ctxBattle?.logs) ? ctxBattle.logs : [];
+    const recent = allLogs
+      .slice(-(BTTL_BOTTOM_JP_MAX_LINES + 2))
+      .map(toBttlJpLogLine)
+      .filter((line) => line.length > 0);
+    if(recent.length <= 0){
+      return ["戦闘中...", "介入タイミングを選択"];
+    }
+    while(recent.length < 2){
+      recent.unshift("戦闘中...");
+    }
+    return recent.slice(-BTTL_BOTTOM_JP_MAX_LINES);
+  }
+
+  function drawBttlBottomPane(ctxBattle, bottom, paneMode, nowMs = performance.now()){
+    const inner = {
+      x: bottom.x + 4,
+      y: bottom.y + 4,
+      w: Math.max(16, bottom.w - 8),
+      h: Math.max(20, bottom.h - 8),
+    };
+    drawBox(inner.x, inner.y, inner.w, inner.h);
+    const lines = getBttlBottomNarrativeLines(ctxBattle, paneMode).slice(-BTTL_BOTTOM_JP_MAX_LINES);
+    const jpLines = lines.map((line) => fitJaText(line, inner.w - 6, 11));
+    showBttlBottomPaneOverlay(jpLines, {
+      x: inner.x + 2,
+      y: inner.y + 2,
+      w: Math.max(8, inner.w - 4),
+      h: Math.max(8, inner.h - 4),
+    });
   }
 
   function drawBttlRightPaneSignalMenu(ctxBattle, right, rightInner){
@@ -5422,42 +5814,143 @@
   function drawBttlRightPaneSignalGame(ctxBattle, right, nowMs){
     const metrics = getBttlSignalGameMetrics(getBttlFieldGeometry());
     const rightInner = metrics.rightInner;
-    drawBox(rightInner.x, rightInner.y, rightInner.w, rightInner.h);
+    const badShakeUntilMs = toNumber(ctxBattle.signalFxBadShakeUntilMs, 0);
+    const isBadShakeActive = nowMs < badShakeUntilMs;
+    const shakeX = isBadShakeActive ? (Math.sign(toNumber(ctxBattle.signalFxBadShakeDir, 1)) || 1) : 0;
+    const badShakeStartedAtMs = badShakeUntilMs - TRN_BAD_SHAKE_MS;
+    const ghostActive = isBadShakeActive && ((nowMs - badShakeStartedAtMs) < TRN_BAD_GHOST_MS);
     const session = ctxBattle.signalSession;
-    if(session){
-      const cmdLabel = BTTL_SIGNAL_CMD_LOG_LABEL[normalizeBttlSignalCommand(session.cmd)] || "SIG";
-      drawText(right.x + 8, right.y + 6, `SIG ${cmdLabel}`, { scale: 1 });
-      const ringCx = metrics.cx;
-      const ringCy = metrics.cy;
-      const waveR = getBttlSignalCurrentRadius(session, nowMs);
-      const stabilityMax = toPositiveInt(state.stats?.stabilityMax, 10);
-      const stabilityNow = clamp(toNumber(state.stats?.stability, stabilityMax), 0, stabilityMax);
-      const stabilityRatio = stabilityMax > 0 ? stabilityNow / stabilityMax : 0;
-      const visualDistortion = (1 - stabilityRatio) * 3.2;
-      drawIdealRing(ringCx, ringCy, session.centerR, toNumber(session.bandW, 8), "rgba(14,20,15,0.16)");
-      if(session.critEnabled){
-        drawIdealRing(ringCx, ringCy, session.centerR, toNumber(session.critW, 4), "rgba(14,20,15,0.28)");
+
+    const drawBody = (ghostPass = false) => {
+      drawBox(rightInner.x, rightInner.y, rightInner.w, rightInner.h);
+      if(session){
+        const cmdLabel = BTTL_SIGNAL_CMD_LOG_LABEL[normalizeBttlSignalCommand(session.cmd)] || "SIG";
+        drawText(right.x + 8, right.y + 6, `SIG ${cmdLabel}`, { scale: 1 });
+        const ringCx = metrics.cx;
+        const ringCy = metrics.cy;
+        const waveR = getBttlSignalCurrentRadius(session, nowMs);
+        const stabilityMax = toPositiveInt(state.stats?.stabilityMax, 10);
+        const stabilityNow = clamp(toNumber(state.stats?.stability, stabilityMax), 0, stabilityMax);
+        const stabilityRatio = stabilityMax > 0 ? stabilityNow / stabilityMax : 0;
+        const visualDistortion = (1 - stabilityRatio) * 3.2;
+        const bandCenterR = clamp(toNumber(session.centerR, metrics.maxR * 0.6), metrics.minR, metrics.maxR);
+        const bandW = toNumber(session.bandW, 8);
+        const critW = toNumber(session.critW, 4);
+        const distToCenter = Math.abs(waveR - bandCenterR);
+        const bandHalf = Math.max(1, bandW / 2);
+        const critHalf = Math.max(1, critW / 2);
+        const inBand = distToCenter <= bandHalf;
+        const inCrit = session.critEnabled && distToCenter <= critHalf;
+        const prevInBand = Boolean(session.wasInBand);
+        const prevInCrit = Boolean(session.wasInCrit);
+        if(inBand && !prevInBand){
+          session.bandHitFlashUntilMs = nowMs + TRN_BAND_HIT_FLASH_MS;
+        }
+        if(inCrit && !prevInCrit){
+          session.critHitFlashUntilMs = nowMs + TRN_CRIT_HIT_FLASH_MS;
+        }
+        const bandFlashRemain = toNumber(session.bandHitFlashUntilMs, 0) - nowMs;
+        const critFlashRemain = toNumber(session.critHitFlashUntilMs, 0) - nowMs;
+        const bandFlashActive = bandFlashRemain > 0;
+        const critFlashActive = critFlashRemain > 0;
+        session.wasInBand = inBand;
+        session.wasInCrit = inCrit;
+
+        let bandLineW = Math.max(1, bandW * 0.82);
+        let bandAlpha = 0.08;
+        if(inBand){
+          bandLineW = Math.max(1, bandW * 0.88);
+          bandAlpha = 0.15;
+        }
+        if(bandFlashActive){
+          bandLineW = Math.max(1, bandW * 0.94);
+          bandAlpha = 0.20;
+        }
+        if(inCrit || critFlashActive){
+          bandLineW = Math.max(bandLineW, bandW * 1.00);
+          bandAlpha = Math.max(bandAlpha, critFlashActive ? 0.24 : 0.18);
+        }
+        let critLineW = Math.max(1, critW * 0.82);
+        let critAlpha = 0.16;
+        if(inCrit){
+          critLineW = Math.max(1, critW * 0.90);
+          critAlpha = 0.28;
+        }
+        if(critFlashActive){
+          critLineW = Math.max(1, critW * 0.98);
+          critAlpha = 0.34;
+        }
+
+        if(bandFlashActive){
+          const remain01 = clamp(bandFlashRemain / TRN_BAND_HIT_FLASH_MS, 0, 1);
+          const progress01 = 1 - remain01;
+          const expand = 1 - Math.pow(1 - progress01, 3);
+          const fade = 1 - Math.pow(1 - remain01, 3);
+          const pulseR = Math.min(metrics.maxR - 2, bandCenterR + (expand * (TRN_BAND_PULSE_RADIUS_MAX_PX * 0.54)));
+          const pulseAlpha = 0.13 * fade;
+          drawIdealRing(ringCx, ringCy, pulseR + 1, 2, `rgba(14,20,15,${(pulseAlpha * 0.45).toFixed(3)})`);
+          drawIdealRing(ringCx, ringCy, pulseR, 1, `rgba(14,20,15,${pulseAlpha.toFixed(3)})`);
+        }
+        if(critFlashActive){
+          const remain01 = clamp(critFlashRemain / TRN_CRIT_HIT_FLASH_MS, 0, 1);
+          const progress01 = 1 - remain01;
+          const expand = 1 - Math.pow(1 - progress01, 3);
+          const fade = 1 - Math.pow(1 - remain01, 3);
+          const pulseR = Math.min(metrics.maxR - 2, bandCenterR + (expand * (TRN_CRIT_PULSE_RADIUS_MAX_PX * 0.60)));
+          const pulseAlpha = 0.18 * fade;
+          drawIdealRing(ringCx, ringCy, pulseR + 1, 2, `rgba(14,20,15,${(pulseAlpha * 0.50).toFixed(3)})`);
+          drawIdealRing(ringCx, ringCy, pulseR, 1, `rgba(14,20,15,${pulseAlpha.toFixed(3)})`);
+        }
+
+        drawIdealRing(ringCx, ringCy, bandCenterR, bandLineW, `rgba(14,20,15,${bandAlpha.toFixed(3)})`);
+        if(session.critEnabled){
+          drawIdealRing(ringCx, ringCy, bandCenterR, critLineW, `rgba(14,20,15,${critAlpha.toFixed(3)})`);
+          if(inCrit){
+            drawIdealRing(ringCx, ringCy, bandCenterR, 1, "rgba(14,20,15,0.60)");
+          }
+        }
+        drawDistortedRing(
+          ringCx,
+          ringCy,
+          waveR,
+          visualDistortion,
+          nowMs * 0.007,
+          2,
+          "rgba(14,20,15,0.58)"
+        );
+        drawIdealRing(ringCx, ringCy, metrics.minR, 1, "rgba(14,20,15,0.20)");
+        drawIdealRing(ringCx, ringCy, metrics.maxR, 1, "rgba(14,20,15,0.16)");
+        drawText(metrics.footerRect.x, metrics.footerRect.y + 4, "A:STOP B:BACK", { scale: 1 });
+        return;
       }
-      drawDistortedRing(
-        ringCx,
-        ringCy,
-        waveR,
-        visualDistortion,
-        nowMs * 0.007,
-        2,
-        "rgba(14,20,15,0.58)"
-      );
-      drawIdealRing(ringCx, ringCy, metrics.minR, 1, "rgba(14,20,15,0.20)");
-      drawIdealRing(ringCx, ringCy, metrics.maxR, 1, "rgba(14,20,15,0.16)");
-      drawText(metrics.footerRect.x, metrics.footerRect.y + 4, "A:STOP B:BACK", { scale: 1 });
-      return;
+      const grade = String(ctxBattle.signalResult?.grade || "").trim();
+      drawText(right.x + 8, right.y + 6, "SIG RESULT", { scale: 1 });
+      drawIdealRing(metrics.cx, metrics.cy, metrics.minR, 1, "rgba(14,20,15,0.20)");
+      drawIdealRing(metrics.cx, metrics.cy, metrics.maxR, 1, "rgba(14,20,15,0.16)");
+      drawBttlSignalStopFx(ctxBattle, nowMs, metrics.playRect, metrics.cx, metrics.cy, metrics.minR, metrics.maxR);
+      if(grade.length > 0){
+        const fitted = fitTrnRightPaneText(grade, rightInner.w - 6, { scale: 1 });
+        drawText(
+          rightInner.x + Math.floor(rightInner.w / 2),
+          rightInner.y + Math.floor(rightInner.h / 2) - 4,
+          fitted,
+          { align: "center", scale: 1 }
+        );
+      }
+    };
+
+    if(ghostActive){
+      ctx.save();
+      ctx.translate(-shakeX, 0);
+      ctx.globalAlpha = TRN_BAD_GHOST_ALPHA;
+      drawBody(true);
+      ctx.restore();
     }
-    const grade = String(ctxBattle.signalResult?.grade || "").trim();
-    drawText(right.x + 8, right.y + 6, "SIG RESULT", { scale: 1 });
-    if(grade.length > 0){
-      const fitted = fitTrnRightPaneText(grade, rightInner.w - 8, { scale: 2 });
-      drawText(rightInner.x + Math.floor(rightInner.w / 2), rightInner.y + Math.floor(rightInner.h / 2) - 6, fitted, { align: "center" });
-    }
+    ctx.save();
+    ctx.translate(shakeX, 0);
+    ctx.globalAlpha = 1;
+    drawBody(false);
+    ctx.restore();
   }
 
   function drawBttlScreen(view, nowMs = performance.now()){
@@ -5471,7 +5964,7 @@
     if(!ctxBattle) return;
 
     const field = getBttlFieldGeometry();
-    const { frame, left, right } = field;
+    const { frame, left, right, bottom } = field;
     const spritePx = field.spritePx;
 
     hudTitle.textContent = "BTTL";
@@ -5500,6 +5993,7 @@
     drawBox(frame.x, frame.y, frame.w, frame.h);
     drawBox(left.x, left.y, left.w, left.h);
     drawBox(right.x, right.y, right.w, right.h);
+    drawBox(bottom.x, bottom.y, bottom.w, bottom.h);
 
     drawBox(field.innerRect.x, field.innerRect.y, field.innerRect.w, field.innerRect.h);
     ctx.save();
@@ -5539,12 +6033,39 @@
 
     drawBttlSignalStatusBadge(ctxBattle, field, allyX, allyY, nowMs);
 
-    drawText(field.topLaneRect.x, field.topLaneRect.y + 1, `ENEMY ${Math.max(0, Math.floor(toNumber(ctxBattle.enemy?.hp, 0)))}/${Math.max(0, Math.floor(toNumber(ctxBattle.enemy?.maxHp, 0)))}`);
-    drawText(
-      field.bottomLaneRect.x + field.bottomLaneRect.w,
-      field.bottomLaneRect.y + field.bottomLaneRect.h - 12,
-      `ALLY ${Math.max(0, Math.floor(toNumber(ctxBattle.ally?.hp, 0)))}/${Math.max(0, Math.floor(toNumber(ctxBattle.ally?.maxHp, 0)))}`,
-      { align: "right" }
+    const hpPanelW = clamp(Math.floor(field.topLaneRect.w * 0.30), 88, 148);
+    const topPanelX = clamp(
+      field.topLaneRect.x + Math.floor(field.topLaneRect.w * 0.58),
+      field.topLaneRect.x + 20,
+      (field.topLaneRect.x + field.topLaneRect.w) - hpPanelW - 4
+    );
+    const topPanelY = field.topLaneRect.y + 2;
+    drawBttlHpPanel(
+      topPanelX,
+      topPanelY,
+      hpPanelW,
+      ctxBattle.enemy?.hp,
+      ctxBattle.enemy?.maxHp,
+      { textPos: "below", textScale: 1 }
+    );
+
+    const bottomPanelW = clamp(Math.floor(field.bottomLaneRect.w * 0.30), 88, 148);
+    const bottomPanelX = clamp(
+      field.bottomLaneRect.x + 8,
+      field.bottomLaneRect.x + 2,
+      field.bottomBattleX1 - bottomPanelW - 6
+    );
+    const bottomPanelY = Math.max(
+      field.bottomLaneRect.y + 1,
+      field.bottomLaneRect.y + field.bottomLaneRect.h - 16
+    );
+    drawBttlHpPanel(
+      bottomPanelX,
+      bottomPanelY,
+      bottomPanelW,
+      ctxBattle.ally?.hp,
+      ctxBattle.ally?.maxHp,
+      { textPos: "above", textScale: 1 }
     );
 
     if(BTTL_DEBUG_SHOW_RING_POINTS){
@@ -5572,13 +6093,12 @@
       h: right.h - 8,
     };
     const rightPaneMode = String(ctxBattle.rightPaneMode || BTTL_RIGHTPANE_MODE.SIGNAL_MENU);
-    if(rightPaneMode === BTTL_RIGHTPANE_MODE.SIGNAL_MENU){
-      drawBttlRightPaneSignalMenu(ctxBattle, right, rightInner);
-    }else if(rightPaneMode === BTTL_RIGHTPANE_MODE.SIGNAL_GAME){
+    if(rightPaneMode === BTTL_RIGHTPANE_MODE.SIGNAL_GAME){
       drawBttlRightPaneSignalGame(ctxBattle, right, nowMs);
     }else{
       drawBttlRightPaneSignalMenu(ctxBattle, right, rightInner);
     }
+    drawBttlBottomPane(ctxBattle, bottom, rightPaneMode, nowMs);
   }
 
   // ===== actions =====
@@ -6265,6 +6785,9 @@
     const nowMs = performance.now();
     const showCursor = uiCursorShouldShow(nowMs, state.cursorFlashUntilMs);
     if(hudClock) hudClock.textContent = gameHHMM();
+    if(state.screen !== "bttl"){
+      hideBttlBottomPaneOverlay();
+    }
 
     if(state.screen === TRN_MODE_SCREEN){
       drawTrnModeSelect(view, showCursor, nowMs);
@@ -6440,7 +6963,7 @@
         if(state.timeMin >= 24*60){
           state.timeMin -= 24*60;
           state.day += 1;
-          uiDay.textContent = `DAY ${state.day}`;
+          if(uiDay) uiDay.textContent = `DAY ${state.day}`;
         }
       }
     }
@@ -6455,14 +6978,14 @@
       saveDetailedState();
     }
 
-    uiClock.textContent = gameHHMM();
+    if(uiClock) uiClock.textContent = gameHHMM();
     drawFrame();
     requestAnimationFrame(tick);
   }
 
   // init
-  uiDay.textContent = `DAY ${state.day}`;
-  uiClock.textContent = gameHHMM();
+  if(uiDay) uiDay.textContent = `DAY ${state.day}`;
+  if(uiClock) uiClock.textContent = gameHHMM();
   tick();
 })();
 

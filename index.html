@@ -12,15 +12,6 @@
 
 <body>
   <main class="app" role="main">
-    <header class="topbar">
-      <div class="brand">DOTMON</div>
-      <div class="meta">
-        <span id="uiClock">--:--</span>
-        <span class="sep">/</span>
-        <span id="uiDay">DAY 1</span>
-      </div>
-    </header>
-
     <section class="device">
       <section class="lcd" aria-label="LCD Screen">
         <!-- ゲーム画面（Canvas） -->
@@ -31,6 +22,7 @@
             <div id="overlayLogBody" class="overlay-log-body"></div>
             <div id="overlayLogHint" class="overlay-log-hint"></div>
           </div>
+          <div id="overlayBottomPane" class="overlay-bottom hidden" aria-hidden="true"></div>
         </div>
 
         <!-- HUD -->
@@ -60,8 +52,6 @@
         <div class="legend">EDIT時は画面をタップ/ドラッグで直接描画（右クリックで消去）</div>
       </section>
     </section>
-
-    <p class="note">まずはUIと挙動の土台。次で「ゲームロジック」と「保存機能」を足していく。</p>
   </main>
 
   <script src="./src/core/spriteSpec.js?v=20260227-1" defer></script>
