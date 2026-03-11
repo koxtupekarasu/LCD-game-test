@@ -22,6 +22,7 @@
   const SPRITE_W = Number(SpriteSpecModule?.SPRITE_W);
   const SPRITE_H = Number(SpriteSpecModule?.SPRITE_H);
   const BITMAP_GLYPH_H = Number(BitmapFontSpecModule?.GLYPH_H);
+  const BITMAP_ADVANCE_X = Number(BitmapFontSpecModule?.ADVANCE_X);
   const SPRITE_SIZE = SPRITE_W;
   const DEFAULT_TEXT_SCALE = 2;
   const DOT_SCALE = 4;
@@ -64,6 +65,15 @@
   const TRN_LOG_SCREEN = "trnlog";
   const BTTL_LOG_SCREEN = "bttllog";
   const TRN_MAX_MS = 9500;
+  const TRN_START_INTRO_MS = 980;
+  const TRN_START_INTRO_FLASH_MAX_ALPHA = 0.16;
+  const TRN_START_INTRO_FINAL_HOLD_RATIO = 0.50;
+  const TRN_START_INTRO_BLINK_MS = 72;
+  const TRN_START_INTRO_TEXT_SCALE = 5;
+  const TRN_START_INTRO_HATCH_ALPHA = 0.08;
+  const TRN_START_INTRO_HATCH_STEP = 14;
+  const TRN_END_REVEAL_MS = 320;
+  const TRN_END_REVEAL_INITIAL_ALPHA = 0.76;
   const TRN_MIN_BAND_R_RATIO = 0.30;
   const TRN_MAX_BAND_R_RATIO = 0.82;
   const TRN_PLAY_RING_SAFE_MARGIN_PX = 3;
@@ -119,6 +129,7 @@
     PLAYER_WINDOW: "PLAYER_WINDOW",
     TURN: "TURN",
     CHECK: "CHECK",
+    OUTRO: "OUTRO",
     RESULT: "RESULT",
   });
   const BTTL_RIGHTPANE_MODE = Object.freeze({
@@ -127,9 +138,45 @@
     SIGNAL_GAME: "signal_game",
   });
   const BTTL_INIT_MS = 420;
+  const BTTL_START_INTRO_TYPE = Object.freeze({
+    ENCOUNT: "encount",
+    WARNING: "warning",
+  });
+  const BTTL_START_INTRO_ENCOUNT_MS = 980;
+  const BTTL_START_INTRO_WARNING_MS = 1680;
+  const BTTL_START_INTRO_WARNING_HP_THRESHOLD = 45;
+  const BTTL_START_INTRO_WARNING_CHANCE = 0.35;
+  // Debug: set to "warning" to force WARNING!! intro every battle. Set "" to disable.
+  const BTTL_START_INTRO_DEBUG_FORCE_TYPE = "";
+  const BTTL_START_INTRO_ENCOUNT_FLASH_MAX_ALPHA = 0.16;
+  const BTTL_START_INTRO_ENCOUNT_FINAL_HOLD_RATIO = 0.50;
+  const BTTL_START_INTRO_ENCOUNT_BLINK_MS = 72;
+  const BTTL_START_INTRO_ENCOUNT_TEXT_SCALE = 5;
+  const BTTL_START_INTRO_ENCOUNT_HATCH_ALPHA = 0.08;
+  const BTTL_START_INTRO_ENCOUNT_HATCH_STEP = 14;
+  const BTTL_START_INTRO_WARNING_FLASH_MAX_ALPHA = 0.24;
+  const BTTL_START_INTRO_WARNING_NOISE_ALPHA = 0.14;
+  const BTTL_START_INTRO_WARNING_FINAL_HOLD_RATIO = 0.30;
+  const BTTL_START_INTRO_WARNING_HATCH_ALPHA = 0.12;
+  const BTTL_START_INTRO_WARNING_HATCH_STEP = 12;
+  const BTTL_END_OUTRO_TYPE = Object.freeze({
+    WIN: "win",
+    LOST: "lost",
+  });
+  const BTTL_END_OUTRO_WIN_FLASH_MS = 80;
+  const BTTL_END_OUTRO_WIN_FLASH_GAP_MS = 40;
+  const BTTL_END_OUTRO_WIN_HOLD_MS = 750;
+  const BTTL_END_OUTRO_WIN_TO_WHITE_MS = 320;
+  const BTTL_END_OUTRO_WIN_FROM_WHITE_MS = 360;
+  const BTTL_END_OUTRO_LOST_FADE_MS = 260;
+  const BTTL_END_OUTRO_LOST_HOLD_MS = 750;
+  const BTTL_END_OUTRO_LOST_TO_BLACK_MS = 320;
+  const BTTL_END_OUTRO_LOST_FROM_BLACK_MS = 360;
+  const BTTL_END_OUTRO_LOST_NOISE_ALPHA = 0.10;
+  const BTTL_END_OUTRO_HANDOFF_IN_FADE_RATIO = 0.90;
   const BTTL_ACTION_POST_RESOLVE_MS = 90;
-  const BTTL_MAIN_PANE_RATIO = 0.76;
-  const BTTL_BOTTOM_PANE_RATIO = 0.30;
+  const BTTL_MAIN_PANE_RATIO = 0.73;
+  const BTTL_BOTTOM_PANE_RATIO = 0.27;
   const BTTL_PANE_GAP = 6;
   const BTTL_PROJECTILE_SPEED = 88;
   const BTTL_PROJECTILE_SPEED_DEBUG = 88;
@@ -141,9 +188,231 @@
   const BTTL_PROJECTILE_COLOR = "rgba(14,20,15,0.95)";
   const BTTL_HIT_FLASH_MS = 120;
   const BTTL_KNOCK_MS = 90;
+  const BTTL_BREAK_MAX = 100;
+  const BTTL_BREAK_HIGH_RATIO = 0.74;
+  const BTTL_BREAK_RECOVERY_PER_SEC = 2.4;
+  const BTTL_BREAK_RECOVER_DELAY_MS = 1300;
+  const BTTL_BREAK_STATE_MS = 1250;
+  const BTTL_BREAK_INTERVAL_MULT = 1.34;
+  const BTTL_BREAK_LOG_PLUS_MIN_INTERVAL_MS = 520;
+  const BTTL_BREAK_GAIN_HIT_BASE = 4;
+  const BTTL_BREAK_GAIN_HIT_SHORT_BONUS = 6;
+  const BTTL_BREAK_GAIN_HIT_HEAVY_BONUS = 28;
+  const BTTL_BREAK_GAIN_HIT_DAMAGE_SCALE = 1.4;
+  const BTTL_BREAK_GAIN_SHORT_PRESSURE_MISS = 3;
+  const BTTL_BREAK_GAIN_PARRY = 18;
+  const BTTL_BREAK_GAIN_REFLECT = 26;
+  const BTTL_BREAK_RECOVERY_MULT_BY_RANGE = Object.freeze({
+    short: 0.70,
+    mid: 1.00,
+    long: 2.25,
+  });
+  const BTTL_BREAK_GAIN_MULT_BY_RANGE = Object.freeze({
+    short: 1.15,
+    mid: 1.00,
+    long: 0.72,
+  });
   const BTTL_LOG_KEEP_MAX = 24;
   const BTTL_LOG_DRAW_LINES = 10;
-  const BTTL_BOTTOM_JP_MAX_LINES = 5;
+  const BTTL_BOTTOM_JP_MAX_LINES = 4;
+  const BTTL_BOTTOM_NARRATIVE_DRAW_LINES = 4;
+  const BTTL_BOTTOM_NARRATIVE_MIN_INTERVAL_MS = 1600;
+  const BTTL_BOTTOM_NARRATIVE_IMPORTANT_INTERVAL_MS = 950;
+  const BTTL_BOTTOM_NARRATIVE_SUMMARY_INTERVAL_MS = 4800;
+  const BTTL_BOTTOM_NARRATIVE_DUPLICATE_BLOCK_MS = 4200;
+  const BTTL_BOTTOM_NARRATIVE_CATEGORY_MIN_INTERVAL_MS = Object.freeze({
+    alert: 700,
+    signal: 1200,
+    hint: 1600,
+    cause: 2200,
+    flow: 3200,
+    atmosphere: 2600,
+  });
+  const BTTL_BOTTOM_NARRATIVE_KIND_COOLDOWN_MS = Object.freeze({
+    alert: 1200,
+    signal: 2600,
+    hint: 2800,
+    cause: 3400,
+    flow: 5200,
+    atmosphere: 5000,
+  });
+  const BTTL_BOTTOM_NARRATIVE_LINES_BY_KIND = Object.freeze({
+    flow_advantage: Object.freeze([
+      "流れはこちらにある。",
+      "押し込みは維持できている。",
+      "主導は渡していない。",
+    ]),
+    flow_pressure: Object.freeze([
+      "押されつつある。",
+      "相手が主導を握りつつある。",
+      "立て直しが要る。",
+    ]),
+    flow_even: Object.freeze([
+      "拮抗している。",
+      "均衡はまだ崩れない。",
+      "読み合いは続いている。",
+    ]),
+    cause_you_miss: Object.freeze([
+      "信号が散った。",
+      "狙いがまだ甘い。",
+      "補正が噛んでいない。",
+    ]),
+    cause_ene_miss: Object.freeze([
+      "相手の照準がぶれた。",
+      "被弾は回避できた。",
+      "位相差でいなした。",
+    ]),
+    cause_you_dmg: Object.freeze([
+      "攻勢が通った。",
+      "出力が素直に乗った。",
+      "押し込みは有効だ。",
+    ]),
+    cause_ene_dmg: Object.freeze([
+      "被弾を確認。",
+      "守りが薄い。",
+      "圧を受けている。",
+    ]),
+    hint_enemy_defend: Object.freeze([
+      "相手は守りに寄せた。",
+      "崩すには手数が要る。",
+      "押し急ぐと空転する。",
+    ]),
+    signal_bst_ok: Object.freeze([
+      "増幅が噛み合った。",
+      "出力が前に出る。",
+      "次弾は通しやすい。",
+    ]),
+    signal_stb_ok: Object.freeze([
+      "同期が整った。",
+      "乱れは抑えられている。",
+      "足場は悪くない。",
+    ]),
+    signal_cal_ok: Object.freeze([
+      "基準位相を捉えた。",
+      "補正が深く入った。",
+      "流れを戻せる。",
+    ]),
+    signal_ovc_ok: Object.freeze([
+      "過駆動に入った。",
+      "無理に間合いを詰める。",
+      "安定を犠牲に前へ出る。",
+    ]),
+    signal_bad: Object.freeze([
+      "補正は浅い。",
+      "同期がまだ荒い。",
+      "整える余地がある。",
+    ]),
+    signal_ovc_bad: Object.freeze([
+      "過駆動は噛まない。",
+      "駆動だけが空回りしている。",
+      "突入の起点を作れない。",
+    ]),
+    alert_heavy: Object.freeze([
+      "強い反応。来る。",
+      "危険信号を検出。",
+      "大振りの兆候あり。",
+    ]),
+    alert_dodge: Object.freeze([
+      "紙一重でかわした。",
+      "位相ずらし成功。",
+      "被弾は避けた。",
+    ]),
+    alert_parry: Object.freeze([
+      "同期反転、通した。",
+      "読み勝った。",
+      "打ち返しに成功。",
+    ]),
+    alert_reflect: Object.freeze([
+      "打ち返した。",
+      "信号を返した。",
+      "反応が逆流した。",
+    ]),
+    alert_bad: Object.freeze([
+      "間に合わない。",
+      "避けきれなかった。",
+      "反応が遅れた。",
+    ]),
+    atmosphere_start: Object.freeze([
+      "擬似生命反応、なお不安定。",
+      "記録開始。挙動を観測する。",
+      "戦闘位相へ遷移。",
+    ]),
+    atmosphere_idle: Object.freeze([
+      "癖が出始めている。",
+      "反応は鈍い。だが死んではいない。",
+      "記録値以上に荒さがある。",
+    ]),
+    range_approach: Object.freeze([
+      "間合いが詰まった。",
+      "相手が踏み込んでくる。",
+      "距離が縮む。重い一撃に注意。",
+    ]),
+    range_retreat: Object.freeze([
+      "相手は距離を取りたがっている。",
+      "間合いが離れた。",
+      "引き気味だ。追うかは判断次第。",
+    ]),
+    range_hold: Object.freeze([
+      "距離は維持されている。",
+      "間合いは膠着気味だ。",
+      "まだ均衡は崩れない。",
+    ]),
+    range_short: Object.freeze([
+      "近い。重い一撃に注意。",
+      "接近戦。反応速度が問われる。",
+      "間合いは短い。危険域だ。",
+    ]),
+    range_mid: Object.freeze([
+      "中距離。読み合いが続く。",
+      "標準距離での交戦が続く。",
+      "間合いは中間に戻った。",
+    ]),
+    range_long: Object.freeze([
+      "距離を取られた。",
+      "遠距離。圧は弱まる。",
+      "間合いは長い。仕掛けは遅れる。",
+    ]),
+    break_rise_enemy: Object.freeze([
+      "相手の応答が乱れ始めた。",
+      "敵側の同調が揺れている。",
+      "崩れの兆候を検知。",
+    ]),
+    break_rise_ally: Object.freeze([
+      "こちらの同期が揺れている。",
+      "応答が荒い。立て直しが必要だ。",
+      "崩れかけている。無理は禁物。",
+    ]),
+    break_high_enemy: Object.freeze([
+      "敵の乱れが深い。押し時だ。",
+      "もう一押しで崩せる。",
+      "敵の同調が限界に近い。",
+    ]),
+    break_high_ally: Object.freeze([
+      "危うい。持ち直しを優先したい。",
+      "こちらの乱れが深い。",
+      "崩壊寸前。受けを固めたい。",
+    ]),
+    break_enemy: Object.freeze([
+      "敵の応答が崩れた。今が好機だ。",
+      "敵同調が破綻。攻勢を通せる。",
+      "敵BREAK。流れを奪える。",
+    ]),
+    break_ally: Object.freeze([
+      "こちらの応答が崩れた。",
+      "BREAK発生。立て直しが必要だ。",
+      "同調破綻。耐える時間だ。",
+    ]),
+    break_recover_enemy: Object.freeze([
+      "敵が持ち直しつつある。",
+      "敵の応答が戻り始めた。",
+      "崩れは収束しつつある。",
+    ]),
+    break_recover_ally: Object.freeze([
+      "こちらの応答が戻り始めた。",
+      "同調が回復しつつある。",
+      "立て直しの余地が戻った。",
+    ]),
+  });
   const BTTL_MAX_TURNS = 24;
   const BTTL_DEBUG_SHOW_RING_POINTS = false;
   const BTTL_DEBUG_SLOW_PROJECTILES = false;
@@ -154,43 +423,55 @@
   const BTTL_HIT_SYNC_WEIGHT = 0.12;
   const BTTL_HIT_MIN = 0.08;
   const BTTL_HIT_MAX = 0.95;
-  const BTTL_ENEMY_SIG = 46;
-  const BTTL_ENEMY_SYNC = 38;
-  const BTTL_ENEMY_HP_RATIO = 0.45;
-  const BTTL_ENEMY_HP_MIN = 3;
-  const BTTL_ENEMY_HP_MAX = 50;
+  const BTTL_ENEMY_SIG = 60;
+  const BTTL_ENEMY_SYNC = 54;
+  const BTTL_ENEMY_HP_RATIO = 0.58;
+  const BTTL_ENEMY_HP_MIN = 8;
+  const BTTL_ENEMY_HP_MAX = 65;
   const BTTL_SIGNAL_GAME_RESULT_HOLD_MS = 2200;
   const BTTL_SIGNAL_GAME_MAX_MS = 4200;
   const BTTL_SIGNAL_MENU_ITEMS = Object.freeze([
     Object.freeze({ id: "boost", label: "BOOST" }),
     Object.freeze({ id: "stabilize", label: "STABILIZE" }),
     Object.freeze({ id: "calibrate", label: "CALIBRATE" }),
+    Object.freeze({ id: "overclock", label: "OVER CLOCK" }),
   ]);
   const BTTL_SIGNAL_CMD_TO_TRN_MODE = Object.freeze({
     boost: "boost",
     stabilize: "noise",
     calibrate: "calib",
+    overclock: "boost",
   });
   const BTTL_SIGNAL_CMD_LOG_LABEL = Object.freeze({
     boost: "BST",
     stabilize: "STB",
     calibrate: "CAL",
+    overclock: "OVC",
+  });
+  const BTTL_SIGNAL_USE_DETAIL_KEY_BY_CMD = Object.freeze({
+    boost: "signalUseBoost",
+    stabilize: "signalUseStabilize",
+    calibrate: "signalUseCalibrate",
+    overclock: "signalUseOverclock",
   });
   const BTTL_SIGNAL_HIT_BONUS_BY_TIER = Object.freeze({
-    boost: Object.freeze([0, 0.04, 0.10, 0.16]),
-    stabilize: Object.freeze([0, 0.05, 0.12, 0.18]),
-    calibrate: Object.freeze([0, 0.03, 0.08, 0.14]),
+    boost: Object.freeze([0.00, 0.04, 0.08, 0.12]),
+    stabilize: Object.freeze([0.00, 0.06, 0.12, 0.18]),
+    calibrate: Object.freeze([0.00, 0.04, 0.09, 0.14]),
+    overclock: Object.freeze([0.00, 0.00, 0.00, 0.00]),
   });
   const BTTL_SIGNAL_INTERVAL_MULT_BY_TIER = Object.freeze({
-    boost: Object.freeze([1.14, 1.05, 0.95, 0.86]),
-    stabilize: Object.freeze([1.10, 1.02, 0.95, 0.88]),
-    calibrate: Object.freeze([1.12, 1.03, 0.96, 0.90]),
+    boost: Object.freeze([0.99, 0.94, 0.88, 0.82]),
+    stabilize: Object.freeze([1.00, 0.97, 0.93, 0.89]),
+    calibrate: Object.freeze([1.00, 0.96, 0.91, 0.87]),
+    overclock: Object.freeze([1.00, 1.00, 1.00, 1.00]),
   });
-  const BTTL_SIGNAL_GCD_MS = 600;
+  const BTTL_SIGNAL_GCD_MS = 700;
   const BTTL_SIGNAL_MODE_COOLDOWN_MS = Object.freeze({
-    boost: 3400,
-    stabilize: 2800,
-    calibrate: 2400,
+    boost: 4200,
+    stabilize: 3400,
+    calibrate: 3200,
+    overclock: 4600,
   });
   const BTTL_SIGNAL_PENDING_BLINK_MS = 520;
   const BTTL_SIGNAL_PROC_FLASH_MS = 1400;
@@ -198,9 +479,36 @@
     boost: 2,
     stabilize: 1,
     calibrate: 1,
+    overclock: 2,
+  });
+  const BTTL_STA_RECOVERY_PER_SEC = 0.55;
+  const BTTL_SIGNAL_DURATION_MS_BY_TIER = Object.freeze([600, 2000, 3200, 4500]);
+  const BTTL_SIGNAL_APPROACH_MULT_BY_TIER = Object.freeze({
+    boost: Object.freeze([1.00, 1.00, 1.00, 1.00]),
+    stabilize: Object.freeze([1.00, 1.00, 1.00, 1.00]),
+    calibrate: Object.freeze([1.00, 1.00, 1.00, 1.00]),
+    overclock: Object.freeze([1.00, 1.45, 1.90, 2.35]),
+  });
+  const BTTL_SIGNAL_KNOCKBACK_RESIST_BY_TIER = Object.freeze({
+    boost: Object.freeze([0.00, 0.00, 0.00, 0.00]),
+    stabilize: Object.freeze([0.00, 0.00, 0.00, 0.00]),
+    calibrate: Object.freeze([0.00, 0.00, 0.00, 0.00]),
+    overclock: Object.freeze([0.00, 0.20, 0.35, 0.50]),
+  });
+  const BTTL_SIGNAL_DAMAGE_TAKEN_MULT_BY_TIER = Object.freeze({
+    boost: Object.freeze([1.00, 1.00, 1.00, 1.00]),
+    stabilize: Object.freeze([1.00, 1.00, 1.00, 1.00]),
+    calibrate: Object.freeze([1.00, 1.00, 1.00, 1.00]),
+    overclock: Object.freeze([1.10, 1.12, 1.15, 1.20]),
+  });
+  const BTTL_SIGNAL_BREAK_TAKEN_MULT_BY_TIER = Object.freeze({
+    boost: Object.freeze([1.00, 1.00, 1.00, 1.00]),
+    stabilize: Object.freeze([1.00, 1.00, 1.00, 1.00]),
+    calibrate: Object.freeze([1.00, 1.00, 1.00, 1.00]),
+    overclock: Object.freeze([1.15, 1.20, 1.28, 1.38]),
   });
   const BTTL_ATTACK_INTERVAL_ALLY_BASE_MS = 2400;
-  const BTTL_ATTACK_INTERVAL_ENEMY_BASE_MS = 2800;
+  const BTTL_ATTACK_INTERVAL_ENEMY_BASE_MS = 2300;
   const BTTL_ATTACK_INTERVAL_MIN_MS = 1400;
   const BTTL_ATTACK_INTERVAL_MAX_MS = 4200;
   const BTTL_ATTACK_INTERVAL_SIG_SPEEDUP_MAX = 0.10;
@@ -212,17 +520,134 @@
     STABLE: "STABLE",
     DEFEND: "DEFEND",
   });
+  const BTTL_ALLY_ACTION = Object.freeze({
+    PRESS: "PRESS",
+    STABLE: "STABLE",
+    DEFEND: "DEFEND",
+    EVADE: "EVADE",
+  });
   const BTTL_ENEMY_ACTION_INTERVAL_MULT = Object.freeze({
     PRESS: 0.88,
     STABLE: 1.00,
     DEFEND: 1.18,
   });
+  const BTTL_ALLY_ACTION_INTERVAL_MULT = Object.freeze({
+    PRESS: 0.92,
+    STABLE: 1.00,
+    DEFEND: 1.16,
+    EVADE: 1.10,
+  });
+  const BTTL_ALLY_DEFEND_DMG_MULT = 0.90;
+  const BTTL_ALLY_DODGE_BASE = 0.08;
+  const BTTL_ALLY_DODGE_SYNC_WEIGHT = 0.24;
+  const BTTL_ALLY_DODGE_STABILITY_WEIGHT = 0.16;
+  const BTTL_ALLY_DODGE_EVADE_BONUS = 0.20;
+  const BTTL_ALLY_DODGE_DEFEND_PENALTY = 0.06;
+  const BTTL_ALLY_PARRY_BASE = 0.03;
+  const BTTL_ALLY_PARRY_SYNC_WEIGHT = 0.18;
+  const BTTL_ALLY_PARRY_STABILITY_WEIGHT = 0.10;
+  const BTTL_ALLY_PARRY_EVADE_BONUS = 0.08;
+  const BTTL_ALLY_REFLECT_BASE = 0.08;
+  const BTTL_ALLY_REFLECT_SYNC_WEIGHT = 0.18;
+  const BTTL_ALLY_REFLECT_STABILITY_WEIGHT = 0.12;
+  const BTTL_HEAVY_CHANCE_BASE = 0.16;
+  const BTTL_HEAVY_COOLDOWN_MS = 5400;
+  const BTTL_HEAVY_INITIAL_READY_RATIO = 0.45;
+  const BTTL_HEAVY_TEST_MODE = false;
+  const BTTL_HEAVY_TEST_CHANCE_BASE = 0.42;
+  const BTTL_HEAVY_TEST_COOLDOWN_MS = 2400;
+  const BTTL_HEAVY_TEST_INITIAL_READY_RATIO = 0.20;
+  const BTTL_HEAVY_DAMAGE_BONUS = 2;
+  const BTTL_HEAVY_SPEED_MULT = 0.88;
+  const BTTL_HEAVY_DODGE_PENALTY = 0.12;
+  const BTTL_HEAVY_PARRY_BONUS = 0.06;
+  const BTTL_HEAVY_REFLECT_BONUS = 0.05;
+  const BTTL_HEAVY_REFLECT_DAMAGE_MULT = 1.00;
+  const BTTL_HEAVY_REACT_RING_LEAD_MS = 1200;
+  const BTTL_HEAVY_REACT_RING_GRACE_MS = 120;
+  const BTTL_HEAVY_REACT_LOOP_MS = 740;
+  const BTTL_HEAVY_REACT_BAND_W = 8;
+  const BTTL_HEAVY_REACT_CRIT_W = 4;
+  const BTTL_HEAVY_REACT_NEAR_MARGIN = 4;
+  const BTTL_HEAVY_REACT_RESULT_HOLD_MS = 760;
+  const BTTL_HEAVY_REACT_SLOW_SCALE = 0.52;
+  const BTTL_HEAVY_REACT_DIM_ALPHA = 0.18;
+  const BTTL_HEAVY_REACT_FOCUS_DIM_ALPHA = 0.32;
+  const BTTL_HEAVY_REACT_FOCUS_ZOOM_SCALE = 1.10;
+  const BTTL_PARRY_ENEMY_DELAY_MS = 720;
+  const BTTL_REFLECT_DAMAGE_MULT = 1.00;
+  const BTTL_HEAVY_TELEGRAPH_MIN_MS = 420;
+  const BTTL_HEAVY_TELEGRAPH_MAX_MS = 1800;
+  const BTTL_ENEMY_AI_DECIDE_INTERVAL_MS = 320;
+  const BTTL_ENEMY_AI_MIN_HOLD_MS = 2500;
+  const BTTL_ENEMY_AI_SWITCH_COOLDOWN_MS = 1400;
+  const BTTL_ALLY_AI_DECIDE_INTERVAL_MS = 320;
+  const BTTL_ALLY_AI_MIN_HOLD_MS = 2100;
+  const BTTL_ALLY_AI_SWITCH_COOLDOWN_MS = 900;
   const BTTL_ENEMY_DEFEND_DMG_MULT = 0.88;
   const BTTL_ENEMY_AI_RECENT_WINDOW = 8;
-  const BTTL_ENEMY_AI_DECIDE_INTERVAL_MS = 260;
-  const BTTL_ENEMY_AI_MIN_HOLD_MS = 2100;
-  const BTTL_ENEMY_AI_SWITCH_COOLDOWN_MS = 1200;
   const BTTL_ENEMY_AI_AUDIT_LOG = false;
+  const BTTL_RANGE_INTENT = Object.freeze({
+    APPROACH: "APPROACH",
+    HOLD: "HOLD",
+    RETREAT: "RETREAT",
+  });
+  const BTTL_RANGE_POS_MIN = 0.05;
+  const BTTL_RANGE_POS_MAX = 0.95;
+  const BTTL_RANGE_INIT_ENEMY_POS = 0.24;
+  const BTTL_RANGE_INIT_ALLY_POS = 0.78;
+  const BTTL_RANGE_MIN_GAP = 0.10;
+  const BTTL_RANGE_SHORT_THRESHOLD = 0.18;
+  const BTTL_RANGE_MID_THRESHOLD = 0.48;
+  const BTTL_RANGE_SHORT_ENTER_MARGIN = 0.022;
+  const BTTL_RANGE_SHORT_EXIT_MARGIN = 0.008;
+  const BTTL_RANGE_LONG_ENTER_MARGIN = 0.020;
+  const BTTL_RANGE_LONG_EXIT_MARGIN = 0.012;
+  const BTTL_RANGE_MOVE_SPEED_BASE = 0.10;
+  const BTTL_RANGE_MOVE_SPEED_APPROACH_BONUS = 0.035;
+  const BTTL_RANGE_MOVE_SPEED_RETREAT_BONUS = 0.085;
+  const BTTL_RANGE_HOLD_WOBBLE = 0.012;
+  const BTTL_RANGE_LERP_SPEED = 8.5;
+  const BTTL_RANGE_CENTER_PULL = 0.16;
+  const BTTL_RANGE_SAME_INTENT_DAMP = 0.70;
+  const BTTL_RANGE_SHORT_APPROACH_RESIST = 0.60;
+  const BTTL_RANGE_SHORT_ESCAPE_SPEED = 0.18;
+  const BTTL_OVERCLOCK_RUSH_SPEED = 0.38;
+  const BTTL_OVERCLOCK_SAME_INTENT_BYPASS = 0.78;
+  const BTTL_OVERCLOCK_SHORT_RESIST_BYPASS = 0.70;
+  const BTTL_OVERCLOCK_RANGE_LERP_MULT = 1.80;
+  const BTTL_RANGE_INTENT_LOG_MIN_INTERVAL_MS = 1800;
+  const BTTL_RANGE_STATE_LOG_MIN_INTERVAL_MS = 1400;
+  const BTTL_RANGE_HEAVY_CHANCE_BONUS = Object.freeze({
+    short: 0.24,
+    mid: 0.03,
+    long: -0.12,
+  });
+  const BTTL_RANGE_INTERVAL_MULT = Object.freeze({
+    short: 1.00,
+    mid: 1.00,
+    long: 1.08,
+  });
+  const BTTL_RANGE_SHORT_HIT_FX_MS = 170;
+  const BTTL_SHORT_DIRECT_IMPACT_DELAY_MS = 110;
+  const BTTL_SHORT_HEAVY_TELEGRAPH_MIN_MS = 540;
+  const BTTL_SHORT_HEAVY_TELEGRAPH_MAX_MS = 980;
+  const BTTL_SHORT_LUNGE_MS = 180;
+  const BTTL_SHORT_LUNGE_PX = 7;
+  const BTTL_SHORT_RECOIL_POS_DELTA = 0.110;
+  const BTTL_SHORT_RECOIL_KNOCK_MS = 120;
+  const BTTL_SHORT_RECOIL_LONG_MARGIN = 0.10;
+  const BTTL_RANGED_HIT_KNOCK_POS_DELTA = 0.028;
+  const BTTL_RANGED_HIT_KNOCK_TARGET_RATIO = 0.72;
+  const BTTL_SHORT_GATE_SLASH_MS = 560;
+  const BTTL_SHORT_GATE_SLASH_HEAVY_MS = 820;
+  const BTTL_HIT_GATE_BAR_HALF_H = 9;
+  const BTTL_HIT_GATE_BAR_SPACING = 3;
+  const BTTL_RANGE_BAR_PAD_X = 10;
+  const BTTL_RANGE_BAR_MARKER_HALF = 4;
+  const BTTL_RANGE_MARKER_SHAKE_MS = 520;
+  const BTTL_RANGE_MARKER_SHAKE_PX = 4;
+  const BTTL_RANGE_MARKER_SHAKE_HZ = 20;
   const BTTL_RESULT_FLAVORS = Object.freeze({
     WIN: Object.freeze([
       "同調は安定した。対象を制圧。",
@@ -269,6 +694,22 @@
         SUCCESS: 0,
         CRIT: 0,
       }),
+      adIntegrityDeltaByTier: Object.freeze({
+        FAIL: 0,
+        NEAR: 1,
+        SUCCESS: 2,
+        CRIT: 3,
+      }),
+      personalityDeltaByTier: Object.freeze({
+        FAIL: Object.freeze({ aggression: 0, curiosity: 0, calmness: 0 }),
+        NEAR: Object.freeze({ aggression: 0, curiosity: 1, calmness: 1 }),
+        SUCCESS: Object.freeze({ aggression: 0, curiosity: 2, calmness: 1 }),
+        CRIT: Object.freeze({ aggression: 0, curiosity: 3, calmness: 2 }),
+      }),
+      trainingTypeCountsDelta: Object.freeze({
+        integrity: 1,
+        curiosity: 1,
+      }),
     }),
     boost: Object.freeze({
       bpm: 120,
@@ -293,6 +734,22 @@
         NEAR: 0,
         SUCCESS: 0,
         CRIT: 0,
+      }),
+      adIntegrityDeltaByTier: Object.freeze({
+        FAIL: 0,
+        NEAR: 0,
+        SUCCESS: 1,
+        CRIT: 1,
+      }),
+      personalityDeltaByTier: Object.freeze({
+        FAIL: Object.freeze({ aggression: 0, curiosity: 0, calmness: 0 }),
+        NEAR: Object.freeze({ aggression: 1, curiosity: 0, calmness: 0 }),
+        SUCCESS: Object.freeze({ aggression: 2, curiosity: 0, calmness: 0 }),
+        CRIT: Object.freeze({ aggression: 3, curiosity: 1, calmness: 0 }),
+      }),
+      trainingTypeCountsDelta: Object.freeze({
+        signal: 1,
+        aggression: 1,
       }),
     }),
     noise: Object.freeze({
@@ -319,8 +776,32 @@
         SUCCESS: 1,
         CRIT: 2,
       }),
+      adIntegrityDeltaByTier: Object.freeze({
+        FAIL: 0,
+        NEAR: 1,
+        SUCCESS: 1,
+        CRIT: 2,
+      }),
+      personalityDeltaByTier: Object.freeze({
+        FAIL: Object.freeze({ aggression: 0, curiosity: 0, calmness: 0 }),
+        NEAR: Object.freeze({ aggression: 0, curiosity: 0, calmness: 1 }),
+        SUCCESS: Object.freeze({ aggression: 0, curiosity: 1, calmness: 2 }),
+        CRIT: Object.freeze({ aggression: 0, curiosity: 1, calmness: 3 }),
+      }),
+      trainingTypeCountsDelta: Object.freeze({
+        stability: 1,
+        calmness: 1,
+      }),
     }),
   });
+  const TRAINING_TYPE_COUNT_KEYS = Object.freeze([
+    "signal",
+    "stability",
+    "integrity",
+    "aggression",
+    "curiosity",
+    "calmness",
+  ]);
   const TRN_RESULT_LOG_FALLBACK = Object.freeze({
     calib: Object.freeze({
       fail: "信号が揺らぐ。同期が外れた",
@@ -343,8 +824,28 @@
   });
   const DETAIL_STORAGE_KEY = "dotmon_detail_v1";
   const DETAIL_STATE_VERSION = 1;
-  const STAT_PAGE_COUNT = 2;
+  const STAT_PAGE_COUNT = 3;
   const LAST_DELTA_NONE_TEXT = "なし";
+  const STAT_DESCRIPTION_TEXT = Object.freeze({
+    hp: "現在の耐久値。0になると戦闘不能になる。",
+    stamina: "戦術行動の余力。SIGNAL操作などで消費される。",
+    hunger: "充足値。高いほど空腹が抑えられている。",
+    damage: "損傷の蓄積。高いほど各挙動が不安定になりやすい。",
+    stability: "安定度。高いほど状態の乱れが出にくい。",
+    aggression: "攻勢傾向。高いほど前に出る選択を取りやすい。",
+    curiosity: "探索傾向。未知の挙動へ寄る性質の目安。",
+    calmness: "平静傾向。高いほど安定維持を優先しやすい。",
+    signalTrend: "信号品質の傾向。矢印は直近の上昇・横ばい・低下。",
+    adIntegrity: "媒体健全度。器の保全状態を示す。",
+    condition: "現在の総合コンディション評価。",
+    chronotype: "活動帯。個体の自然睡眠リズムを示す。",
+    growthTrend: "戦績と安定度から見た成長の傾向。",
+    mutation: "進化予兆。変質進行の兆しを示す。",
+    syncRate: "同調率。信号・安定・媒体の噛み合い度合い。",
+    battleHistory: "戦闘履歴。蓄積した勝敗の概要。",
+    lastDelta: "直近の変化。最後に記録された差分。",
+    note: "観測メモ。現在の読みを短く示す。",
+  });
   const SIGNAL_TREND_DIFF_THRESHOLD = 0.5;
   const AD_DECAY_PER_HOUR = 0.02;
   const SIGNAL_DECAY_PER_HOUR = 0.05;
@@ -413,6 +914,7 @@
     isLogOpen: false,
     overlayMode: null,
     statPage: 0,
+    statCursorByPage: Array.from({ length: STAT_PAGE_COUNT }, () => 0),
     trnMode: TRN_MODE_ORDER[0],
     trnSession: null,
     trnResultBuffer: [],
@@ -424,7 +926,39 @@
     trnBadShakeDir: 0,
     trnRecentCount: 0,
     trnRecentWindowStartMs: 0,
+    bttlResultReveal: null,
   };
+
+  function ensureBttlRevealOverlayElement(){
+    if(!canvas) return null;
+    const host = canvas.parentElement;
+    if(!host) return null;
+    let el = document.getElementById("bttlRevealOverlay");
+    if(!el){
+      el = document.createElement("div");
+      el.id = "bttlRevealOverlay";
+      el.className = "bttl-reveal-overlay";
+      host.appendChild(el);
+    }
+    return el;
+  }
+
+  function setBttlRevealOverlayVisual(alpha = 0, mode = "black"){
+    const el = ensureBttlRevealOverlayElement();
+    if(!el) return;
+    const a = clamp(toNumber(alpha, 0), 0, 1);
+    if(a <= 0.001){
+      el.style.display = "none";
+      el.style.background = "transparent";
+      return;
+    }
+    el.style.display = "block";
+    if(String(mode || "black").toLowerCase() === "white"){
+      el.style.background = `rgba(200,214,194,${a.toFixed(3)})`;
+    }else{
+      el.style.background = `rgba(14,20,15,${a.toFixed(3)})`;
+    }
+  }
 
   // Buttons
   const btnA = document.getElementById("btnA");
@@ -539,7 +1073,7 @@
     const fitFontByHeight = Math.max(9, Math.floor((pxH - 6) / Math.max(1, BTTL_BOTTOM_JP_MAX_LINES)));
     const fontScale = canvasScale / OVERLAY_FONT_BASE_CANVAS_SCALE;
     const scaledFont = Math.round(OVERLAY_FONT_BASE_PX * fontScale);
-    const nextFontPx = clamp(Math.min(scaledFont, fitFontByHeight), 9, 16);
+    const nextFontPx = clamp(Math.min(scaledFont, fitFontByHeight) - 1, 9, 15);
     const linePx = Math.max(nextFontPx + 1, Math.floor((pxH - 4) / Math.max(1, BTTL_BOTTOM_JP_MAX_LINES)));
     overlayBottomPane.style.left = `${Math.floor(rect.x * sx)}px`;
     overlayBottomPane.style.top = `${Math.floor(rect.y * sy)}px`;
@@ -553,7 +1087,19 @@
     if(!overlayBottomPane) return;
     const safeLines = Array.isArray(lines) ? lines.slice(-BTTL_BOTTOM_JP_MAX_LINES) : [];
     setOverlayBottomPaneRect(rect);
-    overlayBottomPane.textContent = safeLines.join("\n");
+    overlayBottomPane.textContent = "";
+    const total = safeLines.length;
+    for(let i = 0; i < total; i++){
+      const line = String(safeLines[i] ?? "");
+      const row = document.createElement("span");
+      row.className = "overlay-bottom-line";
+      row.textContent = line;
+      // Keep the newest line darkest, older lines slightly faded.
+      const depth = total <= 1 ? 1 : (i / Math.max(1, total - 1));
+      const alpha = 0.52 + (depth * 0.42);
+      row.style.opacity = alpha.toFixed(2);
+      overlayBottomPane.appendChild(row);
+    }
     overlayBottomPane.classList.remove("hidden");
   }
 
@@ -570,9 +1116,58 @@
     return mod < 0 ? mod + STAT_PAGE_COUNT : mod;
   }
 
+  function ensureStatCursorByPage(){
+    if(!Array.isArray(uiState.statCursorByPage)){
+      uiState.statCursorByPage = Array.from({ length: STAT_PAGE_COUNT }, () => 0);
+      return uiState.statCursorByPage;
+    }
+    if(uiState.statCursorByPage.length !== STAT_PAGE_COUNT){
+      const next = Array.from({ length: STAT_PAGE_COUNT }, (_v, i) => {
+        const raw = Number(uiState.statCursorByPage[i]);
+        return Number.isFinite(raw) ? Math.max(0, Math.floor(raw)) : 0;
+      });
+      uiState.statCursorByPage = next;
+    }
+    return uiState.statCursorByPage;
+  }
+
+  function getStatCursor(page){
+    const nextPage = normalizeStatPage(page);
+    const list = ensureStatCursorByPage();
+    const raw = Number(list[nextPage]);
+    return Number.isFinite(raw) ? Math.max(0, Math.floor(raw)) : 0;
+  }
+
+  function setStatCursor(page, cursor){
+    const nextPage = normalizeStatPage(page);
+    const list = ensureStatCursorByPage();
+    const items = getStatItemsForPage(nextPage);
+    if(items.length <= 0){
+      list[nextPage] = 0;
+      return 0;
+    }
+    const nextCursorRaw = Math.floor(Number(cursor));
+    const safeCursor = Number.isFinite(nextCursorRaw)
+      ? ((nextCursorRaw % items.length) + items.length) % items.length
+      : 0;
+    list[nextPage] = safeCursor;
+    return safeCursor;
+  }
+
+  function moveStatCursor(delta){
+    const page = setStatPage(uiState.statPage);
+    const current = getStatCursor(page);
+    return setStatCursor(page, current + Math.floor(toNumber(delta, 0)));
+  }
+
+  function resetStatCursors(){
+    uiState.statCursorByPage = Array.from({ length: STAT_PAGE_COUNT }, () => 0);
+  }
+
   function setStatPage(page){
     const next = normalizeStatPage(page);
     uiState.statPage = next;
+    setStatCursor(next, getStatCursor(next));
     return next;
   }
 
@@ -946,7 +1541,8 @@
     if(!session) return 0;
     const fallbackLoopMs = trnLoopMsFromBpm(getTrnModeConfig(session.mode)?.bpm, 375);
     const loopMs = Math.max(1, Math.floor(toNumber(session.loopMs, fallbackLoopMs)));
-    const elapsed = Math.max(0, nowMs - toNumber(session.startedAtMs, nowMs));
+    const playStartedAtMs = getTrnPlayStartedAtMs(session, nowMs);
+    const elapsed = Math.max(0, nowMs - playStartedAtMs);
     return (elapsed % loopMs) / loopMs;
   }
 
@@ -1075,6 +1671,76 @@
     return getCurrentStaminaForTrn() >= required;
   }
 
+  function isTrnStartIntroActive(session, nowMs = performance.now()){
+    if(!isRecord(session)) return false;
+    const now = toNumber(nowMs, performance.now());
+    const startedAtMs = toNumber(session.introStartedAtMs, now);
+    const rawUntilMs = toNumber(session.introUntilMs, startedAtMs);
+    const maxIntroMs = Math.max(
+      240,
+      Math.floor(toNumber(TRN_START_INTRO_MS, 980) * 3)
+    );
+    const untilMs = clamp(rawUntilMs, startedAtMs, startedAtMs + maxIntroMs);
+    return untilMs > 0 && now < untilMs;
+  }
+
+  function getTrnPlayStartedAtMs(session, nowMs = performance.now()){
+    if(!isRecord(session)) return toNumber(nowMs, performance.now());
+    const now = toNumber(nowMs, performance.now());
+    const startedAtMs = toNumber(session.startedAtMs, now);
+    const introUntilRawMs = toNumber(session.introUntilMs, startedAtMs);
+    const maxIntroMs = Math.max(
+      240,
+      Math.floor(toNumber(TRN_START_INTRO_MS, 980) * 3)
+    );
+    const introUntilMs = clamp(introUntilRawMs, startedAtMs, startedAtMs + maxIntroMs);
+    return Math.max(startedAtMs, introUntilMs);
+  }
+
+  function drawTrnStartIntroOverlay(frameRect, leftPaneRect, session, nowMs = performance.now()){
+    if(!frameRect || !leftPaneRect || !isTrnStartIntroActive(session, nowMs)) return;
+    const now = toNumber(nowMs, performance.now());
+    const startedAtMs = toNumber(session.introStartedAtMs, now);
+    const untilMs = Math.max(startedAtMs + 1, toNumber(session.introUntilMs, startedAtMs + TRN_START_INTRO_MS));
+    const durationMs = Math.max(1, untilMs - startedAtMs);
+    const elapsedMs = Math.max(0, now - startedAtMs);
+    const progress = clamp(elapsedMs / durationMs, 0, 1);
+    const flashWindow = 0.22;
+    const flashMax = clamp(toNumber(TRN_START_INTRO_FLASH_MAX_ALPHA, 0.16), 0, 0.6);
+    let flashAlpha = 0;
+    if(progress <= flashWindow){
+      flashAlpha = flashMax * (1 - (progress / flashWindow));
+    }
+    const blinkMs = Math.max(40, Math.floor(toNumber(TRN_START_INTRO_BLINK_MS, 72)));
+    const finalHoldRatio = clamp(toNumber(TRN_START_INTRO_FINAL_HOLD_RATIO, 0.50), 0.10, 0.90);
+    const showText = progress >= finalHoldRatio || (Math.floor(elapsedMs / blinkMs) % 2 === 0);
+
+    ctx.save();
+    if(flashAlpha > 0.001){
+      ctx.fillStyle = `rgba(200,214,194,${flashAlpha.toFixed(3)})`;
+      ctx.fillRect(frameRect.x + 1, frameRect.y + 1, Math.max(2, frameRect.w - 2), Math.max(2, frameRect.h - 2));
+    }
+    if(showText){
+      drawBttlEncountCenterPlate(frameRect, leftPaneRect, "START", now, {
+        scale: toNumber(TRN_START_INTRO_TEXT_SCALE, 5),
+        textScale: toNumber(TRN_START_INTRO_TEXT_SCALE, 5),
+        drawHatch: false,
+      });
+    }
+    ctx.restore();
+  }
+
+  function triggerTrnEndReveal(feedbackGrade, nowMs = performance.now()){
+    const grade = String(feedbackGrade || "").toUpperCase();
+    const mode = grade === "BAD" ? "black" : "white";
+    uiState.bttlResultReveal = {
+      mode,
+      startedAtMs: toNumber(nowMs, performance.now()),
+      durationMs: Math.max(120, Math.floor(toNumber(TRN_END_REVEAL_MS, 320))),
+      initialAlpha: clamp(toNumber(TRN_END_REVEAL_INITIAL_ALPHA, 0.76), 0.20, 1),
+    };
+  }
+
   function startTrnSession(nowMs = performance.now()){
     const mode = setTrnMode(uiState.trnMode);
     if(!canStartTrnSession(mode)){
@@ -1113,14 +1779,21 @@
     );
     const critEnabled = Math.random() < critChance;
     const critW = clamp(Math.round(Math.min(toNumber(cfg.critW, 4), Math.max(2, bandW - 2))), 2, Math.max(2, bandW));
+    const introStartedAtMs = toNumber(nowMs, performance.now());
+    const introMs = Math.max(120, Math.floor(toNumber(TRN_START_INTRO_MS, 980)));
+    const introUntilMs = introStartedAtMs + introMs;
 
     uiState.trnLastFeedback = null;
     clearTrnSuccessFx();
     uiState.trnBadShakeUntilMs = 0;
     uiState.trnBadShakeDir = 0;
+    uiState.bttlResultReveal = null;
+    setBttlRevealOverlayVisual(0, "black");
     uiState.trnSession = {
       mode,
-      startedAtMs: nowMs,
+      startedAtMs: introStartedAtMs,
+      introStartedAtMs,
+      introUntilMs,
       loopMs,
       centerR,
       bandW,
@@ -1183,19 +1856,65 @@
     return staminaNext - staminaNow;
   }
 
+  function ensureTrnGrowthTargets(detail){
+    const targetDetail = isRecord(detail)
+      ? detail
+      : createDefaultDetailedState(state.monster?.id || "mon001");
+    if(!isRecord(targetDetail.trainingTypeCounts)){
+      targetDetail.trainingTypeCounts = createDefaultTrainingTypeCounts();
+    }else{
+      targetDetail.trainingTypeCounts = normalizeTrainingTypeCounts(
+        targetDetail.trainingTypeCounts,
+        createDefaultTrainingTypeCounts()
+      );
+    }
+
+    state.monster = ensureMonsterSchema(state.monster, state.monster?.id || "mon001");
+    if(!isRecord(state.monster.personality)){
+      state.monster.personality = {
+        aggression: 0,
+        curiosity: 0,
+        calmness: 0,
+      };
+    }
+    return {
+      detail: targetDetail,
+      personality: state.monster.personality,
+    };
+  }
+
+  function addTrainingTypeCounts(detail, deltas){
+    if(!isRecord(detail)) return;
+    if(!isRecord(detail.trainingTypeCounts)){
+      detail.trainingTypeCounts = createDefaultTrainingTypeCounts();
+    }
+    for(let i = 0; i < TRAINING_TYPE_COUNT_KEYS.length; i++){
+      const key = TRAINING_TYPE_COUNT_KEYS[i];
+      const inc = Math.max(0, Math.floor(toNumber(deltas?.[key], 0)));
+      if(inc <= 0) continue;
+      detail.trainingTypeCounts[key] = Math.max(
+        0,
+        Math.floor(toNumber(detail.trainingTypeCounts[key], 0))
+      ) + inc;
+    }
+  }
+
   function applyTrnResult(mode, tier){
     const cfg = getTrnModeConfig(mode);
     const normalizedTier = String(tier || "FAIL").toUpperCase();
-    const detail = isRecord(state.detailed)
-      ? state.detailed
-      : createDefaultDetailedState(state.monster?.id || "mon001");
+    const { detail, personality } = ensureTrnGrowthTargets(state.detailed);
     state.detailed = detail;
 
     const deltaStamina = consumeStamina(cfg.staminaCost);
+    const adBefore = clamp(toNumber(detail.adIntegrity, 100), 0, 100);
+    const adDeltaRaw = toNumber(cfg.adIntegrityDeltaByTier?.[normalizedTier], 0);
+    const adAfter = clamp(adBefore + adDeltaRaw, 0, 100);
+    detail.adIntegrity = adAfter;
+    const adApplied = adAfter - adBefore;
+
     const signalBefore = clamp(toNumber(detail.signalQuality, 100), 0, 100);
-    const adCap = clamp(toNumber(detail.adIntegrity, 100), 0, 100);
     const signalDeltaRaw = toNumber(cfg.signalDeltaByTier?.[normalizedTier], 0);
-    const signalAfter = clamp(signalBefore + signalDeltaRaw, 0, adCap);
+    const signalAfter = clamp(signalBefore + signalDeltaRaw, 0, adAfter);
     detail.signalQuality = signalAfter;
     detail.lastSignalQualityForTrend = signalAfter;
     detail.lastUpdateAt = Date.now();
@@ -1212,17 +1931,48 @@
     state.stats.stability = stabilityAfter;
     const stabilityApplied = stabilityAfter - stabilityNow;
 
+    const personalityDelta = cfg.personalityDeltaByTier?.[normalizedTier] || {};
+    const nextAggression = clamp(
+      toNumber(personality.aggression, 0) + toNumber(personalityDelta.aggression, 0),
+      0,
+      100
+    );
+    const nextCuriosity = clamp(
+      toNumber(personality.curiosity, 0) + toNumber(personalityDelta.curiosity, 0),
+      0,
+      100
+    );
+    const nextCalmness = clamp(
+      toNumber(personality.calmness, 0) + toNumber(personalityDelta.calmness, 0),
+      0,
+      100
+    );
+    const personalityApplied = {
+      aggression: nextAggression - toNumber(personality.aggression, 0),
+      curiosity: nextCuriosity - toNumber(personality.curiosity, 0),
+      calmness: nextCalmness - toNumber(personality.calmness, 0),
+    };
+    personality.aggression = nextAggression;
+    personality.curiosity = nextCuriosity;
+    personality.calmness = nextCalmness;
+
+    detail.trainingCount = Math.max(0, Math.floor(toNumber(detail.trainingCount, 0))) + 1;
+    addTrainingTypeCounts(detail, cfg.trainingTypeCountsDelta);
+
     const deltaForLast = sanitizeDelta({
       stamina: deltaStamina,
       stability: stabilityApplied,
     });
     recordLastDeltaLine(deltaForLast);
     saveDetailedState();
+    saveWithVersion(state.monster);
     return {
       tier: normalizedTier,
       deltaStamina,
       deltaSignal: signalApplied,
       deltaStability: stabilityApplied,
+      deltaAdIntegrity: adApplied,
+      deltaPersonality: personalityApplied,
     };
   }
 
@@ -1234,6 +1984,7 @@
       recordLastDeltaLine(deltaForLast);
     }
     saveDetailedState();
+    saveWithVersion(state.monster);
   }
 
   function resolveTrnLogText(mode, tier){
@@ -1490,13 +2241,15 @@
     return lines.join("\n");
   }
 
-  function openTrnSummaryLogOrReturnMode(reason = null){
+  function openTrnSummaryLogOrReturnMode(reason = null, nowMs = performance.now()){
     const list = Array.isArray(uiState.trnResultBuffer) ? uiState.trnResultBuffer : [];
     if(list.length <= 0){
       state.screen = TRN_MODE_SCREEN;
       hideOverlayLog();
       return;
     }
+    // Result transition only: keep TRN end reveal out of per-session finish flow.
+    triggerTrnEndReveal("SUCCESS", nowMs);
     state.trnResultLogText = buildTrnSummaryLogText(reason);
     state.screen = TRN_LOG_SCREEN;
     setOverlayMode("log");
@@ -1537,6 +2290,9 @@
     }
     const staminaNow = getCurrentStaminaForTrn();
     uiState.trnSession = null;
+    // Ensure per-session stop does not trigger reveal while staying on TRN screen.
+    uiState.bttlResultReveal = null;
+    setBttlRevealOverlayVisual(0, "black");
     state.trnResultLogText = resolveTrnLogText(session.mode, finalTier);
     if(staminaNow <= 0){
       openTrnSummaryLogOrReturnMode("stamina_empty");
@@ -1558,7 +2314,8 @@
     if(state.screen !== TRN_SCREEN) return;
     const session = uiState.trnSession;
     if(!session) return;
-    if((nowMs - toNumber(session.startedAtMs, nowMs)) >= TRN_MAX_MS){
+    const playStartedAtMs = getTrnPlayStartedAtMs(session, nowMs);
+    if((nowMs - playStartedAtMs) >= TRN_MAX_MS){
       finishTrnSession("FAIL", nowMs, { timeout: true });
     }
   }
@@ -1581,52 +2338,51 @@
     overlayLogHint.textContent = "";
   }
 
-  function showOverlayStat(){
-    if(!showOverlayShell("stat")) return;
-    overlayLogTitle.textContent = "";
-    overlayLogHint.textContent = "";
-    overlayLogBody.textContent = "";
-
-    const page = setStatPage(state.ui?.statPage);
-    if(page !== 0){
-      const page2 = document.createElement("div");
-      page2.className = "overlay-stat-page2";
-      const page2Main = document.createElement("div");
-      page2Main.className = "overlay-stat-page2-main";
-      const page2Footer = document.createElement("div");
-      page2Footer.className = "overlay-stat-page2-footer";
-      const lines = getStatusPage2Lines();
-      const footerStartIndex = Math.max(0, lines.length - 2);
-      for(let i = 0; i < lines.length; i++){
-        const line = lines[i];
-        const lineEl = document.createElement("div");
-        lineEl.className = `overlay-stat-line${line.isSeparator ? " is-separator" : ""}`;
-        lineEl.textContent = line.text;
-        if(i >= footerStartIndex){
-          page2Footer.appendChild(lineEl);
-        }else{
-          page2Main.appendChild(lineEl);
-        }
-      }
-      page2.appendChild(page2Main);
-      page2.appendChild(page2Footer);
-      overlayLogBody.appendChild(page2);
-      return;
+  function resolveStatDescription(item){
+    if(!isRecord(item)) return "項目を選択すると説明が表示される。";
+    if(typeof item.description === "string" && item.description.trim().length > 0){
+      return item.description;
     }
+    const key = String(item.id || "");
+    return STAT_DESCRIPTION_TEXT[key] || "この項目の説明は準備中。";
+  }
 
-    const rows = getStatusRows();
+  function appendStatDescriptionPane(root, item){
+    const description = document.createElement("div");
+    description.className = "overlay-stat-description";
+
+    const label = document.createElement("div");
+    label.className = "overlay-stat-description-label";
+    label.textContent = isRecord(item) ? item.label : "説明";
+
+    const text = document.createElement("div");
+    text.className = "overlay-stat-description-text";
+    text.textContent = resolveStatDescription(item);
+
+    description.appendChild(label);
+    description.appendChild(text);
+    root.appendChild(description);
+  }
+
+  function appendStatPage1(root, items, selectedIndex){
     const grid = document.createElement("div");
     grid.className = "overlay-stat-grid";
-    for(const row of rows){
+    for(let i = 0; i < items.length; i++){
+      const row = items[i];
+      const selected = i === selectedIndex;
       const rowEl = document.createElement("div");
-      rowEl.className = "overlay-stat-row";
+      rowEl.className = `overlay-stat-row${selected ? " is-selected" : ""}`;
+
+      const cursorEl = document.createElement("div");
+      cursorEl.className = `overlay-stat-cursor${selected ? " is-selected" : ""}`;
+      cursorEl.textContent = selected ? ">" : " ";
 
       const labelEl = document.createElement("div");
-      labelEl.className = "overlay-stat-label";
+      labelEl.className = `overlay-stat-label${selected ? " is-selected" : ""}`;
       labelEl.textContent = row.label;
 
       const barEl = document.createElement("div");
-      barEl.className = "overlay-stat-bar";
+      barEl.className = `overlay-stat-bar${selected ? " is-selected" : ""}`;
       const fillEl = document.createElement("div");
       fillEl.className = "overlay-stat-barFill";
       if(row.ratio == null){
@@ -1638,15 +2394,158 @@
       barEl.appendChild(fillEl);
 
       const valueEl = document.createElement("div");
-      valueEl.className = "overlay-stat-value";
+      valueEl.className = `overlay-stat-value${selected ? " is-selected" : ""}`;
       valueEl.textContent = row.value;
 
+      rowEl.appendChild(cursorEl);
       rowEl.appendChild(labelEl);
       rowEl.appendChild(barEl);
       rowEl.appendChild(valueEl);
       grid.appendChild(rowEl);
     }
-    overlayLogBody.appendChild(grid);
+    root.appendChild(grid);
+  }
+
+  function appendStatListPage(root, items, selectedIndex){
+    const list = document.createElement("div");
+    list.className = "overlay-stat-list";
+    for(let i = 0; i < items.length; i++){
+      const row = items[i];
+      const selected = i === selectedIndex;
+      const rowEl = document.createElement("div");
+      rowEl.className = `overlay-stat-list-row${selected ? " is-selected" : ""}`;
+
+      const cursorEl = document.createElement("div");
+      cursorEl.className = `overlay-stat-cursor${selected ? " is-selected" : ""}`;
+      cursorEl.textContent = selected ? ">" : " ";
+
+      const labelEl = document.createElement("div");
+      labelEl.className = "overlay-stat-list-label";
+      labelEl.textContent = row.label;
+
+      const valueEl = document.createElement("div");
+      valueEl.className = "overlay-stat-list-value";
+      valueEl.textContent = String(row.value ?? "--");
+
+      rowEl.appendChild(cursorEl);
+      rowEl.appendChild(labelEl);
+      rowEl.appendChild(valueEl);
+      list.appendChild(rowEl);
+    }
+    root.appendChild(list);
+  }
+
+  function appendStatPage2(root, items, selectedIndex){
+    const barItems = [];
+    const listItems = [];
+    for(let i = 0; i < items.length; i++){
+      const row = isRecord(items[i]) ? items[i] : {};
+      const entry = { ...row, __index: i };
+      if(row.view === "bar"){
+        barItems.push(entry);
+      }else{
+        listItems.push(entry);
+      }
+    }
+
+    if(barItems.length > 0){
+      const grid = document.createElement("div");
+      grid.className = "overlay-stat-grid overlay-stat-grid-page2";
+      for(let i = 0; i < barItems.length; i++){
+        const row = barItems[i];
+        const selected = row.__index === selectedIndex;
+        const rowEl = document.createElement("div");
+        rowEl.className = `overlay-stat-row${selected ? " is-selected" : ""}`;
+
+        const cursorEl = document.createElement("div");
+        cursorEl.className = `overlay-stat-cursor${selected ? " is-selected" : ""}`;
+        cursorEl.textContent = selected ? ">" : " ";
+
+        const labelEl = document.createElement("div");
+        labelEl.className = `overlay-stat-label${selected ? " is-selected" : ""}`;
+        labelEl.textContent = row.label;
+
+        const barEl = document.createElement("div");
+        barEl.className = `overlay-stat-bar${selected ? " is-selected" : ""}`;
+        const fillEl = document.createElement("div");
+        fillEl.className = "overlay-stat-barFill";
+        if(row.ratio == null){
+          barEl.classList.add("is-unavailable");
+          fillEl.style.width = "0%";
+        }else{
+          fillEl.style.width = `${Math.round(clamp(toNumber(row.ratio, 0), 0, 1) * 1000) / 10}%`;
+        }
+        barEl.appendChild(fillEl);
+
+        const valueEl = document.createElement("div");
+        valueEl.className = `overlay-stat-value${selected ? " is-selected" : ""}`;
+        valueEl.textContent = String(row.value ?? "--");
+
+        rowEl.appendChild(cursorEl);
+        rowEl.appendChild(labelEl);
+        rowEl.appendChild(barEl);
+        rowEl.appendChild(valueEl);
+        grid.appendChild(rowEl);
+      }
+      root.appendChild(grid);
+    }
+
+    if(listItems.length > 0){
+      const list = document.createElement("div");
+      list.className = "overlay-stat-list overlay-stat-list-page2";
+      for(let i = 0; i < listItems.length; i++){
+        const row = listItems[i];
+        const selected = row.__index === selectedIndex;
+        const rowEl = document.createElement("div");
+        rowEl.className = `overlay-stat-list-row${selected ? " is-selected" : ""}`;
+
+        const cursorEl = document.createElement("div");
+        cursorEl.className = `overlay-stat-cursor${selected ? " is-selected" : ""}`;
+        cursorEl.textContent = selected ? ">" : " ";
+
+        const labelEl = document.createElement("div");
+        labelEl.className = "overlay-stat-list-label";
+        labelEl.textContent = row.label;
+
+        const valueEl = document.createElement("div");
+        valueEl.className = "overlay-stat-list-value";
+        valueEl.textContent = String(row.value ?? "--");
+
+        rowEl.appendChild(cursorEl);
+        rowEl.appendChild(labelEl);
+        rowEl.appendChild(valueEl);
+        list.appendChild(rowEl);
+      }
+      root.appendChild(list);
+    }
+  }
+
+  function showOverlayStat(){
+    if(!showOverlayShell("stat")) return;
+    overlayLogTitle.textContent = "";
+    overlayLogHint.textContent = "";
+    overlayLogBody.textContent = "";
+
+    const page = setStatPage(uiState.statPage);
+    const items = getStatItemsForPage(page);
+    const selectedIndex = setStatCursor(page, getStatCursor(page));
+    const selectedItem = items[selectedIndex] || null;
+
+    const pageRoot = document.createElement("div");
+    pageRoot.className = "overlay-stat-page";
+    const pageMain = document.createElement("div");
+    pageMain.className = "overlay-stat-main";
+
+    if(page === 0){
+      appendStatPage1(pageMain, items, selectedIndex);
+    }else if(page === 1){
+      appendStatPage2(pageMain, items, selectedIndex);
+    }else{
+      appendStatListPage(pageMain, items, selectedIndex);
+    }
+    pageRoot.appendChild(pageMain);
+    appendStatDescriptionPane(pageRoot, selectedItem);
+    overlayLogBody.appendChild(pageRoot);
   }
 
   function hideOverlayLog(){
@@ -1741,6 +2640,25 @@
     return ids[hash % ids.length];
   }
 
+  function createDefaultTrainingTypeCounts(){
+    const counts = {};
+    for(let i = 0; i < TRAINING_TYPE_COUNT_KEYS.length; i++){
+      counts[TRAINING_TYPE_COUNT_KEYS[i]] = 0;
+    }
+    return counts;
+  }
+
+  function normalizeTrainingTypeCounts(input, fallback){
+    const base = isRecord(fallback) ? fallback : createDefaultTrainingTypeCounts();
+    const src = isRecord(input) ? input : {};
+    const normalized = createDefaultTrainingTypeCounts();
+    for(let i = 0; i < TRAINING_TYPE_COUNT_KEYS.length; i++){
+      const key = TRAINING_TYPE_COUNT_KEYS[i];
+      normalized[key] = Math.max(0, Math.floor(toNumber(src[key], base[key])));
+    }
+    return normalized;
+  }
+
   function createDefaultDetailedState(monsterId){
     const now = Date.now();
     return {
@@ -1754,6 +2672,19 @@
       isTuckedIn: false,
       battleCount: 0,
       battleWins: 0,
+      battleLosses: 0,
+      battleRetreats: 0,
+      signalUseBoost: 0,
+      signalUseStabilize: 0,
+      signalUseCalibrate: 0,
+      signalUseOverclock: 0,
+      breakInflictedCount: 0,
+      breakSufferedCount: 0,
+      rangeStayShort: 0,
+      rangeStayMid: 0,
+      rangeStayLong: 0,
+      trainingCount: 0,
+      trainingTypeCounts: createDefaultTrainingTypeCounts(),
     };
   }
 
@@ -1766,6 +2697,19 @@
       : "→";
     const battleCount = Math.max(0, Math.floor(toNumber(src.battleCount, base.battleCount)));
     const battleWins = clamp(Math.floor(toNumber(src.battleWins, base.battleWins)), 0, battleCount);
+    const battleLosses = clamp(Math.floor(toNumber(src.battleLosses, base.battleLosses)), 0, battleCount);
+    const battleRetreats = clamp(Math.floor(toNumber(src.battleRetreats, base.battleRetreats)), 0, battleCount);
+    const signalUseBoost = Math.max(0, Math.floor(toNumber(src.signalUseBoost, base.signalUseBoost)));
+    const signalUseStabilize = Math.max(0, Math.floor(toNumber(src.signalUseStabilize, base.signalUseStabilize)));
+    const signalUseCalibrate = Math.max(0, Math.floor(toNumber(src.signalUseCalibrate, base.signalUseCalibrate)));
+    const signalUseOverclock = Math.max(0, Math.floor(toNumber(src.signalUseOverclock, base.signalUseOverclock)));
+    const breakInflictedCount = Math.max(0, Math.floor(toNumber(src.breakInflictedCount, base.breakInflictedCount)));
+    const breakSufferedCount = Math.max(0, Math.floor(toNumber(src.breakSufferedCount, base.breakSufferedCount)));
+    const rangeStayShort = Math.max(0, Math.floor(toNumber(src.rangeStayShort, base.rangeStayShort)));
+    const rangeStayMid = Math.max(0, Math.floor(toNumber(src.rangeStayMid, base.rangeStayMid)));
+    const rangeStayLong = Math.max(0, Math.floor(toNumber(src.rangeStayLong, base.rangeStayLong)));
+    const trainingCount = Math.max(0, Math.floor(toNumber(src.trainingCount, base.trainingCount)));
+    const trainingTypeCounts = normalizeTrainingTypeCounts(src.trainingTypeCounts, base.trainingTypeCounts);
     const chronotype = normalizeChronotype(src.chronotype, base.chronotype);
 
     return {
@@ -1783,6 +2727,19 @@
       isTuckedIn: Boolean(src.isTuckedIn),
       battleCount,
       battleWins,
+      battleLosses,
+      battleRetreats,
+      signalUseBoost,
+      signalUseStabilize,
+      signalUseCalibrate,
+      signalUseOverclock,
+      breakInflictedCount,
+      breakSufferedCount,
+      rangeStayShort,
+      rangeStayMid,
+      rangeStayLong,
+      trainingCount,
+      trainingTypeCounts,
     };
   }
 
@@ -2790,7 +3747,7 @@
   }
 
   function drawTextJa(x, y, text, opts = {}){
-    const sizePx = clamp(Math.floor(toNumber(opts.size, 11)), 9, 24);
+    const sizePx = clamp(Math.floor(toNumber(opts.size, 11)), 8, 24);
     const align = String(opts.align || "left").toLowerCase();
     const color = String(opts.color || "rgba(14,20,15,0.90)");
     ctx.save();
@@ -2803,7 +3760,7 @@
   }
 
   function measureTextJa(text, size = 11){
-    const sizePx = clamp(Math.floor(toNumber(size, 11)), 9, 24);
+    const sizePx = clamp(Math.floor(toNumber(size, 11)), 8, 24);
     ctx.save();
     ctx.font = `${sizePx}px "PixelMplus12", ui-monospace, monospace`;
     const width = Number(ctx.measureText(String(text ?? "")).width) || 0;
@@ -2890,31 +3847,59 @@
   function getStatusRows(){
     return [
       {
+        id: "hp",
         label: "HP",
         value: formatMetricPair(state.monster?.runtimeState?.hp, state.monster?.stats?.maxHp),
         ratio: calcMetricRatio(state.monster?.runtimeState?.hp, state.monster?.stats?.maxHp),
       },
       {
+        id: "stamina",
         label: "スタミナ",
         value: formatMetricPair(state.monster?.runtimeState?.stamina, state.monster?.stats?.staminaMax),
         ratio: calcMetricRatio(state.monster?.runtimeState?.stamina, state.monster?.stats?.staminaMax),
       },
       {
+        id: "hunger",
         label: "充足値",
         value: formatMetricPair(state.stats?.hunger, state.stats?.hungerMax),
         ratio: calcMetricRatio(state.stats?.hunger, state.stats?.hungerMax),
       },
       {
+        id: "damage",
         label: "損傷",
         value: formatMetricPair(state.stats?.damage, state.stats?.damageMax),
         ratio: calcMetricRatio(state.stats?.damage, state.stats?.damageMax),
       },
       {
+        id: "stability",
         label: "安定度",
         value: formatMetricPair(state.stats?.stability, state.stats?.stabilityMax),
         ratio: calcMetricRatio(state.stats?.stability, state.stats?.stabilityMax),
       },
     ];
+  }
+
+  function resolveChronotypeText(chronotype){
+    const key = normalizeChronotype(chronotype, "morning");
+    if(key === "day") return "昼型";
+    if(key === "night") return "夜型";
+    return "朝型";
+  }
+
+  function normalizeTraitPercent(rawValue){
+    const value = toNumber(rawValue, NaN);
+    if(!Number.isFinite(value)) return 0;
+    const normalized = (value >= 0 && value <= 1) ? (value * 100) : value;
+    return clamp(Math.round(normalized), 0, 100);
+  }
+
+  function resolveGrowthTrendSummary(winRate, battleCount, stabilityRatio){
+    if(battleCount <= 0) return "観測不足";
+    if(winRate >= 70 && stabilityRatio >= 0.6) return "攻勢成長";
+    if(winRate >= 70) return "突破寄り";
+    if(stabilityRatio >= 0.7) return "安定成長";
+    if(winRate <= 35) return "再調整段階";
+    return "均衡成長";
   }
 
   function resolveAdStateText(adIntegrity){
@@ -3016,42 +4001,134 @@
     return clamp(Math.round((battleWins / battleCount) * 100), 0, 100);
   }
 
-  function getStatusPage2Lines(){
+  function getStatusPage2Items(){
+    const detail = isRecord(state.detailed)
+      ? state.detailed
+      : createDefaultDetailedState(state.monster?.id || "mon001");
+    const personality = isRecord(state.monster?.personality) ? state.monster.personality : {};
+    const adIntegrity = clamp(toNumber(detail.adIntegrity, 100), 0, 100);
+    const signalQuality = Math.min(clamp(toNumber(detail.signalQuality, 100), 0, 100), adIntegrity);
+    const trendArrow = (detail.signalTrend === "↑" || detail.signalTrend === "↓" || detail.signalTrend === "→")
+      ? detail.signalTrend
+      : "→";
+    const aggression = normalizeTraitPercent(personality.aggression);
+    const curiosity = normalizeTraitPercent(personality.curiosity);
+    const calmness = normalizeTraitPercent(personality.calmness);
+    const syncRate = resolveSyncRate(adIntegrity, signalQuality);
+    return [
+      {
+        id: "aggression",
+        label: "攻勢傾向",
+        value: `${aggression}%`,
+        ratio: aggression / 100,
+        view: "bar",
+      },
+      {
+        id: "curiosity",
+        label: "探索傾向",
+        value: `${curiosity}%`,
+        ratio: curiosity / 100,
+        view: "bar",
+      },
+      {
+        id: "calmness",
+        label: "平静傾向",
+        value: `${calmness}%`,
+        ratio: calmness / 100,
+        view: "bar",
+      },
+      {
+        id: "adIntegrity",
+        label: "媒体健全度",
+        value: `${Math.round(adIntegrity)}%`,
+        ratio: adIntegrity / 100,
+        view: "bar",
+      },
+      {
+        id: "syncRate",
+        label: "同調率",
+        value: `${syncRate}%`,
+        ratio: syncRate / 100,
+        view: "bar",
+      },
+      {
+        id: "signalTrend",
+        label: "信号傾向",
+        value: `${resolveSignalTierText(signalQuality)} ${trendArrow}`,
+        view: "list",
+      },
+      {
+        id: "condition",
+        label: "状態評価",
+        value: resolveConditionSummary(adIntegrity, signalQuality),
+        view: "list",
+      },
+      {
+        id: "chronotype",
+        label: "活動帯",
+        value: resolveChronotypeText(detail.chronotype),
+        view: "list",
+      },
+    ];
+  }
+
+  function getStatusPage3Items(){
     const detail = isRecord(state.detailed)
       ? state.detailed
       : createDefaultDetailedState(state.monster?.id || "mon001");
     const adIntegrity = clamp(toNumber(detail.adIntegrity, 100), 0, 100);
     const signalQuality = Math.min(clamp(toNumber(detail.signalQuality, 100), 0, 100), adIntegrity);
-    const adStateText = resolveAdStateText(adIntegrity);
-    const signalTierText = resolveSignalTierText(signalQuality);
-    const trendArrow = (detail.signalTrend === "↑" || detail.signalTrend === "↓" || detail.signalTrend === "→")
-      ? detail.signalTrend
-      : "→";
-    const conditionSummary = resolveConditionSummary(adIntegrity, signalQuality);
-    const temperamentText = resolveTemperamentText();
-    const weightKg = formatWeightKgNumber();
-    const mutationSummary = resolveMutationSummary();
-    const syncRate = resolveSyncRate(adIntegrity, signalQuality);
     const battleCount = Math.max(0, Math.floor(toNumber(detail.battleCount, 0)));
     const winRate = resolveWinRatePercent();
+    const stabilityMax = toPositiveInt(state.stats?.stabilityMax, 10);
+    const stability = clamp(toNumber(state.stats?.stability, stabilityMax), 0, stabilityMax);
+    const stabilityRatio = stabilityMax > 0 ? stability / stabilityMax : 0;
+    const growthTrend = resolveGrowthTrendSummary(winRate, battleCount, stabilityRatio);
+    const mutationSummary = resolveMutationSummary();
     const lastDelta = (typeof state.lastDeltaLine === "string" && state.lastDeltaLine.trim().length > 0)
       ? state.lastDeltaLine
       : LAST_DELTA_NONE_TEXT;
+    const observationNote = `${resolveConditionSummary(adIntegrity, signalQuality)} / ${resolveTemperamentText()}`;
 
     return [
-      { text: `DAY：${state.day}`, isSeparator: false },
-      { text: `AD：${adStateText}`, isSeparator: false },
-      { text: `信号品質：${signalTierText} ${trendArrow}`, isSeparator: false },
-      { text: `コンディション：${conditionSummary}`, isSeparator: false },
-      { text: `気質：${temperamentText}`, isSeparator: false },
-      { text: `体重：${weightKg}kg`, isSeparator: false },
-      { text: `変質度：${mutationSummary}`, isSeparator: false },
-      { text: `同調率：${syncRate}%`, isSeparator: false },
-      { text: `戦闘数：${battleCount}`, isSeparator: false },
-      { text: `勝率：${winRate}%`, isSeparator: false },
-      { text: "――――――――", isSeparator: true },
-      { text: `直近変化  ${lastDelta}`, isSeparator: false },
+      {
+        id: "growthTrend",
+        label: "成長傾向",
+        value: growthTrend,
+      },
+      {
+        id: "mutation",
+        label: "進化予兆",
+        value: mutationSummary,
+      },
+      {
+        id: "syncRate",
+        label: "同調率",
+        value: `${resolveSyncRate(adIntegrity, signalQuality)}%`,
+      },
+      {
+        id: "battleHistory",
+        label: "戦績",
+        value: `${battleCount}戦 ${winRate}%`,
+      },
+      {
+        id: "lastDelta",
+        label: "直近変化",
+        value: lastDelta,
+      },
+      {
+        id: "note",
+        label: "観測メモ",
+        value: observationNote,
+      },
     ];
+  }
+
+  function getStatItemsForPage(page){
+    const nextPage = normalizeStatPage(page);
+    if(nextPage === 0) return getStatusRows();
+    if(nextPage === 1) return getStatusPage2Items();
+    return getStatusPage3Items();
   }
 
   function drawSprite16x16(x, y, sprite, dotScale){
@@ -3147,30 +4224,328 @@
     return mask;
   }
 
-  function drawBttlProjectileShape(x, y, owner, size){
+  function normalizeBttlRangeStateId(rangeState){
+    const id = String(rangeState || "").trim().toLowerCase();
+    if(id === "short" || id === "mid" || id === "long"){
+      return id;
+    }
+    return "mid";
+  }
+
+  function drawBttlProjectileCells(cx, cy, unit, cells, facing = "right"){
+    const safeUnit = Math.max(1, Math.floor(toNumber(unit, 1)));
+    const mirror = facing === "left" ? -1 : 1;
+    for(let i = 0; i < cells.length; i++){
+      const cell = Array.isArray(cells[i]) ? cells[i] : [];
+      const ox = toNumber(cell[0], 0) * mirror;
+      const oy = toNumber(cell[1], 0);
+      const px = Math.round(cx + (ox * safeUnit) - (safeUnit / 2));
+      const py = Math.round(cy + (oy * safeUnit) - (safeUnit / 2));
+      ctx.fillRect(px, py, safeUnit, safeUnit);
+    }
+  }
+
+  function drawBttlProjectileShape(x, y, owner, size, isHeavy = false, rangeState = "mid"){
     const mask = getBttlProjectileMask();
     const drawSize = getBttlProjectileDrawSize(size);
     const dot = Math.max(1, Math.round(drawSize / mask.grid));
     const left = Math.round(x - (drawSize / 2));
     const top = Math.round(y - (drawSize / 2));
     const isEnemy = owner === "enemy";
+    const rangeId = normalizeBttlRangeStateId(rangeState);
+    const facing = isEnemy ? "left" : "right";
     ctx.save();
     ctx.imageSmoothingEnabled = false;
-    ctx.fillStyle = BTTL_PROJECTILE_COLOR;
-    for(let gy = 0; gy < mask.grid; gy++){
-      for(let gx = 0; gx < mask.grid; gx++){
-        const srcX = isEnemy ? (mask.grid - 1 - gx) : gx;
-        if(!mask.fill[gy][srcX]){
-          continue;
+    if(rangeId === "short"){
+      const unit = Math.max(2, Math.floor(drawSize / 8));
+      ctx.fillStyle = isHeavy ? "rgba(14,20,15,0.98)" : "rgba(14,20,15,0.88)";
+      drawBttlProjectileCells(
+        x,
+        y,
+        unit,
+        [
+          [3, -5], [4, -5], [5, -5],
+          [2, -4], [3, -4], [4, -4],
+          [1, -3], [2, -3], [3, -3],
+          [0, -2], [1, -2], [2, -2],
+          [-1, -1], [0, -1], [1, -1],
+          [-2, 0], [-1, 0], [0, 0],
+          [-1, 1], [0, 1], [1, 1],
+          [0, 2], [1, 2], [2, 2],
+          [1, 3], [2, 3], [3, 3],
+          [2, 4], [3, 4], [4, 4],
+          [3, 5], [4, 5], [5, 5],
+        ],
+        facing
+      );
+      ctx.fillStyle = "rgba(14,20,15,0.32)";
+      drawBttlProjectileCells(
+        x,
+        y,
+        Math.max(1, unit),
+        [
+          [4, -2], [5, -2],
+          [4, -1], [5, -1],
+          [4, 0], [5, 0],
+          [4, 1], [5, 1],
+          [4, 2], [5, 2],
+        ],
+        facing
+      );
+    }else if(rangeId === "mid"){
+      const unit = Math.max(2, Math.floor(drawSize / 8));
+      ctx.fillStyle = isHeavy ? "rgba(14,20,15,0.98)" : "rgba(14,20,15,0.84)";
+      drawBttlProjectileCells(
+        x,
+        y,
+        unit,
+        [
+          [-3, 0], [-2, 0], [-1, 0], [0, 0], [1, 0], [2, 0], [3, 0],
+          [0, -1], [1, -1], [2, -1], [3, -1],
+          [0, 1], [1, 1], [2, 1], [3, 1],
+          [2, -2], [3, -2],
+          [2, 2], [3, 2],
+        ],
+        facing
+      );
+    }else{
+      ctx.fillStyle = isHeavy ? "rgba(14,20,15,0.98)" : BTTL_PROJECTILE_COLOR;
+      for(let gy = 0; gy < mask.grid; gy++){
+        for(let gx = 0; gx < mask.grid; gx++){
+          const srcX = isEnemy ? (mask.grid - 1 - gx) : gx;
+          if(!mask.fill[gy][srcX]){
+            continue;
+          }
+          if(isEnemy && !mask.edge[gy][srcX] && !isHeavy){
+            // Enemy projectile is transparent inside, only outline pixels remain.
+            continue;
+          }
+          ctx.fillRect(left + (gx * dot), top + (gy * dot), dot, dot);
         }
-        if(isEnemy && !mask.edge[gy][srcX]){
-          // Enemy projectile is transparent inside, only outline pixels remain.
-          continue;
-        }
-        ctx.fillRect(left + (gx * dot), top + (gy * dot), dot, dot);
       }
     }
+    if(isHeavy){
+      ctx.strokeStyle = "rgba(14,20,15,0.60)";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(left + 0.5, top + 0.5, Math.max(2, drawSize - 1), Math.max(2, drawSize - 1));
+    }
     ctx.restore();
+  }
+
+  function drawBttlShortRangeImpactFx(x, y, spritePx, nowMs = performance.now(), untilMs = 0){
+    const remain = Math.max(0, toNumber(untilMs, 0) - toNumber(nowMs, performance.now()));
+    if(remain <= 0) return;
+    const ratio = clamp(remain / BTTL_RANGE_SHORT_HIT_FX_MS, 0, 1);
+    const cx = Math.round(x + (spritePx * 0.5));
+    const cy = Math.round(y + (spritePx * 0.5));
+    const arm = Math.max(4, Math.floor(spritePx * 0.30));
+    ctx.save();
+    ctx.strokeStyle = `rgba(14,20,15,${(0.34 + (0.36 * ratio)).toFixed(3)})`;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(cx - arm, cy - arm);
+    ctx.lineTo(cx + arm, cy + arm);
+    ctx.moveTo(cx - arm, cy + arm);
+    ctx.lineTo(cx + arm, cy - arm);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function queueBttlShortGateSlashFx(ctxBattle, targetKey, owner, isHeavy, field, nowMs = performance.now()){
+    if(!ctxBattle || !field) return;
+    const gate = getBttlHitGatePoint(field, targetKey);
+    const startedAtMs = toNumber(nowMs, performance.now());
+    const durationMs = isHeavy ? BTTL_SHORT_GATE_SLASH_HEAVY_MS : BTTL_SHORT_GATE_SLASH_MS;
+    const list = Array.isArray(ctxBattle.shortGateSlashFx) ? ctxBattle.shortGateSlashFx.slice() : [];
+    list.push({
+      x: gate.x,
+      y: gate.y,
+      owner: owner === "enemy" ? "enemy" : "ally",
+      target: targetKey === "ally" ? "ally" : "enemy",
+      isHeavy: Boolean(isHeavy),
+      startedAtMs,
+      untilMs: startedAtMs + Math.max(50, Math.floor(toNumber(durationMs, 120))),
+    });
+    while(list.length > 10){
+      list.shift();
+    }
+    ctxBattle.shortGateSlashFx = list;
+  }
+
+  function drawBttlShortGateSlashFx(ctxBattle, nowMs = performance.now()){
+    if(!ctxBattle) return;
+    const buildArcCells = (anchorX, radius, startA, endA, thickness = 1, skew = 0) => {
+      const cells = [];
+      const seen = new Set();
+      const step = Math.max(0.03, Math.min(0.08, 1 / Math.max(8, radius * 2.4)));
+      const thick = Math.max(1, Math.floor(toNumber(thickness, 1)));
+      for(let a = startA; a <= endA + 0.0001; a += step){
+        const bx = Math.round(anchorX + (Math.cos(a) * radius));
+        const by = Math.round(Math.sin(a) * radius);
+        const skewOffset = Math.round(by * toNumber(skew, 0));
+        for(let t = 0; t < thick; t++){
+          const cx = bx + skewOffset - t; // keep "(" body thick to the left side
+          const key = `${cx}:${by}`;
+          if(seen.has(key)) continue;
+          seen.add(key);
+          cells.push([cx, by]);
+        }
+      }
+      return cells;
+    };
+    const now = toNumber(nowMs, performance.now());
+    const list = Array.isArray(ctxBattle.shortGateSlashFx) ? ctxBattle.shortGateSlashFx : [];
+    if(list.length <= 0) return;
+    const active = [];
+    for(const fx of list){
+      const untilMs = toNumber(fx?.untilMs, 0);
+      const startedAtMs = toNumber(fx?.startedAtMs, 0);
+      if(untilMs <= now || untilMs <= startedAtMs){
+        continue;
+      }
+      const ratio = clamp((untilMs - now) / Math.max(1, untilMs - startedAtMs), 0, 1);
+      const alphaBase = Boolean(fx?.isHeavy) ? 0.88 : 0.74;
+      const alpha = alphaBase * (0.38 + (0.62 * ratio));
+      const mainR = Math.round((Boolean(fx?.isHeavy) ? 8.2 : 7.0) + (1.2 * ratio));
+      const subR = Math.max(4, Math.round(mainR * 0.78));
+      const echoR = Math.max(3, Math.round(mainR * 0.62));
+      const dir = (fx?.target === "enemy") ? -1 : 1;
+      const cx = Math.round(toNumber(fx?.x, 0));
+      const cy = Math.round(toNumber(fx?.y, 0));
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.imageSmoothingEnabled = false;
+      if(dir < 0){
+        ctx.scale(-1, 1);
+      }
+      // 16x16-like pixel slash: layered "(" arcs drawn with dot cells.
+      const unit = Math.max(1, Math.floor(((Boolean(fx?.isHeavy) ? 34 : 30) + (4 * ratio)) / 16));
+      const anchorX = Math.round((Boolean(fx?.isHeavy) ? 9 : 8) + (1.5 * ratio));
+      const startA = Math.PI * 0.62;
+      const endA = Math.PI * 1.38;
+      const baseSkew = Boolean(fx?.isHeavy) ? 0.52 : 0.44;
+      const drawLayer = (offsetX, radius, alphaMul, thickness, skewMul = 1) => {
+        const a = clamp(alpha * alphaMul, 0.06, 1);
+        const cells = buildArcCells(
+          anchorX + offsetX,
+          Math.max(3, radius),
+          startA,
+          endA,
+          thickness,
+          baseSkew * skewMul
+        );
+        ctx.fillStyle = `rgba(14,20,15,${a.toFixed(3)})`;
+        drawBttlProjectileCells(0, 0, unit, cells, "right");
+      };
+      // back -> core -> front
+      drawLayer(-4, Math.round(mainR * 1.10), 0.36, 1, 0.90);
+      drawLayer(-2, Math.round(subR * 1.02), 0.58, 1, 1.00);
+      drawLayer(0, mainR, 1.00, Boolean(fx?.isHeavy) ? 3 : 2, 1.08);
+      drawLayer(2, Math.round(echoR * 1.04), 0.74, 1, 1.18);
+      ctx.restore();
+      active.push(fx);
+    }
+    ctxBattle.shortGateSlashFx = active;
+  }
+
+  function startBttlShortLunge(ctxBattle, attacker, nowMs = performance.now()){
+    if(!ctxBattle) return;
+    const actorKey = attacker === "ally" ? "ally" : "enemy";
+    const actor = ctxBattle[actorKey];
+    if(!actor) return;
+    const now = toNumber(nowMs, performance.now());
+    const duration = Math.max(60, Math.floor(toNumber(BTTL_SHORT_LUNGE_MS, 180)));
+    actor.lungeStartedAtMs = now;
+    actor.lungeUntilMs = now + duration;
+    actor.lungeDir = actorKey === "enemy" ? 1 : -1;
+  }
+
+  function getBttlActorLungeOffset(actor, nowMs = performance.now()){
+    const lungeUntilMs = toNumber(actor?.lungeUntilMs, 0);
+    const lungeStartedAtMs = toNumber(actor?.lungeStartedAtMs, 0);
+    if(lungeUntilMs <= 0 || lungeUntilMs <= lungeStartedAtMs) return 0;
+    const now = toNumber(nowMs, performance.now());
+    if(now >= lungeUntilMs || now < lungeStartedAtMs) return 0;
+    const progress = clamp((now - lungeStartedAtMs) / Math.max(1, lungeUntilMs - lungeStartedAtMs), 0, 1);
+    const wave = Math.sin(progress * Math.PI); // quick in/out pulse
+    const dir = toNumber(actor?.lungeDir, 0);
+    const px = Math.max(0, toNumber(BTTL_SHORT_LUNGE_PX, 7));
+    return dir * px * wave;
+  }
+
+  function drawBttlShortLungeDust(x, y, spritePx, actor, nowMs = performance.now()){
+    const lungeUntilMs = toNumber(actor?.lungeUntilMs, 0);
+    const lungeStartedAtMs = toNumber(actor?.lungeStartedAtMs, 0);
+    if(lungeUntilMs <= lungeStartedAtMs) return;
+    const now = toNumber(nowMs, performance.now());
+    if(now < lungeStartedAtMs || now >= lungeUntilMs) return;
+    const progress = clamp((now - lungeStartedAtMs) / Math.max(1, lungeUntilMs - lungeStartedAtMs), 0, 1);
+    const alpha = 0.24 * (1 - progress);
+    if(alpha <= 0.01) return;
+    const dir = toNumber(actor?.lungeDir, 0);
+    const cx = Math.round(toNumber(x, 0) + (toNumber(spritePx, 0) * 0.5));
+    const baseY = Math.round(toNumber(y, 0) + toNumber(spritePx, 0) - 2);
+    const behindX = Math.round(cx - (dir * Math.max(2, Math.floor(toNumber(spritePx, 0) * 0.20))));
+    ctx.save();
+    ctx.fillStyle = `rgba(14,20,15,${alpha.toFixed(3)})`;
+    ctx.fillRect(behindX, baseY, 1, 1);
+    ctx.fillRect(behindX - (dir * 2), baseY - 1, 1, 1);
+    ctx.fillRect(behindX - (dir * 4), baseY, 1, 1);
+    ctx.restore();
+  }
+
+  function applyBttlShortRangeRecoil(ctxBattle, nowMs = performance.now(), attackOwner = ""){
+    if(!ctxBattle) return;
+    const delta = clamp(toNumber(BTTL_SHORT_RECOIL_POS_DELTA, 0.08), 0.02, 0.40);
+    const prevEnemy = toNumber(ctxBattle.enemyRangePos, BTTL_RANGE_INIT_ENEMY_POS);
+    const prevAlly = toNumber(ctxBattle.allyRangePos, BTTL_RANGE_INIT_ALLY_POS);
+    const prevMid = (prevEnemy + prevAlly) * 0.5;
+    const prevGap = Math.abs(prevAlly - prevEnemy);
+    let targetGap = clamp(
+      Math.max(
+        prevGap + (delta * 2.4),
+        toNumber(BTTL_RANGE_MID_THRESHOLD, 0.50) + clamp(toNumber(BTTL_SHORT_RECOIL_LONG_MARGIN, 0.08), 0.04, 0.20)
+      ),
+      toNumber(BTTL_RANGE_MIN_GAP, 0.10),
+      toNumber(BTTL_RANGE_POS_MAX, 0.94) - toNumber(BTTL_RANGE_POS_MIN, 0.06)
+    );
+    const overclock = getBttlActiveOverclock(ctxBattle, nowMs);
+    const owner = String(attackOwner || "").trim().toLowerCase();
+    if(owner === "enemy" && overclock){
+      const resist = clamp(toNumber(overclock.knockbackResist, 0), 0, 0.9);
+      targetGap = clamp(
+        targetGap * (1 - (resist * 0.65)),
+        toNumber(BTTL_RANGE_MIN_GAP, 0.10),
+        toNumber(BTTL_RANGE_POS_MAX, 0.94) - toNumber(BTTL_RANGE_POS_MIN, 0.06)
+      );
+    }
+    const moved = normalizeBttlRangePositions(
+      prevMid - (targetGap * 0.5),
+      prevMid + (targetGap * 0.5)
+    );
+    ctxBattle.enemyRangePos = moved.enemyPos;
+    ctxBattle.allyRangePos = moved.allyPos;
+    // Snap visual positions close to the resolved recoil destination for an instant blowback feel.
+    const visualEnemy = toNumber(ctxBattle.enemyRangeVisualPos, moved.enemyPos);
+    const visualAlly = toNumber(ctxBattle.allyRangeVisualPos, moved.allyPos);
+    ctxBattle.enemyRangeVisualPos = visualEnemy + ((moved.enemyPos - visualEnemy) * 0.90);
+    ctxBattle.allyRangeVisualPos = visualAlly + ((moved.allyPos - visualAlly) * 0.90);
+    ctxBattle.rangeDistance = Math.abs(moved.allyPos - moved.enemyPos);
+    ctxBattle.rangeMidpoint = (moved.enemyPos + moved.allyPos) * 0.5;
+    ctxBattle.rangeState = getBttlRangeStateWithHysteresis(ctxBattle.rangeDistance, ctxBattle.rangeState);
+
+    const now = toNumber(nowMs, performance.now());
+    const recoilUntil = now + Math.max(60, Math.floor(toNumber(BTTL_SHORT_RECOIL_KNOCK_MS, 120)));
+    if(isRecord(ctxBattle.enemy)){
+      ctxBattle.enemy.knockUntilMs = recoilUntil;
+      ctxBattle.enemy.knockDir = -1;
+    }
+    if(isRecord(ctxBattle.ally)){
+      ctxBattle.ally.knockUntilMs = recoilUntil;
+      ctxBattle.ally.knockDir = 1;
+    }
+    ctxBattle.rangeMarkerShakeStartedAtMs = now;
+    ctxBattle.rangeMarkerShakeUntilMs = now + Math.max(90, Math.floor(toNumber(BTTL_RANGE_MARKER_SHAKE_MS, 420)));
   }
 
   function drawCursorTriangle(x, y){
@@ -4005,6 +5380,7 @@
     const layout = getTrnLayout();
     const { frame, left, right } = layout;
     const session = uiState.trnSession;
+    const startIntroActive = isTrnStartIntroActive(session, nowMs);
     const activeMode = session ? normalizeTrnMode(session.mode) : setTrnMode(uiState.trnMode);
 
     const ringMetrics = getTrnPlayRingMetrics();
@@ -4017,7 +5393,11 @@
     const ringMaxR = ringMetrics.maxR;
 
     hudTitle.textContent = "TRN";
-    hudHint.textContent = session ? "A:STOP  B:BACK" : "A:RETRY  B:BACK";
+    if(startIntroActive){
+      hudHint.textContent = "START";
+    }else{
+      hudHint.textContent = session ? "A:STOP  B:BACK" : "A:RETRY  B:BACK";
+    }
 
     const badShakeUntilMs = toNumber(uiState.trnBadShakeUntilMs, 0);
     const isBadShakeActive = nowMs < badShakeUntilMs;
@@ -4166,7 +5546,9 @@
       drawIdealRing(ringCx, ringCy, ringMinR, 1, "rgba(14,20,15,0.20)");
       drawIdealRing(ringCx, ringCy, ringMaxR, 1, "rgba(14,20,15,0.15)");
 
-      const remainMs = Math.max(0, TRN_MAX_MS - (nowMs - toNumber(session.startedAtMs, nowMs)));
+      const playStartedAtMs = getTrnPlayStartedAtMs(session, nowMs);
+      const elapsedMs = Math.max(0, nowMs - playStartedAtMs);
+      const remainMs = Math.max(0, TRN_MAX_MS - elapsedMs);
       const remainSec = Math.ceil(remainMs / 1000);
       const footerCandidates = [
         `TIME:${remainSec}S  A:STOP  B:BACK`,
@@ -4240,6 +5622,9 @@
     ctx.translate(shakeX, 0);
     ctx.globalAlpha = 1;
     drawBody(false);
+    if(startIntroActive){
+      drawTrnStartIntroOverlay(frame, left, session, nowMs);
+    }
     ctx.restore();
   }
 
@@ -4276,6 +5661,186 @@
       logs.shift();
     }
     ctxBattle.logs = logs;
+  }
+
+  function normalizeBttlStartIntroType(value){
+    const id = String(value || "").trim().toLowerCase();
+    if(id === BTTL_START_INTRO_TYPE.WARNING){
+      return BTTL_START_INTRO_TYPE.WARNING;
+    }
+    return BTTL_START_INTRO_TYPE.ENCOUNT;
+  }
+
+  function getBttlStartIntroDurationMs(type){
+    const introType = normalizeBttlStartIntroType(type);
+    return introType === BTTL_START_INTRO_TYPE.WARNING
+      ? BTTL_START_INTRO_WARNING_MS
+      : BTTL_START_INTRO_ENCOUNT_MS;
+  }
+
+  function resolveBttlStartIntroType(options, enemyHp){
+    const debugForced = normalizeBttlStartIntroType(BTTL_START_INTRO_DEBUG_FORCE_TYPE);
+    if(String(BTTL_START_INTRO_DEBUG_FORCE_TYPE || "").trim().length > 0){
+      return debugForced;
+    }
+    const requested = normalizeBttlStartIntroType(options?.introType || "");
+    if(options && options.introType){
+      return requested;
+    }
+    const hp = Math.max(0, Math.floor(toNumber(enemyHp, 0)));
+    if(
+      hp >= Math.max(1, Math.floor(toNumber(BTTL_START_INTRO_WARNING_HP_THRESHOLD, 45))) &&
+      Math.random() < clamp(toNumber(BTTL_START_INTRO_WARNING_CHANCE, 0.35), 0, 1)
+    ){
+      return BTTL_START_INTRO_TYPE.WARNING;
+    }
+    return BTTL_START_INTRO_TYPE.ENCOUNT;
+  }
+
+  function isBttlStartIntroActive(ctxBattle, nowMs = performance.now()){
+    if(!isRecord(ctxBattle)) return false;
+    if(String(ctxBattle.phase || "") !== BTTL_STATE.INIT) return false;
+    if(!Boolean(ctxBattle.startIntroActive)) return false;
+    const now = toNumber(nowMs, performance.now());
+    return now < toNumber(ctxBattle.startIntroUntilMs, 0);
+  }
+
+  function normalizeBttlEndOutroType(value){
+    const id = String(value || "").trim().toLowerCase();
+    if(id === BTTL_END_OUTRO_TYPE.WIN){
+      return BTTL_END_OUTRO_TYPE.WIN;
+    }
+    return BTTL_END_OUTRO_TYPE.LOST;
+  }
+
+  function getBttlEndOutroDurationMs(type){
+    const normalized = normalizeBttlEndOutroType(type);
+    if(normalized === BTTL_END_OUTRO_TYPE.WIN){
+      const flashMs = Math.max(20, Math.floor(toNumber(BTTL_END_OUTRO_WIN_FLASH_MS, 80)));
+      const gapMs = Math.max(10, Math.floor(toNumber(BTTL_END_OUTRO_WIN_FLASH_GAP_MS, 40)));
+      const holdMs = Math.max(120, Math.floor(toNumber(BTTL_END_OUTRO_WIN_HOLD_MS, 750)));
+      const toWhiteMs = Math.max(120, Math.floor(toNumber(BTTL_END_OUTRO_WIN_TO_WHITE_MS, 320)));
+      const fromWhiteMs = Math.max(120, Math.floor(toNumber(BTTL_END_OUTRO_WIN_FROM_WHITE_MS, 360)));
+      return (flashMs * 2) + gapMs + holdMs + toWhiteMs + fromWhiteMs;
+    }
+    const fadeMs = Math.max(120, Math.floor(toNumber(BTTL_END_OUTRO_LOST_FADE_MS, 260)));
+    const holdMs = Math.max(120, Math.floor(toNumber(BTTL_END_OUTRO_LOST_HOLD_MS, 750)));
+    const toBlackMs = Math.max(120, Math.floor(toNumber(BTTL_END_OUTRO_LOST_TO_BLACK_MS, 320)));
+    const fromBlackMs = Math.max(120, Math.floor(toNumber(BTTL_END_OUTRO_LOST_FROM_BLACK_MS, 360)));
+    return fadeMs + holdMs + toBlackMs + fromBlackMs;
+  }
+
+  function getBttlEndOutroTiming(type){
+    const normalized = normalizeBttlEndOutroType(type);
+    if(normalized === BTTL_END_OUTRO_TYPE.WIN){
+      const flashMs = Math.max(20, Math.floor(toNumber(BTTL_END_OUTRO_WIN_FLASH_MS, 80)));
+      const gapMs = Math.max(10, Math.floor(toNumber(BTTL_END_OUTRO_WIN_FLASH_GAP_MS, 40)));
+      const holdMs = Math.max(120, Math.floor(toNumber(BTTL_END_OUTRO_WIN_HOLD_MS, 750)));
+      const fadeInMs = Math.max(120, Math.floor(toNumber(BTTL_END_OUTRO_WIN_TO_WHITE_MS, 320)));
+      const fadeOutMs = Math.max(120, Math.floor(toNumber(BTTL_END_OUTRO_WIN_FROM_WHITE_MS, 360)));
+      const flash1End = flashMs;
+      const flash2Start = flash1End + gapMs;
+      const flash2End = flash2Start + flashMs;
+      const holdStart = flash2End;
+      const holdEnd = holdStart + holdMs;
+      const fadeInStart = holdEnd;
+      const fadeInEnd = fadeInStart + fadeInMs;
+      const handoffAt = fadeInStart + Math.floor(fadeInMs * clamp(toNumber(BTTL_END_OUTRO_HANDOFF_IN_FADE_RATIO, 0.70), 0.30, 0.95));
+      return {
+        type: normalized,
+        flashMs,
+        gapMs,
+        holdMs,
+        fadeInMs,
+        fadeOutMs,
+        flash1End,
+        flash2Start,
+        flash2End,
+        holdStart,
+        holdEnd,
+        fadeInStart,
+        fadeInEnd,
+        handoffAt,
+      };
+    }
+    const preFadeMs = Math.max(120, Math.floor(toNumber(BTTL_END_OUTRO_LOST_FADE_MS, 260)));
+    const holdMs = Math.max(120, Math.floor(toNumber(BTTL_END_OUTRO_LOST_HOLD_MS, 750)));
+    const fadeInMs = Math.max(120, Math.floor(toNumber(BTTL_END_OUTRO_LOST_TO_BLACK_MS, 320)));
+    const fadeOutMs = Math.max(120, Math.floor(toNumber(BTTL_END_OUTRO_LOST_FROM_BLACK_MS, 360)));
+    const holdStart = preFadeMs;
+    const holdEnd = holdStart + holdMs;
+    const fadeInStart = holdEnd;
+    const fadeInEnd = fadeInStart + fadeInMs;
+    const handoffAt = fadeInStart + Math.floor(fadeInMs * clamp(toNumber(BTTL_END_OUTRO_HANDOFF_IN_FADE_RATIO, 0.70), 0.30, 0.95));
+    return {
+      type: normalized,
+      preFadeMs,
+      holdMs,
+      fadeInMs,
+      fadeOutMs,
+      holdStart,
+      holdEnd,
+      fadeInStart,
+      fadeInEnd,
+      handoffAt,
+    };
+  }
+
+  function computeBttlEndOutroHandoffAlpha(type, elapsed, timing){
+    const normalized = normalizeBttlEndOutroType(type);
+    if(normalized === BTTL_END_OUTRO_TYPE.WIN){
+      if(elapsed <= timing.fadeInStart) return 0;
+      const p = clamp((elapsed - timing.fadeInStart) / Math.max(1, timing.fadeInMs), 0, 1);
+      return p;
+    }
+    if(elapsed <= timing.preFadeMs){
+      const p = clamp(elapsed / Math.max(1, timing.preFadeMs), 0, 1);
+      return 0.72 * p;
+    }
+    if(elapsed <= timing.holdEnd){
+      return 0.72;
+    }
+    const p = clamp((elapsed - timing.fadeInStart) / Math.max(1, timing.fadeInMs), 0, 1);
+    return 0.72 + ((0.96 - 0.72) * p);
+  }
+
+  function startBttlEndOutro(ctxBattle, type, nowMs = performance.now()){
+    if(!isRecord(ctxBattle)) return;
+    const now = toNumber(nowMs, performance.now());
+    const outroType = normalizeBttlEndOutroType(type);
+    const durationMs = getBttlEndOutroDurationMs(outroType);
+    ctxBattle.projectiles = [];
+    ctxBattle.shortGateSlashFx = [];
+    ctxBattle.signalSession = null;
+    ctxBattle.signalResult = null;
+    ctxBattle.lastSignalProc = null;
+    clearBttlSignalBuffState(ctxBattle);
+    clearBttlSignalSuccessFx(ctxBattle);
+    ctxBattle.signalFxBadShakeUntilMs = 0;
+    ctxBattle.signalFxBadShakeDir = 0;
+    ctxBattle.heavyInboundStartedAtMs = 0;
+    ctxBattle.heavyInboundUntilMs = 0;
+    ctxBattle.heavyImpactAtMs = 0;
+    ctxBattle.heavyIncomingActionHint = "";
+    ctxBattle.heavyReactSession = null;
+    ctxBattle.rightPaneMode = BTTL_RIGHTPANE_MODE.SIGNAL_MENU;
+    ctxBattle.endOutroType = outroType;
+    ctxBattle.endOutroActive = true;
+    ctxBattle.endOutroStartedAtMs = now;
+    ctxBattle.endOutroDurationMs = durationMs;
+    ctxBattle.endOutroUntilMs = now + durationMs;
+    ctxBattle.endOutroHandoffDone = false;
+    uiState.bttlResultReveal = null;
+    ctxBattle.phase = BTTL_STATE.OUTRO;
+    ctxBattle.phaseStartedAtMs = now;
+  }
+
+  function isBttlEndOutroActive(ctxBattle, nowMs = performance.now()){
+    if(!isRecord(ctxBattle)) return false;
+    if(String(ctxBattle.phase || "") !== BTTL_STATE.OUTRO) return false;
+    if(!Boolean(ctxBattle.endOutroActive)) return false;
+    const now = toNumber(nowMs, performance.now());
+    return now < toNumber(ctxBattle.endOutroUntilMs, 0);
   }
 
   function computeBttlHitChance(sig, sync){
@@ -4446,39 +6011,450 @@
     };
   }
 
+  function getBttlRangeBarGeometry(field){
+    const x0 = Math.round((field?.innerRect?.x || 0) + BTTL_RANGE_BAR_PAD_X);
+    const x1 = Math.round(((field?.innerRect?.x || 0) + (field?.innerRect?.w || 0)) - BTTL_RANGE_BAR_PAD_X);
+    const safeX1 = Math.max(x0 + 8, x1);
+    const y = Math.round(toNumber(field?.dividerY, 0)) + 0.5;
+    return {
+      x0,
+      x1: safeX1,
+      w: Math.max(8, safeX1 - x0),
+      y,
+      centerX: Math.round((x0 + safeX1) * 0.5) + 0.5,
+    };
+  }
+
+  function getBttlRangeBarXByPos(rangeGeom, pos){
+    if(!rangeGeom) return 0;
+    const ratio = clamp(toNumber(pos, 0.5), 0, 1);
+    return Math.round(rangeGeom.x0 + (rangeGeom.w * ratio));
+  }
+
+  function drawBttlRangeBar(ctxBattle, field, nowMs = performance.now()){
+    if(!ctxBattle || !field) return;
+    ensureBttlRangeState(ctxBattle, nowMs);
+    const rangeGeom = getBttlRangeBarGeometry(field);
+    const y = rangeGeom.y;
+    ctx.save();
+    ctx.strokeStyle = "rgba(14,20,15,0.34)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(rangeGeom.x0 + 0.5, y);
+    ctx.lineTo(rangeGeom.x1 - 0.5, y);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(rangeGeom.centerX, y - 4);
+    ctx.lineTo(rangeGeom.centerX, y + 4);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(rangeGeom.x0 + 0.5, y - 3);
+    ctx.lineTo(rangeGeom.x0 + 0.5, y + 3);
+    ctx.moveTo(rangeGeom.x1 - 0.5, y - 3);
+    ctx.lineTo(rangeGeom.x1 - 0.5, y + 3);
+    ctx.stroke();
+    ctx.restore();
+
+    let enemyX = getBttlRangeBarXByPos(rangeGeom, ctxBattle.enemyRangeVisualPos);
+    let allyX = getBttlRangeBarXByPos(rangeGeom, ctxBattle.allyRangeVisualPos);
+    const markerHalf = Math.max(2, Math.floor(toNumber(BTTL_RANGE_BAR_MARKER_HALF, 4)));
+    const markerY = Math.round(y);
+    let enemyShakeX = 0;
+    let enemyShakeY = 0;
+    let allyShakeX = 0;
+    let allyShakeY = 0;
+    const shakeStartedAtMs = toNumber(ctxBattle.rangeMarkerShakeStartedAtMs, 0);
+    const shakeUntilMs = toNumber(ctxBattle.rangeMarkerShakeUntilMs, 0);
+    const now = toNumber(nowMs, performance.now());
+    if(shakeUntilMs > shakeStartedAtMs && now < shakeUntilMs){
+      const total = Math.max(1, shakeUntilMs - shakeStartedAtMs);
+      const p = clamp((now - shakeStartedAtMs) / total, 0, 1);
+      const decay = 1 - p;
+      const amp = Math.max(0, toNumber(BTTL_RANGE_MARKER_SHAKE_PX, 3)) * decay;
+      const hz = Math.max(1, toNumber(BTTL_RANGE_MARKER_SHAKE_HZ, 18));
+      const t = (now - shakeStartedAtMs) / 1000;
+      const sx = Math.sin(t * Math.PI * 2 * hz);
+      const sy = Math.cos(t * Math.PI * 2 * (hz * 0.5));
+      enemyShakeX = Math.round(sx * amp);
+      enemyShakeY = Math.round(sy * amp * 0.35);
+      allyShakeX = -enemyShakeX;
+      allyShakeY = -enemyShakeY;
+    }
+    enemyX += enemyShakeX;
+    allyX += allyShakeX;
+    const enemyY = markerY + enemyShakeY;
+    const allyY = markerY + allyShakeY;
+
+    // Enemy marker: diamond (outline + light fill)
+    ctx.save();
+    ctx.fillStyle = "rgba(14,20,15,0.22)";
+    ctx.strokeStyle = "rgba(14,20,15,0.78)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(enemyX, enemyY - markerHalf);
+    ctx.lineTo(enemyX + markerHalf, enemyY);
+    ctx.lineTo(enemyX, enemyY + markerHalf);
+    ctx.lineTo(enemyX - markerHalf, enemyY);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+
+    // Ally marker: square (filled)
+    const square = markerHalf * 2 - 1;
+    ctx.save();
+    ctx.fillStyle = "rgba(14,20,15,0.82)";
+    ctx.fillRect(
+      Math.round(allyX - (square / 2)),
+      Math.round(allyY - (square / 2)),
+      square,
+      square
+    );
+    ctx.strokeStyle = "rgba(14,20,15,0.42)";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(
+      Math.round(allyX - (square / 2)) + 0.5,
+      Math.round(allyY - (square / 2)) + 0.5,
+      Math.max(1, square - 1),
+      Math.max(1, square - 1)
+    );
+    ctx.restore();
+  }
+
+  function drawBttlHitGateAt(x, y){
+    const cx = Math.round(toNumber(x, 0));
+    const cy = Math.round(toNumber(y, 0));
+    const spacing = Math.max(2, Math.floor(toNumber(BTTL_HIT_GATE_BAR_SPACING, 3)));
+    const halfH = Math.max(4, Math.floor(toNumber(BTTL_HIT_GATE_BAR_HALF_H, 9)));
+    const bars = [-1, 0, 1];
+    ctx.save();
+    for(const idx of bars){
+      const bx = cx + (idx * spacing);
+      const localHalf = idx === 0 ? halfH : Math.max(3, halfH - 2);
+      ctx.fillStyle = idx === 0
+        ? "rgba(14,20,15,0.30)"
+        : "rgba(14,20,15,0.22)";
+      ctx.fillRect(bx, cy - localHalf, 1, localHalf * 2);
+    }
+    ctx.restore();
+  }
+
+  function getBttlHitGatePoint(field, targetKey){
+    if(!field){
+      return { x: 0, y: 0 };
+    }
+    const target = targetKey === "ally" ? "ally" : "enemy";
+    if(target === "enemy"){
+      return {
+        x: Math.round(toNumber(field.topBattleX1, 0) - 1),
+        y: Math.round(toNumber(field.topLaneCenterY, 0)),
+      };
+    }
+    return {
+      x: Math.round(toNumber(field.bottomBattleX0, 0) + 1),
+      y: Math.round(toNumber(field.bottomLaneCenterY, 0)),
+    };
+  }
+
+  function drawBttlHitGates(field){
+    if(!field) return;
+    const enemyGate = getBttlHitGatePoint(field, "enemy");
+    const allyGate = getBttlHitGatePoint(field, "ally");
+    drawBttlHitGateAt(enemyGate.x, enemyGate.y);
+    drawBttlHitGateAt(allyGate.x, allyGate.y);
+  }
+
   function drawBttlHpPanel(x, y, w, hpNowRaw, hpMaxRaw, opts = {}){
     const hpMax = Math.max(1, Math.floor(toNumber(hpMaxRaw, 1)));
     const hpNow = clamp(Math.floor(toNumber(hpNowRaw, 0)), 0, hpMax);
     const ratio = hpMax > 0 ? clamp(hpNow / hpMax, 0, 1) : 0;
     const valueText = `${hpNow}/${hpMax}`;
     const panelW = Math.max(36, Math.floor(toNumber(w, 0)));
+    const showValue = opts.showValue !== false;
     const textScale = clamp(Math.floor(toNumber(opts.textScale, 1)), 1, 2);
-    const textH = BITMAP_GLYPH_H * textScale;
+    const valueSizePx = Math.floor(toNumber(opts.valueSizePx, 0));
+    const useJaValueText = showValue && valueSizePx > 0;
+    const textH = showValue
+      ? (useJaValueText
+      ? clamp(valueSizePx, 8, 24)
+      : (BITMAP_GLYPH_H * textScale))
+      : 0;
     const textPos = String(opts.textPos || "above").toLowerCase();
     const barX = Math.round(x);
     const isTextBelow = textPos === "below";
-    const barY = isTextBelow ? Math.round(y) : Math.round(y + textH + 1);
+    const barY = showValue
+      ? (isTextBelow ? Math.round(y) : Math.round(y + textH + 1))
+      : Math.round(y);
     const barW = panelW;
     const barH = 4;
     const valueY = isTextBelow ? Math.round(barY + barH + 1) : Math.round(y);
     const fillW = Math.floor((barW - 2) * ratio);
 
-    drawText(Math.round(x + Math.floor(panelW / 2)), valueY, valueText, {
-      scale: textScale,
-      align: "center",
-      color: "rgba(14,20,15,0.92)",
-    });
+    if(showValue){
+      if(useJaValueText){
+        drawTextJa(Math.round(x + Math.floor(panelW / 2)), valueY, valueText, {
+          size: clamp(valueSizePx, 8, 24),
+          align: "center",
+          color: "rgba(14,20,15,0.92)",
+        });
+      }else{
+        drawText(Math.round(x + Math.floor(panelW / 2)), valueY, valueText, {
+          scale: textScale,
+          align: "center",
+          color: "rgba(14,20,15,0.92)",
+        });
+      }
+    }
 
     ctx.save();
-    ctx.fillStyle = "rgba(14,20,15,0.12)";
+    ctx.fillStyle = "rgba(14,20,15,0.18)";
     ctx.fillRect(barX, barY, barW, barH);
-    ctx.strokeStyle = "rgba(14,20,15,0.38)";
+    ctx.strokeStyle = "rgba(14,20,15,0.62)";
     ctx.lineWidth = 1;
     ctx.strokeRect(barX + 0.5, barY + 0.5, barW - 1, barH - 1);
     if(fillW > 0){
-      ctx.fillStyle = "rgba(14,20,15,0.78)";
+      ctx.fillStyle = "rgba(14,20,15,0.94)";
       ctx.fillRect(barX + 1, barY + 1, fillW, Math.max(1, barH - 2));
     }
+    ctx.restore();
+    return {
+      barX,
+      barY,
+      barW,
+      barH,
+      valueY,
+      textScale,
+      textH,
+    };
+  }
+
+  function drawBttlStaGauge(x, y, w, staNowRaw, staMaxRaw, opts = {}){
+    const staMax = Math.max(1, Math.floor(toNumber(staMaxRaw, 1)));
+    const staNow = clamp(Math.floor(toNumber(staNowRaw, 0)), 0, staMax);
+    const ratio = staMax > 0 ? clamp(staNow / staMax, 0, 1) : 0;
+    const barX = Math.round(toNumber(x, 0));
+    const barY = Math.round(toNumber(y, 0));
+    const barW = Math.max(36, Math.floor(toNumber(w, 0)));
+    const barH = 3;
+    const fillW = Math.floor((barW - 2) * ratio);
+    const isLow = ratio <= 0.22;
+    const now = toNumber(opts.nowMs, performance.now());
+    const blinkOn = isLow && (Math.floor(now / 160) % 2 === 0);
+
+    ctx.save();
+    // STA is a tactical resource: slimmer than HP and visually patterned.
+    ctx.fillStyle = "rgba(14,20,15,0.10)";
+    ctx.fillRect(barX, barY, barW, barH);
+    ctx.strokeStyle = "rgba(14,20,15,0.56)";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(barX + 0.5, barY + 0.5, barW - 1, barH - 1);
+    if(fillW > 0){
+      ctx.fillStyle = blinkOn ? "rgba(14,20,15,0.80)" : "rgba(14,20,15,0.68)";
+      ctx.fillRect(barX + 1, barY + 1, fillW, Math.max(1, barH - 2));
+      // Keep a subtle notch pattern so it never reads as HP.
+      ctx.fillStyle = "rgba(200,214,194,0.18)";
+      for(let sx = barX + 4; sx < (barX + 1 + fillW); sx += 5){
+        ctx.fillRect(sx, barY + 1, 1, Math.max(1, barH - 2));
+      }
+    }
+    ctx.restore();
+    return {
+      barX,
+      barY,
+      barW,
+      barH,
+    };
+  }
+
+  function ensureBttlBreakActorState(actor){
+    if(!isRecord(actor)) return;
+    const maxValue = Math.max(1, Math.floor(toNumber(actor.breakMax, BTTL_BREAK_MAX)));
+    actor.breakMax = maxValue;
+    actor.breakValue = clamp(toNumber(actor.breakValue, 0), 0, maxValue);
+    actor.isBreak = Boolean(actor.isBreak);
+    actor.breakUntilMs = Math.max(0, toNumber(actor.breakUntilMs, 0));
+    actor.breakRecoverResumeAtMs = Math.max(0, toNumber(actor.breakRecoverResumeAtMs, 0));
+    actor.breakHighLogged = Boolean(actor.breakHighLogged);
+    actor.breakLastPlusLogAtMs = Math.max(0, toNumber(actor.breakLastPlusLogAtMs, 0));
+  }
+
+  function ensureBttlActorResourceState(actor){
+    if(!isRecord(actor)) return;
+    const maxHp = Math.max(1, Math.floor(toNumber(actor.maxHp, 1)));
+    actor.maxHp = maxHp;
+    actor.hp = clamp(Math.floor(toNumber(actor.hp, maxHp)), 0, maxHp);
+    const maxSta = Math.max(1, Math.floor(toNumber(actor.maxSta, maxHp)));
+    actor.maxSta = maxSta;
+    actor.sta = clamp(toNumber(actor.sta, maxSta), 0, maxSta);
+  }
+
+  function getBttlBreakActor(ctxBattle, actorKey){
+    if(!ctxBattle) return null;
+    const key = actorKey === "enemy" ? "enemy" : "ally";
+    const actor = isRecord(ctxBattle[key]) ? ctxBattle[key] : null;
+    if(actor){
+      ensureBttlBreakActorState(actor);
+    }
+    return actor;
+  }
+
+  function getBttlBreakLogPrefix(actorKey){
+    return actorKey === "enemy" ? "EN" : "AL";
+  }
+
+  function getBttlBreakRecoveryRangeMult(rangeState){
+    const id = normalizeBttlRangeStateId(rangeState);
+    return clamp(toNumber(BTTL_BREAK_RECOVERY_MULT_BY_RANGE[id], 1), 0.25, 4);
+  }
+
+  function getBttlBreakGainRangeMult(rangeState){
+    const id = normalizeBttlRangeStateId(rangeState);
+    return clamp(toNumber(BTTL_BREAK_GAIN_MULT_BY_RANGE[id], 1), 0.3, 2.5);
+  }
+
+  function getBttlBreakGainByHit(projectile, appliedDamage){
+    const damage = Math.max(0, Math.floor(toNumber(appliedDamage, 0)));
+    if(damage <= 0){
+      return 0;
+    }
+    const rangeId = normalizeBttlRangeStateId(projectile?.rangeStateAtLaunch);
+    let gain = toNumber(BTTL_BREAK_GAIN_HIT_BASE, 4) + (damage * toNumber(BTTL_BREAK_GAIN_HIT_DAMAGE_SCALE, 1.4));
+    if(rangeId === "short"){
+      gain += toNumber(BTTL_BREAK_GAIN_HIT_SHORT_BONUS, 5);
+    }
+    if(Boolean(projectile?.isHeavy)){
+      gain += toNumber(BTTL_BREAK_GAIN_HIT_HEAVY_BONUS, 10);
+    }
+    gain *= getBttlBreakGainRangeMult(rangeId);
+    return Math.max(0, Math.round(gain));
+  }
+
+  function applyBttlBreakDelta(ctxBattle, targetKey, deltaRaw, nowMs = performance.now(), options = {}){
+    if(!ctxBattle) return;
+    const actor = getBttlBreakActor(ctxBattle, targetKey);
+    if(!actor) return;
+    const delta = Math.floor(toNumber(deltaRaw, 0));
+    if(delta <= 0) return;
+    const now = toNumber(nowMs, performance.now());
+    const prev = clamp(toNumber(actor.breakValue, 0), 0, actor.breakMax);
+    const next = clamp(prev + delta, 0, actor.breakMax);
+    actor.breakValue = next;
+    actor.breakRecoverResumeAtMs = Math.max(toNumber(actor.breakRecoverResumeAtMs, 0), now + Math.max(200, Math.floor(toNumber(BTTL_BREAK_RECOVER_DELAY_MS, 720) * 0.45)));
+
+    const prefix = getBttlBreakLogPrefix(targetKey);
+    const plusInterval = Math.max(120, Math.floor(toNumber(BTTL_BREAK_LOG_PLUS_MIN_INTERVAL_MS, 520)));
+    const forcePlusLog = Boolean(options.forcePlusLog);
+    if(forcePlusLog || (now - toNumber(actor.breakLastPlusLogAtMs, 0) >= plusInterval)){
+      pushBttlLog(ctxBattle, `${prefix} BRK+`);
+      actor.breakLastPlusLogAtMs = now;
+    }
+
+    const highTh = actor.breakMax * clamp(toNumber(BTTL_BREAK_HIGH_RATIO, 0.74), 0.2, 0.98);
+    if(prev < highTh && next >= highTh && !actor.breakHighLogged){
+      actor.breakHighLogged = true;
+      pushBttlLog(ctxBattle, `${prefix} BRK HIGH`);
+    }
+
+    if(!actor.isBreak && next >= actor.breakMax){
+      actor.isBreak = true;
+      actor.breakUntilMs = now + Math.max(200, Math.floor(toNumber(BTTL_BREAK_STATE_MS, 1250)));
+      actor.breakRecoverResumeAtMs = actor.breakUntilMs + Math.max(180, Math.floor(toNumber(BTTL_BREAK_RECOVER_DELAY_MS, 720)));
+      actor.breakValue = actor.breakMax;
+      actor.breakHighLogged = true;
+      pushBttlLog(ctxBattle, `${prefix} BREAK`);
+      const resultMetrics = ensureBttlResultMetrics(ctxBattle, now);
+      if(targetKey === "enemy"){
+        resultMetrics.breakInflictedCount = Math.max(0, Math.floor(toNumber(resultMetrics.breakInflictedCount, 0))) + 1;
+      }else{
+        resultMetrics.breakSufferedCount = Math.max(0, Math.floor(toNumber(resultMetrics.breakSufferedCount, 0))) + 1;
+      }
+      if(targetKey === "enemy"){
+        ctxBattle.nextEnemyActAtMs = Math.max(
+          toNumber(ctxBattle.nextEnemyActAtMs, now),
+          now + Math.floor(Math.max(240, toNumber(BTTL_BREAK_STATE_MS, 1250) * 0.75))
+        );
+      }else{
+        ctxBattle.nextAllyActAtMs = Math.max(
+          toNumber(ctxBattle.nextAllyActAtMs, now),
+          now + Math.floor(Math.max(200, toNumber(BTTL_BREAK_STATE_MS, 1250) * 0.65))
+        );
+      }
+    }
+  }
+
+  function updateBttlBreakState(ctxBattle, nowMs = performance.now(), dtMs = 16){
+    if(!ctxBattle) return;
+    const now = toNumber(nowMs, performance.now());
+    const dtSec = Math.max(0, toNumber(dtMs, 0)) / 1000;
+    const recPerSec = Math.max(0, toNumber(BTTL_BREAK_RECOVERY_PER_SEC, 8.5));
+    const recoverAmount = recPerSec * dtSec * getBttlBreakRecoveryRangeMult(ctxBattle.rangeState);
+    for(const key of ["enemy", "ally"]){
+      const actor = getBttlBreakActor(ctxBattle, key);
+      if(!actor) continue;
+      const prefix = getBttlBreakLogPrefix(key);
+      if(actor.isBreak && now >= toNumber(actor.breakUntilMs, 0)){
+        actor.isBreak = false;
+        actor.breakUntilMs = 0;
+        actor.breakRecoverResumeAtMs = Math.max(
+          toNumber(actor.breakRecoverResumeAtMs, 0),
+          now + Math.max(180, Math.floor(toNumber(BTTL_BREAK_RECOVER_DELAY_MS, 720)))
+        );
+        actor.breakValue = Math.min(actor.breakValue, actor.breakMax * 0.58);
+        pushBttlLog(ctxBattle, `${prefix} RECOVER`);
+      }
+      if(!actor.isBreak && now >= toNumber(actor.breakRecoverResumeAtMs, 0) && recoverAmount > 0 && actor.breakValue > 0){
+        actor.breakValue = Math.max(0, actor.breakValue - recoverAmount);
+      }
+      const highTh = actor.breakMax * clamp(toNumber(BTTL_BREAK_HIGH_RATIO, 0.74), 0.2, 0.98);
+      if(actor.breakValue < (highTh * 0.90)){
+        actor.breakHighLogged = false;
+      }
+    }
+  }
+
+  function drawBttlBreakGauge(x, y, w, breakNowRaw, breakMaxRaw, opts = {}){
+    const breakMax = Math.max(1, Math.floor(toNumber(breakMaxRaw, BTTL_BREAK_MAX)));
+    const breakNow = clamp(toNumber(breakNowRaw, 0), 0, breakMax);
+    const ratio = breakMax > 0 ? clamp(breakNow / breakMax, 0, 1) : 0;
+    const barX = Math.round(toNumber(x, 0));
+    const barY = Math.round(toNumber(y, 0));
+    const barW = Math.max(28, Math.floor(toNumber(w, 0)));
+    const barH = 4;
+    const now = toNumber(opts.nowMs, performance.now());
+    const isBreak = Boolean(opts.isBreak);
+    const highTh = clamp(toNumber(BTTL_BREAK_HIGH_RATIO, 0.74), 0.2, 0.98);
+    const highActive = ratio >= highTh;
+    const blinkOn = isBreak
+      ? (Math.floor(now / 90) % 2 === 0)
+      : (highActive && (Math.floor(now / 150) % 2 === 0));
+    const innerW = Math.max(1, barW - 2);
+    const innerH = Math.max(1, barH - 2);
+    const fillW = Math.floor(Math.max(0, innerW * ratio));
+
+    ctx.save();
+    // BREAK is "accumulation" gauge: keep background transparent and compact.
+    ctx.strokeStyle = "rgba(14,20,15,0.44)";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(barX + 0.5, barY + 0.5, barW - 1, barH - 1);
+    if(fillW > 0){
+      ctx.fillStyle = isBreak
+        ? (blinkOn ? "rgba(14,20,15,0.88)" : "rgba(14,20,15,0.70)")
+        : (highActive ? "rgba(14,20,15,0.64)" : "rgba(14,20,15,0.48)");
+      ctx.fillRect(barX + 1, barY + 1, fillW, innerH);
+      // Subtle pulse ticks, but less dense than STA.
+      if(isBreak || highActive){
+        ctx.fillStyle = "rgba(200,214,194,0.22)";
+        for(let sx = barX + 5; sx < (barX + 1 + fillW); sx += 6){
+          ctx.fillRect(sx, barY + 1, 1, innerH);
+        }
+      }
+    }
+    // 3-step guide markers (1/3 and 2/3) for quick danger reading.
+    ctx.fillStyle = "rgba(14,20,15,0.30)";
+    const marker1 = Math.round(barX + 1 + (innerW / 3));
+    const marker2 = Math.round(barX + 1 + ((innerW * 2) / 3));
+    ctx.fillRect(marker1, barY + 1, 1, innerH);
+    ctx.fillRect(marker2, barY + 1, 1, innerH);
     ctx.restore();
   }
 
@@ -4532,6 +6508,143 @@
     return clamp(toNumber(BTTL_SIGNAL_MODE_COOLDOWN_MS[id], 1200), 0, 30000);
   }
 
+  function getBttlSignalCost(cmd){
+    const id = normalizeBttlSignalCommand(cmd);
+    return Math.max(0, Math.floor(toNumber(BTTL_SIGNAL_COST_BY_CMD[id], 0)));
+  }
+
+  function canConsumeBttlSignalCost(ctxBattle, cmd){
+    if(!ctxBattle) return false;
+    ensureBttlActorResourceState(ctxBattle.ally);
+    const cost = getBttlSignalCost(cmd);
+    if(cost <= 0) return true;
+    const staNow = Math.max(0, Math.floor(toNumber(ctxBattle.ally?.sta, 0)));
+    return staNow >= cost;
+  }
+
+  function createBttlResultMetrics(nowMs = performance.now()){
+    const now = toNumber(nowMs, performance.now());
+    return {
+      signalUseBoost: 0,
+      signalUseStabilize: 0,
+      signalUseCalibrate: 0,
+      signalUseOverclock: 0,
+      breakInflictedCount: 0,
+      breakSufferedCount: 0,
+      rangeStayShort: 0,
+      rangeStayMid: 0,
+      rangeStayLong: 0,
+      sampledAtMs: now,
+    };
+  }
+
+  function ensureBttlResultMetrics(ctxBattle, nowMs = performance.now()){
+    if(!ctxBattle) return createBttlResultMetrics(nowMs);
+    if(isRecord(ctxBattle.resultMetrics)){
+      const metrics = ctxBattle.resultMetrics;
+      metrics.signalUseBoost = Math.max(0, Math.floor(toNumber(metrics.signalUseBoost, 0)));
+      metrics.signalUseStabilize = Math.max(0, Math.floor(toNumber(metrics.signalUseStabilize, 0)));
+      metrics.signalUseCalibrate = Math.max(0, Math.floor(toNumber(metrics.signalUseCalibrate, 0)));
+      metrics.signalUseOverclock = Math.max(0, Math.floor(toNumber(metrics.signalUseOverclock, 0)));
+      metrics.breakInflictedCount = Math.max(0, Math.floor(toNumber(metrics.breakInflictedCount, 0)));
+      metrics.breakSufferedCount = Math.max(0, Math.floor(toNumber(metrics.breakSufferedCount, 0)));
+      metrics.rangeStayShort = Math.max(0, toNumber(metrics.rangeStayShort, 0));
+      metrics.rangeStayMid = Math.max(0, toNumber(metrics.rangeStayMid, 0));
+      metrics.rangeStayLong = Math.max(0, toNumber(metrics.rangeStayLong, 0));
+      metrics.sampledAtMs = Math.max(0, toNumber(metrics.sampledAtMs, nowMs));
+      return metrics;
+    }
+    const created = createBttlResultMetrics(nowMs);
+    ctxBattle.resultMetrics = created;
+    return created;
+  }
+
+  function addBttlSignalUseMetric(ctxBattle, cmd, delta = 1){
+    if(!ctxBattle) return;
+    const id = normalizeBttlSignalCommand(cmd);
+    const key = BTTL_SIGNAL_USE_DETAIL_KEY_BY_CMD[id];
+    if(typeof key !== "string" || key.length <= 0) return;
+    const metrics = ensureBttlResultMetrics(ctxBattle);
+    const amount = Math.max(0, Math.floor(toNumber(delta, 0)));
+    if(amount <= 0) return;
+    metrics[key] = Math.max(0, Math.floor(toNumber(metrics[key], 0))) + amount;
+  }
+
+  function addBttlRangeStayMetric(ctxBattle, rangeState, deltaMs){
+    if(!ctxBattle) return;
+    const delta = Math.max(0, toNumber(deltaMs, 0));
+    if(delta <= 0) return;
+    const metrics = ensureBttlResultMetrics(ctxBattle);
+    const id = normalizeBttlRangeStateId(rangeState);
+    const key = id === "short"
+      ? "rangeStayShort"
+      : (id === "long" ? "rangeStayLong" : "rangeStayMid");
+    metrics[key] = Math.max(0, toNumber(metrics[key], 0)) + delta;
+    metrics.sampledAtMs = Math.max(0, toNumber(ctxBattle.rangeLastUpdateAtMs, performance.now()));
+  }
+
+  function flushBttlRangeStayMetric(ctxBattle, nowMs = performance.now()){
+    if(!ctxBattle) return;
+    const now = toNumber(nowMs, performance.now());
+    const last = Math.max(0, toNumber(ctxBattle.rangeLastUpdateAtMs, now));
+    const untracked = Math.max(0, now - last);
+    if(untracked > 0){
+      addBttlRangeStayMetric(ctxBattle, ctxBattle.rangeState, untracked);
+      ctxBattle.rangeLastUpdateAtMs = now;
+    }
+  }
+
+  function addDetailCounter(detail, key, delta){
+    if(!isRecord(detail)) return;
+    const amount = Math.max(0, Math.floor(toNumber(delta, 0)));
+    if(amount <= 0) return;
+    detail[key] = Math.max(0, Math.floor(toNumber(detail[key], 0))) + amount;
+  }
+
+  function commitBttlResultMetrics(ctxBattle, result, nowMs = performance.now()){
+    if(!ctxBattle || Boolean(ctxBattle.resultMetricsCommitted)) return false;
+    const resultRaw = String(result || "LOSE").trim().toUpperCase();
+    const normalizedResult = resultRaw === "WIN"
+      ? "WIN"
+      : (resultRaw === "ABORT" ? "ABORT" : "LOSE");
+    const detail = isRecord(state.detailed)
+      ? state.detailed
+      : createDefaultDetailedState(state.monster?.id || "mon001");
+    state.detailed = detail;
+
+    flushBttlRangeStayMetric(ctxBattle, nowMs);
+    const metrics = ensureBttlResultMetrics(ctxBattle, nowMs);
+
+    const count = Math.max(0, Math.floor(toNumber(detail.battleCount, 0))) + 1;
+    detail.battleCount = count;
+
+    if(normalizedResult === "WIN"){
+      addDetailCounter(detail, "battleWins", 1);
+    }else if(normalizedResult === "ABORT"){
+      addDetailCounter(detail, "battleRetreats", 1);
+    }else{
+      addDetailCounter(detail, "battleLosses", 1);
+    }
+    detail.battleWins = clamp(Math.floor(toNumber(detail.battleWins, 0)), 0, detail.battleCount);
+    detail.battleLosses = clamp(Math.floor(toNumber(detail.battleLosses, 0)), 0, detail.battleCount);
+    detail.battleRetreats = clamp(Math.floor(toNumber(detail.battleRetreats, 0)), 0, detail.battleCount);
+
+    addDetailCounter(detail, "signalUseBoost", metrics.signalUseBoost);
+    addDetailCounter(detail, "signalUseStabilize", metrics.signalUseStabilize);
+    addDetailCounter(detail, "signalUseCalibrate", metrics.signalUseCalibrate);
+    addDetailCounter(detail, "signalUseOverclock", metrics.signalUseOverclock);
+    addDetailCounter(detail, "breakInflictedCount", metrics.breakInflictedCount);
+    addDetailCounter(detail, "breakSufferedCount", metrics.breakSufferedCount);
+    addDetailCounter(detail, "rangeStayShort", metrics.rangeStayShort);
+    addDetailCounter(detail, "rangeStayMid", metrics.rangeStayMid);
+    addDetailCounter(detail, "rangeStayLong", metrics.rangeStayLong);
+
+    detail.lastUpdateAt = Date.now();
+    saveDetailedState();
+    ctxBattle.resultMetricsCommitted = true;
+    return true;
+  }
+
   function getBttlSignalGlobalCooldownRemainMs(ctxBattle, nowMs = performance.now()){
     if(!ctxBattle) return 0;
     const now = toNumber(nowMs, performance.now());
@@ -4566,12 +6679,37 @@
     };
   }
 
+  function createBttlAllyAiState(nowMs = performance.now()){
+    const now = toNumber(nowMs, performance.now());
+    return {
+      currentAction: BTTL_ALLY_ACTION.STABLE,
+      actionLockedUntilMs: 0,
+      switchCooldownUntilMs: 0,
+      lastDecideAtMs: now,
+      recentEnemyShots: [],
+      recentAllyShots: [],
+      lastDamageTakenAtMs: 0,
+      lastActionChangedAtMs: now,
+      lastDodgeAtMs: 0,
+      lastParryAtMs: 0,
+      lastReflectAtMs: 0,
+    };
+  }
+
   function getBttlEnemyAiState(ctxBattle, nowMs = performance.now()){
     if(!ctxBattle) return createBttlEnemyAiState(nowMs);
     if(!isRecord(ctxBattle.enemyAi)){
       ctxBattle.enemyAi = createBttlEnemyAiState(nowMs);
     }
     return ctxBattle.enemyAi;
+  }
+
+  function getBttlAllyAiState(ctxBattle, nowMs = performance.now()){
+    if(!ctxBattle) return createBttlAllyAiState(nowMs);
+    if(!isRecord(ctxBattle.allyAi)){
+      ctxBattle.allyAi = createBttlAllyAiState(nowMs);
+    }
+    return ctxBattle.allyAi;
   }
 
   function noteBttlRecentHit(history, didHit){
@@ -4603,6 +6741,376 @@
     return clamp(toNumber(BTTL_ENEMY_ACTION_INTERVAL_MULT[id], 1), 0.5, 1.6);
   }
 
+  function getBttlAllyActionId(actionId){
+    const id = String(actionId || "").trim().toUpperCase();
+    if(
+      id === BTTL_ALLY_ACTION.PRESS ||
+      id === BTTL_ALLY_ACTION.DEFEND ||
+      id === BTTL_ALLY_ACTION.EVADE
+    ){
+      return id;
+    }
+    return BTTL_ALLY_ACTION.STABLE;
+  }
+
+  function getBttlAllyActionIntervalMult(actionId){
+    const id = getBttlAllyActionId(actionId);
+    return clamp(toNumber(BTTL_ALLY_ACTION_INTERVAL_MULT[id], 1), 0.5, 1.8);
+  }
+
+  function normalizeBttlRangeIntent(intentId){
+    const id = String(intentId || "").trim().toUpperCase();
+    if(id === BTTL_RANGE_INTENT.APPROACH || id === BTTL_RANGE_INTENT.RETREAT){
+      return id;
+    }
+    return BTTL_RANGE_INTENT.HOLD;
+  }
+
+  function getBttlRangeStateByDistance(distance){
+    const d = clamp(toNumber(distance, 1), 0, 1);
+    if(d <= BTTL_RANGE_SHORT_THRESHOLD){
+      return "short";
+    }
+    if(d <= BTTL_RANGE_MID_THRESHOLD){
+      return "mid";
+    }
+    return "long";
+  }
+
+  function getBttlRangeStateWithHysteresis(distance, previousState){
+    const d = clamp(toNumber(distance, 1), 0, 1);
+    const prev = String(previousState || "").trim().toLowerCase();
+    const shortTh = clamp(BTTL_RANGE_SHORT_THRESHOLD, 0.02, 0.9);
+    const midTh = clamp(BTTL_RANGE_MID_THRESHOLD, shortTh + 0.02, 0.98);
+    const shortEnter = clamp(
+      shortTh - Math.max(0.004, toNumber(BTTL_RANGE_SHORT_ENTER_MARGIN, 0.022)),
+      0.02,
+      shortTh
+    );
+    const shortExit = clamp(
+      shortTh + Math.max(0.002, toNumber(BTTL_RANGE_SHORT_EXIT_MARGIN, 0.008)),
+      shortTh,
+      midTh - 0.01
+    );
+    const longEnter = clamp(
+      midTh + Math.max(0.004, toNumber(BTTL_RANGE_LONG_ENTER_MARGIN, 0.020)),
+      shortExit + 0.01,
+      0.98
+    );
+    const longExit = clamp(
+      midTh - Math.max(0.002, toNumber(BTTL_RANGE_LONG_EXIT_MARGIN, 0.012)),
+      shortExit + 0.01,
+      midTh
+    );
+    if(prev === "short"){
+      if(d <= shortExit){
+        return "short";
+      }
+    }else if(prev === "mid"){
+      if(d <= shortEnter){
+        return "short";
+      }
+      if(d >= longEnter){
+        return "long";
+      }
+      return "mid";
+    }else if(prev === "long"){
+      if(d >= longExit){
+        return "long";
+      }
+    }
+    return getBttlRangeStateByDistance(d);
+  }
+
+  function getBttlEnemyRangeIntentByAction(actionId){
+    const id = getBttlEnemyActionId(actionId);
+    if(id === BTTL_ENEMY_ACTION.PRESS){
+      return BTTL_RANGE_INTENT.APPROACH;
+    }
+    if(id === BTTL_ENEMY_ACTION.DEFEND){
+      return BTTL_RANGE_INTENT.RETREAT;
+    }
+    return BTTL_RANGE_INTENT.HOLD;
+  }
+
+  function getBttlAllyRangeIntentByAction(actionId){
+    const id = getBttlAllyActionId(actionId);
+    if(id === BTTL_ALLY_ACTION.PRESS){
+      return BTTL_RANGE_INTENT.APPROACH;
+    }
+    if(id === BTTL_ALLY_ACTION.DEFEND || id === BTTL_ALLY_ACTION.EVADE){
+      return BTTL_RANGE_INTENT.RETREAT;
+    }
+    return BTTL_RANGE_INTENT.HOLD;
+  }
+
+  function getBttlRangeHeavyBonus(rangeState){
+    const id = String(rangeState || "").trim().toLowerCase();
+    return toNumber(BTTL_RANGE_HEAVY_CHANCE_BONUS[id], 0);
+  }
+
+  function getBttlRangeIntervalMult(rangeState){
+    const id = String(rangeState || "").trim().toLowerCase();
+    return clamp(toNumber(BTTL_RANGE_INTERVAL_MULT[id], 1), 0.8, 1.3);
+  }
+
+  function getBttlRangeStateLabel(rangeState){
+    const id = String(rangeState || "").trim().toLowerCase();
+    if(id === "short") return "SHORT";
+    if(id === "mid") return "MID";
+    return "LONG";
+  }
+
+  function normalizeBttlRangePositions(enemyPosRaw, allyPosRaw){
+    const minPos = clamp(BTTL_RANGE_POS_MIN, 0, 1);
+    const maxPos = clamp(BTTL_RANGE_POS_MAX, minPos + 0.02, 1);
+    const minGap = clamp(BTTL_RANGE_MIN_GAP, 0.02, Math.max(0.02, maxPos - minPos));
+    let enemyPos = clamp(toNumber(enemyPosRaw, BTTL_RANGE_INIT_ENEMY_POS), minPos, maxPos);
+    let allyPos = clamp(toNumber(allyPosRaw, BTTL_RANGE_INIT_ALLY_POS), minPos, maxPos);
+    if(enemyPos > allyPos){
+      const tmp = enemyPos;
+      enemyPos = allyPos;
+      allyPos = tmp;
+    }
+    const capacity = Math.max(minGap, maxPos - minPos);
+    const desiredGap = clamp(Math.max(minGap, allyPos - enemyPos), minGap, capacity);
+    const midpoint = clamp(
+      (enemyPos + allyPos) * 0.5,
+      minPos + (desiredGap * 0.5),
+      maxPos - (desiredGap * 0.5)
+    );
+    enemyPos = midpoint - (desiredGap * 0.5);
+    allyPos = midpoint + (desiredGap * 0.5);
+    return { enemyPos, allyPos };
+  }
+
+  function applyBttlRangedHitKnockback(ctxBattle, owner, nowMs = performance.now()){
+    if(!ctxBattle) return;
+    const overclock = getBttlActiveOverclock(ctxBattle, nowMs);
+    const overclockResist = owner === "enemy"
+      ? clamp(toNumber(overclock?.knockbackResist, 0), 0, 0.9)
+      : 0;
+    const baseDelta = clamp(toNumber(BTTL_RANGED_HIT_KNOCK_POS_DELTA, 0.028), 0.006, 0.10);
+    const delta = baseDelta * (1 - overclockResist);
+    const targetRatio = clamp(toNumber(BTTL_RANGED_HIT_KNOCK_TARGET_RATIO, 0.72), 0.50, 0.92);
+    const actorRatio = 1 - targetRatio;
+    let enemyPos = toNumber(ctxBattle.enemyRangePos, BTTL_RANGE_INIT_ENEMY_POS);
+    let allyPos = toNumber(ctxBattle.allyRangePos, BTTL_RANGE_INIT_ALLY_POS);
+    if(owner === "enemy"){
+      enemyPos -= delta * actorRatio;
+      allyPos += delta * targetRatio;
+    }else{
+      enemyPos -= delta * targetRatio;
+      allyPos += delta * actorRatio;
+    }
+    const moved = normalizeBttlRangePositions(enemyPos, allyPos);
+    ctxBattle.enemyRangePos = moved.enemyPos;
+    ctxBattle.allyRangePos = moved.allyPos;
+    const visualEnemy = toNumber(ctxBattle.enemyRangeVisualPos, moved.enemyPos);
+    const visualAlly = toNumber(ctxBattle.allyRangeVisualPos, moved.allyPos);
+    ctxBattle.enemyRangeVisualPos = visualEnemy + ((moved.enemyPos - visualEnemy) * 0.70);
+    ctxBattle.allyRangeVisualPos = visualAlly + ((moved.allyPos - visualAlly) * 0.70);
+    ctxBattle.rangeDistance = Math.abs(moved.allyPos - moved.enemyPos);
+    ctxBattle.rangeMidpoint = (moved.enemyPos + moved.allyPos) * 0.5;
+    ctxBattle.rangeState = getBttlRangeStateWithHysteresis(ctxBattle.rangeDistance, ctxBattle.rangeState);
+    const now = toNumber(nowMs, performance.now());
+    ctxBattle.rangeMarkerShakeStartedAtMs = now;
+    ctxBattle.rangeMarkerShakeUntilMs = now + Math.max(90, Math.floor(toNumber(BTTL_RANGE_MARKER_SHAKE_MS, 420) * 0.65));
+  }
+
+  function ensureBttlRangeState(ctxBattle, nowMs = performance.now()){
+    if(!ctxBattle) return;
+    const now = toNumber(nowMs, performance.now());
+    const normalized = normalizeBttlRangePositions(
+      ctxBattle.enemyRangePos,
+      ctxBattle.allyRangePos
+    );
+    ctxBattle.enemyRangePos = normalized.enemyPos;
+    ctxBattle.allyRangePos = normalized.allyPos;
+    if(!Number.isFinite(toNumber(ctxBattle.enemyRangeVisualPos, NaN))){
+      ctxBattle.enemyRangeVisualPos = normalized.enemyPos;
+    }
+    if(!Number.isFinite(toNumber(ctxBattle.allyRangeVisualPos, NaN))){
+      ctxBattle.allyRangeVisualPos = normalized.allyPos;
+    }
+    if(!Number.isFinite(toNumber(ctxBattle.rangeLastUpdateAtMs, NaN))){
+      ctxBattle.rangeLastUpdateAtMs = now;
+    }
+    if(!Number.isFinite(toNumber(ctxBattle.rangeLastStateLogAtMs, NaN))){
+      ctxBattle.rangeLastStateLogAtMs = 0;
+    }
+    if(!Number.isFinite(toNumber(ctxBattle.rangeLastIntentLogAtMs, NaN))){
+      ctxBattle.rangeLastIntentLogAtMs = 0;
+    }
+    if(!Number.isFinite(toNumber(ctxBattle.rangeDistance, NaN))){
+      ctxBattle.rangeDistance = Math.abs(normalized.allyPos - normalized.enemyPos);
+    }
+    if(!Number.isFinite(toNumber(ctxBattle.rangeMidpoint, NaN))){
+      ctxBattle.rangeMidpoint = (normalized.enemyPos + normalized.allyPos) * 0.5;
+    }
+    if(typeof ctxBattle.rangeState !== "string" || ctxBattle.rangeState.length <= 0){
+      ctxBattle.rangeState = getBttlRangeStateByDistance(ctxBattle.rangeDistance);
+    }
+    if(typeof ctxBattle.enemyRangeIntent !== "string" || ctxBattle.enemyRangeIntent.length <= 0){
+      ctxBattle.enemyRangeIntent = getBttlEnemyRangeIntentByAction(getBttlEnemyAiState(ctxBattle, now).currentAction);
+    }
+    if(typeof ctxBattle.allyRangeIntent !== "string" || ctxBattle.allyRangeIntent.length <= 0){
+      ctxBattle.allyRangeIntent = getBttlAllyRangeIntentByAction(getBttlAllyAiState(ctxBattle, now).currentAction);
+    }
+  }
+
+  function updateBttlRangeRealtime(ctxBattle, nowMs = performance.now(), speedScale = 1){
+    if(!ctxBattle) return;
+    const now = toNumber(nowMs, performance.now());
+    ensureBttlRangeState(ctxBattle, now);
+    const aiEnemy = getBttlEnemyAiState(ctxBattle, now);
+    const aiAlly = getBttlAllyAiState(ctxBattle, now);
+    const enemyIntent = normalizeBttlRangeIntent(getBttlEnemyRangeIntentByAction(aiEnemy.currentAction));
+    const allyIntent = normalizeBttlRangeIntent(getBttlAllyRangeIntentByAction(aiAlly.currentAction));
+    const phaseStartedAtMs = toNumber(ctxBattle.phaseStartedAtMs, now);
+    const canLogIntent = (now - phaseStartedAtMs) >= 480;
+    if(enemyIntent !== String(ctxBattle.enemyRangeIntent || "")){
+      const elapsed = now - toNumber(ctxBattle.rangeLastIntentLogAtMs, 0);
+      if(canLogIntent && elapsed >= BTTL_RANGE_INTENT_LOG_MIN_INTERVAL_MS){
+        pushBttlLog(ctxBattle, enemyIntent);
+        ctxBattle.rangeLastIntentLogAtMs = now;
+      }
+      ctxBattle.enemyRangeIntent = enemyIntent;
+    }
+    if(allyIntent !== String(ctxBattle.allyRangeIntent || "")){
+      ctxBattle.allyRangeIntent = allyIntent;
+    }
+
+    const dtBaseSec = clamp((now - toNumber(ctxBattle.rangeLastUpdateAtMs, now)) / 1000, 0, 0.08);
+    if(dtBaseSec > 0){
+      addBttlRangeStayMetric(ctxBattle, ctxBattle.rangeState, dtBaseSec * 1000);
+    }
+    ctxBattle.rangeLastUpdateAtMs = now;
+    const scaledDtSec = dtBaseSec * clamp(toNumber(speedScale, 1), 0.35, 1.15);
+    if(scaledDtSec <= 0){
+      return;
+    }
+    const base = Math.max(0.01, toNumber(BTTL_RANGE_MOVE_SPEED_BASE, 0.15));
+    const approachSpeed = base + Math.max(0, toNumber(BTTL_RANGE_MOVE_SPEED_APPROACH_BONUS, 0.1));
+    const retreatSpeed = base + Math.max(0, toNumber(BTTL_RANGE_MOVE_SPEED_RETREAT_BONUS, 0.08));
+    const wobble = Math.max(0, toNumber(BTTL_RANGE_HOLD_WOBBLE, 0.012)) * scaledDtSec;
+
+    const enemyDir = +1; // towards ally (right)
+    const allyDir = -1;  // towards enemy (left)
+    const enemyMove = enemyIntent === BTTL_RANGE_INTENT.APPROACH
+      ? enemyDir * approachSpeed * scaledDtSec
+      : (enemyIntent === BTTL_RANGE_INTENT.RETREAT
+        ? -enemyDir * retreatSpeed * scaledDtSec
+        : Math.sin((now * 0.004) + 0.31) * wobble);
+    const allyMove = allyIntent === BTTL_RANGE_INTENT.APPROACH
+      ? allyDir * approachSpeed * scaledDtSec
+      : (allyIntent === BTTL_RANGE_INTENT.RETREAT
+        ? -allyDir * retreatSpeed * scaledDtSec
+        : Math.sin((now * 0.004) + 2.07) * wobble);
+
+    let enemyMoveAdj = enemyMove;
+    let allyMoveAdj = allyMove;
+    const overclock = getBttlActiveOverclock(ctxBattle, now);
+    const overclockApproachActive = Boolean(overclock) && allyIntent === BTTL_RANGE_INTENT.APPROACH;
+    const overclockApproachMult = overclockApproachActive
+      ? clamp(toNumber(overclock.approachMult, 1), 1, 3)
+      : 1;
+    if(overclock && allyIntent === BTTL_RANGE_INTENT.APPROACH){
+      allyMoveAdj *= overclockApproachMult;
+    }
+    if(enemyIntent === allyIntent && enemyIntent !== BTTL_RANGE_INTENT.HOLD){
+      const damp = clamp(toNumber(BTTL_RANGE_SAME_INTENT_DAMP, 0.80), 0.5, 1);
+      enemyMoveAdj *= damp;
+      let allyDamp = damp;
+      if(overclockApproachActive){
+        const bypass = clamp(toNumber(BTTL_OVERCLOCK_SAME_INTENT_BYPASS, 0.70), 0, 1);
+        allyDamp = clamp(damp + ((1 - damp) * bypass), damp, 1);
+      }
+      allyMoveAdj *= allyDamp;
+    }
+    const enemyPosNow = toNumber(ctxBattle.enemyRangePos, BTTL_RANGE_INIT_ENEMY_POS);
+    const allyPosNow = toNumber(ctxBattle.allyRangePos, BTTL_RANGE_INIT_ALLY_POS);
+    const distanceNow = Math.abs(allyPosNow - enemyPosNow);
+    const shortTh = clamp(BTTL_RANGE_SHORT_THRESHOLD, 0.02, 0.9);
+    const midTh = clamp(BTTL_RANGE_MID_THRESHOLD, shortTh + 0.02, 0.98);
+    const shortApproachBand = Math.max(0.02, midTh - shortTh);
+    const shortApproachRatio = clamp((midTh - distanceNow) / shortApproachBand, 0, 1);
+    const shortApproachResist = 1 - (clamp(toNumber(BTTL_RANGE_SHORT_APPROACH_RESIST, 0.60), 0, 0.9) * shortApproachRatio);
+    if(enemyIntent === BTTL_RANGE_INTENT.APPROACH){
+      enemyMoveAdj *= shortApproachResist;
+    }
+    if(allyIntent === BTTL_RANGE_INTENT.APPROACH){
+      let allyShortResist = shortApproachResist;
+      if(overclockApproachActive){
+        const resistBypass = clamp(toNumber(BTTL_OVERCLOCK_SHORT_RESIST_BYPASS, 0.60), 0, 1);
+        allyShortResist = clamp(
+          shortApproachResist + ((1 - shortApproachResist) * resistBypass),
+          shortApproachResist,
+          1
+        );
+      }
+      allyMoveAdj *= allyShortResist;
+      if(overclockApproachActive){
+        // Extra closing burst so OVRCLK clearly feels like "rush in".
+        const rushBase = Math.max(0, toNumber(BTTL_OVERCLOCK_RUSH_SPEED, 0.30));
+        const rushScale = clamp(overclockApproachMult - 1, 0, 2.2);
+        const rush = rushBase * rushScale * scaledDtSec;
+        allyMoveAdj += allyDir * rush;
+        // Slightly drag enemy side even while they hold/retreat, avoiding "stuck in mid-long".
+        if(enemyIntent !== BTTL_RANGE_INTENT.APPROACH){
+          enemyMoveAdj += enemyDir * rush * 0.35;
+        }
+      }
+    }
+    if(distanceNow <= shortTh){
+      const shortEscapeWindow = Math.max(0.02, shortTh - clamp(BTTL_RANGE_MIN_GAP, 0.02, shortTh));
+      const shortEscapeRatio = clamp((shortTh - distanceNow) / shortEscapeWindow, 0, 1);
+      const shortEscapePush = Math.max(0, toNumber(BTTL_RANGE_SHORT_ESCAPE_SPEED, 0.18)) * scaledDtSec * shortEscapeRatio;
+      enemyMoveAdj -= shortEscapePush;
+      allyMoveAdj += shortEscapePush;
+    }
+    const midpointNow = (enemyPosNow + allyPosNow) * 0.5;
+    const centerOffset = clamp(midpointNow - 0.5, -0.4, 0.4);
+    const centerPull = clamp(toNumber(BTTL_RANGE_CENTER_PULL, 0.26), 0, 0.5);
+    const centerCorrection = centerOffset * centerPull * scaledDtSec;
+    // Positive midpoint offset means both are too far right; pull both left (and vice versa).
+    enemyMoveAdj -= centerCorrection;
+    allyMoveAdj -= centerCorrection;
+
+    const moved = normalizeBttlRangePositions(
+      enemyPosNow + enemyMoveAdj,
+      allyPosNow + allyMoveAdj
+    );
+    ctxBattle.enemyRangePos = moved.enemyPos;
+    ctxBattle.allyRangePos = moved.allyPos;
+
+    const lerpSpeed = overclockApproachActive
+      ? (toNumber(BTTL_RANGE_LERP_SPEED, 10) * clamp(toNumber(BTTL_OVERCLOCK_RANGE_LERP_MULT, 1.55), 1, 3))
+      : toNumber(BTTL_RANGE_LERP_SPEED, 10);
+    const lerpT = clamp(lerpSpeed * scaledDtSec, 0, 1);
+    const enemyVisualPrev = toNumber(ctxBattle.enemyRangeVisualPos, moved.enemyPos);
+    const allyVisualPrev = toNumber(ctxBattle.allyRangeVisualPos, moved.allyPos);
+    ctxBattle.enemyRangeVisualPos = enemyVisualPrev + ((moved.enemyPos - enemyVisualPrev) * lerpT);
+    ctxBattle.allyRangeVisualPos = allyVisualPrev + ((moved.allyPos - allyVisualPrev) * lerpT);
+
+    const distance = Math.abs(moved.allyPos - moved.enemyPos);
+    const midpoint = (moved.enemyPos + moved.allyPos) * 0.5;
+    ctxBattle.rangeDistance = distance;
+    ctxBattle.rangeMidpoint = midpoint;
+    const nextRangeState = getBttlRangeStateWithHysteresis(distance, ctxBattle.rangeState);
+    const prevRangeState = String(ctxBattle.rangeState || "").trim().toLowerCase();
+    if(nextRangeState !== prevRangeState){
+      ctxBattle.rangeState = nextRangeState;
+      const elapsedState = now - toNumber(ctxBattle.rangeLastStateLogAtMs, 0);
+      if((now - phaseStartedAtMs) >= 580 && elapsedState >= BTTL_RANGE_STATE_LOG_MIN_INTERVAL_MS){
+        pushBttlLog(ctxBattle, `RANGE ${getBttlRangeStateLabel(nextRangeState)}`);
+        ctxBattle.rangeLastStateLogAtMs = now;
+      }
+    }else{
+      ctxBattle.rangeState = nextRangeState;
+    }
+  }
+
   function buildBttlEnemyPolicyInput(ctxBattle, nowMs = performance.now()){
     const ai = getBttlEnemyAiState(ctxBattle, nowMs);
     const enemyHp = Math.max(0, toNumber(ctxBattle?.enemy?.hp, 0));
@@ -4612,8 +7120,9 @@
     const lastDamageAgoMs = ai.lastDamageTakenAtMs > 0
       ? Math.max(0, toNumber(nowMs, performance.now()) - toNumber(ai.lastDamageTakenAtMs, 0))
       : Infinity;
-    const allyBuffState = isRecord(ctxBattle?.pendingEffect)
-      ? getBttlSignalPendingTone(ctxBattle.pendingEffect)
+    const activeSignal = getBttlActiveSignalBuff(ctxBattle, nowMs);
+    const allyBuffState = activeSignal
+      ? getBttlSignalBuffTone(activeSignal)
       : "NONE";
     return {
       hpRatioEnemy: clamp(enemyHp / enemyMax, 0, 1),
@@ -4622,6 +7131,38 @@
       recentAllyHitRate: getBttlRecentHitRate(ai.recentAllyShots),
       lastDamageTakenMs: lastDamageAgoMs,
       allyBuffState,
+      cooldowns: {
+        holdRemainMs: Math.max(0, toNumber(ai.actionLockedUntilMs, 0) - toNumber(nowMs, performance.now())),
+        switchRemainMs: Math.max(0, toNumber(ai.switchCooldownUntilMs, 0) - toNumber(nowMs, performance.now())),
+      },
+    };
+  }
+
+  function buildBttlAllyPolicyInput(ctxBattle, nowMs = performance.now()){
+    const ai = getBttlAllyAiState(ctxBattle, nowMs);
+    const allyHp = Math.max(0, toNumber(ctxBattle?.ally?.hp, 0));
+    const allyMax = Math.max(1, toNumber(ctxBattle?.ally?.maxHp, 1));
+    const enemyHp = Math.max(0, toNumber(ctxBattle?.enemy?.hp, 0));
+    const enemyMax = Math.max(1, toNumber(ctxBattle?.enemy?.maxHp, 1));
+    const lastDamageAgoMs = ai.lastDamageTakenAtMs > 0
+      ? Math.max(0, toNumber(nowMs, performance.now()) - toNumber(ai.lastDamageTakenAtMs, 0))
+      : Infinity;
+    const activeSignal = getBttlActiveSignalBuff(ctxBattle, nowMs);
+    const pendingTone = activeSignal
+      ? getBttlSignalBuffTone(activeSignal)
+      : "NONE";
+    const now = toNumber(nowMs, performance.now());
+    const heavyInboundRemainMs = Math.max(0, toNumber(ctxBattle?.heavyInboundUntilMs, 0) - now);
+    const heavyImpactRemainMs = Math.max(0, toNumber(ctxBattle?.heavyImpactAtMs, 0) - now);
+    return {
+      hpRatioSelf: clamp(allyHp / allyMax, 0, 1),
+      hpRatioTarget: clamp(enemyHp / enemyMax, 0, 1),
+      recentSelfHitRate: getBttlRecentHitRate(ai.recentAllyShots),
+      recentTargetHitRate: getBttlRecentHitRate(ai.recentEnemyShots),
+      lastDamageTakenMs: lastDamageAgoMs,
+      pendingTone,
+      heavyInboundRemainMs,
+      heavyImpactRemainMs,
       cooldowns: {
         holdRemainMs: Math.max(0, toNumber(ai.actionLockedUntilMs, 0) - toNumber(nowMs, performance.now())),
         switchRemainMs: Math.max(0, toNumber(ai.switchCooldownUntilMs, 0) - toNumber(nowMs, performance.now())),
@@ -4668,9 +7209,76 @@
     return options[0] || { actionId: BTTL_ENEMY_ACTION.STABLE, score: 0 };
   }
 
+  function utilityPolicyDecideAllyAction(input){
+    const hpSelf = clamp(toNumber(input?.hpRatioSelf, 1), 0, 1);
+    const hpTarget = clamp(toNumber(input?.hpRatioTarget, 1), 0, 1);
+    const selfHit = clamp(toNumber(input?.recentSelfHitRate, 0.5), 0, 1);
+    const targetHit = clamp(toNumber(input?.recentTargetHitRate, 0.5), 0, 1);
+    const lastDamageMs = toNumber(input?.lastDamageTakenMs, Infinity);
+    const pendingTone = String(input?.pendingTone || "NONE").toUpperCase();
+    const heavyInboundRemainMs = Math.max(0, toNumber(input?.heavyInboundRemainMs, 0));
+    const heavyImpactRemainMs = Math.max(0, toNumber(input?.heavyImpactRemainMs, 0));
+
+    let scorePress =
+      ((1 - hpTarget) * 1.28) +
+      (hpSelf * 0.34) +
+      (selfHit * 0.95) -
+      (targetHit * 0.58);
+    let scoreDefend =
+      ((1 - hpSelf) * 1.18) +
+      (targetHit * 0.92) +
+      ((lastDamageMs <= 2200) ? 0.44 : 0) -
+      ((1 - hpTarget) * 0.34);
+    let scoreEvade =
+      ((1 - hpSelf) * 1.05) +
+      (targetHit * 0.82) +
+      ((lastDamageMs <= 2100) ? 0.46 : 0) +
+      ((targetHit - selfHit) * 0.30);
+
+    if(pendingTone === "UP"){
+      scorePress += 0.18;
+      scoreDefend -= 0.07;
+      scoreEvade -= 0.08;
+    }else if(pendingTone === "DN"){
+      scoreDefend += 0.18;
+      scoreEvade += 0.14;
+      scorePress -= 0.10;
+    }
+
+    if(heavyInboundRemainMs > 0){
+      scoreEvade += 0.52;
+      scoreDefend += 0.26;
+      scorePress -= 0.24;
+      if(heavyImpactRemainMs > 0 && heavyImpactRemainMs <= 900){
+        scoreEvade += 0.26;
+        scoreDefend += 0.12;
+      }
+      if(heavyImpactRemainMs > 0 && heavyImpactRemainMs <= 520){
+        scoreEvade += 0.20;
+      }
+    }
+
+    const spike = Math.max(scorePress, scoreDefend, scoreEvade) - Math.min(scorePress, scoreDefend, scoreEvade);
+    const scoreStable = 0.86 - Math.min(0.48, spike * 0.22) + (selfHit < 0.34 ? 0.14 : 0);
+
+    const options = [
+      { actionId: BTTL_ALLY_ACTION.PRESS, score: scorePress },
+      { actionId: BTTL_ALLY_ACTION.STABLE, score: scoreStable },
+      { actionId: BTTL_ALLY_ACTION.DEFEND, score: scoreDefend },
+      { actionId: BTTL_ALLY_ACTION.EVADE, score: scoreEvade },
+    ];
+    options.sort((a, b) => b.score - a.score);
+    return options[0] || { actionId: BTTL_ALLY_ACTION.STABLE, score: 0 };
+  }
+
   function decideEnemyActionIntent(ctxBattle, nowMs = performance.now()){
     const input = buildBttlEnemyPolicyInput(ctxBattle, nowMs);
     return utilityPolicyDecideEnemyAction(input);
+  }
+
+  function decideAllyActionIntent(ctxBattle, nowMs = performance.now()){
+    const input = buildBttlAllyPolicyInput(ctxBattle, nowMs);
+    return utilityPolicyDecideAllyAction(input);
   }
 
   function validateAndApplyEnemyActionIntent(ctxBattle, actionIntent, nowMs = performance.now()){
@@ -4693,6 +7301,27 @@
     if(BTTL_ENEMY_AI_AUDIT_LOG){
       pushBttlLog(ctxBattle, `AI ${next}`);
     }
+    return { accepted: true, appliedAction: next, changed: true, rejectReason: "" };
+  }
+
+  function validateAndApplyAllyActionIntent(ctxBattle, actionIntent, nowMs = performance.now()){
+    const ai = getBttlAllyAiState(ctxBattle, nowMs);
+    const now = toNumber(nowMs, performance.now());
+    const current = getBttlAllyActionId(ai.currentAction);
+    const next = getBttlAllyActionId(actionIntent?.actionId);
+    if(next === current){
+      return { accepted: true, appliedAction: current, changed: false, rejectReason: "" };
+    }
+    if(now < toNumber(ai.actionLockedUntilMs, 0)){
+      return { accepted: false, appliedAction: current, changed: false, rejectReason: "hold" };
+    }
+    if(now < toNumber(ai.switchCooldownUntilMs, 0)){
+      return { accepted: false, appliedAction: current, changed: false, rejectReason: "switch_cd" };
+    }
+    ai.currentAction = next;
+    ai.actionLockedUntilMs = now + BTTL_ALLY_AI_MIN_HOLD_MS;
+    ai.switchCooldownUntilMs = now + BTTL_ALLY_AI_SWITCH_COOLDOWN_MS;
+    ai.lastActionChangedAtMs = now;
     return { accepted: true, appliedAction: next, changed: true, rejectReason: "" };
   }
 
@@ -4719,18 +7348,43 @@
     validateAndApplyEnemyActionIntent(ctxBattle, intent, now);
   }
 
+  function updateBttlAllyActionAi(ctxBattle, nowMs = performance.now()){
+    const ai = getBttlAllyAiState(ctxBattle, nowMs);
+    const now = toNumber(nowMs, performance.now());
+    if((now - toNumber(ai.lastDecideAtMs, 0)) < BTTL_ALLY_AI_DECIDE_INTERVAL_MS){
+      return;
+    }
+    ai.lastDecideAtMs = now;
+    let intent = null;
+    try{
+      intent = decideAllyActionIntent(ctxBattle, now);
+    }catch(_err){
+      intent = null;
+    }
+    if(!isRecord(intent)){
+      intent = utilityPolicyDecideAllyAction(buildBttlAllyPolicyInput(ctxBattle, now));
+    }
+    validateAndApplyAllyActionIntent(ctxBattle, intent, now);
+  }
+
   function noteBttlShotOutcome(ctxBattle, owner, didHit, nowMs = performance.now()){
     if(!ctxBattle) return;
-    const ai = getBttlEnemyAiState(ctxBattle, nowMs);
+    const enemyAi = getBttlEnemyAiState(ctxBattle, nowMs);
+    const allyAi = getBttlAllyAiState(ctxBattle, nowMs);
     const shooter = owner === "enemy" ? "enemy" : "ally";
     const hit = Boolean(didHit);
     if(shooter === "enemy"){
-      ai.recentEnemyShots = noteBttlRecentHit(ai.recentEnemyShots, hit);
+      enemyAi.recentEnemyShots = noteBttlRecentHit(enemyAi.recentEnemyShots, hit);
+      allyAi.recentEnemyShots = noteBttlRecentHit(allyAi.recentEnemyShots, hit);
+      if(hit){
+        allyAi.lastDamageTakenAtMs = toNumber(nowMs, performance.now());
+      }
       return;
     }
-    ai.recentAllyShots = noteBttlRecentHit(ai.recentAllyShots, hit);
+    enemyAi.recentAllyShots = noteBttlRecentHit(enemyAi.recentAllyShots, hit);
+    allyAi.recentAllyShots = noteBttlRecentHit(allyAi.recentAllyShots, hit);
     if(hit){
-      ai.lastDamageTakenAtMs = toNumber(nowMs, performance.now());
+      enemyAi.lastDamageTakenAtMs = toNumber(nowMs, performance.now());
     }
   }
 
@@ -4780,12 +7434,265 @@
     return session.minR + ((session.maxR - session.minR) * eased);
   }
 
+  function mapTrnTierToHeavyGrade(tier){
+    const id = String(tier || "").trim().toUpperCase();
+    if(id === "CRIT") return "SUCCESS";
+    if(id === "SUCCESS") return "OK";
+    if(id === "NEAR") return "NEAR";
+    return "BAD";
+  }
+
+  function getBttlHeavyReactPoint(field){
+    const fx = Math.round(clamp(
+      field.innerRect.x + Math.floor(field.innerRect.w * 0.50),
+      field.innerRect.x + 12,
+      field.innerRect.x + field.innerRect.w - 12
+    ));
+    const fy = Math.round(clamp(
+      field.innerRect.y + Math.floor(field.innerRect.h * 0.50),
+      field.innerRect.y + 12,
+      field.innerRect.y + field.innerRect.h - 12
+    ));
+    return { x: fx, y: fy };
+  }
+
+  function createBttlHeavyReactSession(ctxBattle, projectile, field, nowMs = performance.now()){
+    const now = toNumber(nowMs, performance.now());
+    const impactAtMs = toNumber(projectile?.impactAtMs, now + 500);
+    const ringVisibleAtMs = Math.max(now, impactAtMs - BTTL_HEAVY_REACT_RING_LEAD_MS);
+    const p = getBttlHeavyReactPoint(field);
+    const minR = 8;
+    const maxR = 28;
+    const bandW = BTTL_HEAVY_REACT_BAND_W;
+    const critW = BTTL_HEAVY_REACT_CRIT_W;
+    const centerR = minR + ((maxR - minR) * (0.32 + (Math.random() * 0.48)));
+    return {
+      projectileId: toNumber(projectile?.id, 0),
+      startedAtMs: now,
+      ringVisibleAtMs,
+      impactAtMs,
+      minR,
+      maxR,
+      centerR,
+      bandW,
+      critEnabled: true,
+      critW,
+      nearMargin: BTTL_HEAVY_REACT_NEAR_MARGIN,
+      loopMs: BTTL_HEAVY_REACT_LOOP_MS,
+      focusX: p.x,
+      focusY: p.y,
+      windowLatchedAtMs: 0,
+      resolved: false,
+      grade: "",
+      resolvedAtMs: 0,
+      resultUntilMs: 0,
+    };
+  }
+
+  function startBttlHeavyReactSession(ctxBattle, projectile, field, nowMs = performance.now()){
+    if(!ctxBattle || !projectile?.isHeavy) return null;
+    const session = createBttlHeavyReactSession(ctxBattle, projectile, field, nowMs);
+    ctxBattle.heavyReactSession = session;
+    ctxBattle.heavyInboundStartedAtMs = toNumber(nowMs, performance.now());
+    ctxBattle.heavyInboundUntilMs = session.impactAtMs;
+    ctxBattle.heavyImpactAtMs = session.impactAtMs;
+    ctxBattle.heavyIncomingActionHint = getBttlAllyActionId(getBttlAllyAiState(ctxBattle, nowMs).currentAction);
+    return session;
+  }
+
+  function getBttlHeavyRingVisibleAtMs(session){
+    if(!session) return 0;
+    const impactAtMs = toNumber(session.impactAtMs, 0);
+    const startedAtMs = toNumber(session.startedAtMs, 0);
+    return Math.max(startedAtMs, impactAtMs - BTTL_HEAVY_REACT_RING_LEAD_MS);
+  }
+
+  function isBttlHeavyReactionWindowActive(ctxBattle, nowMs = performance.now()){
+    const session = isRecord(ctxBattle?.heavyReactSession) ? ctxBattle.heavyReactSession : null;
+    if(!session) return false;
+    if(Boolean(session.resolved)) return false;
+    const now = toNumber(nowMs, performance.now());
+    const ringVisibleAtMs = getBttlHeavyRingVisibleAtMs(session);
+    const impactEndMs = toNumber(session.impactAtMs, 0) + BTTL_HEAVY_REACT_RING_GRACE_MS;
+    if(now > impactEndMs){
+      return false;
+    }
+    if(toNumber(session.windowLatchedAtMs, 0) > 0){
+      return true;
+    }
+    if(now >= ringVisibleAtMs){
+      session.windowLatchedAtMs = now;
+      return true;
+    }
+    return false;
+  }
+
+  function getBttlHeavyReactCurrentRadius(session, nowMs = performance.now()){
+    if(!session) return 0;
+    const phase = getTrnLoopPhase({
+      startedAtMs: toNumber(session.startedAtMs, nowMs),
+      loopMs: toNumber(session.loopMs, BTTL_HEAVY_REACT_LOOP_MS),
+    }, nowMs);
+    const eased = getTrnEasedProgress(phase);
+    return session.minR + ((session.maxR - session.minR) * eased);
+  }
+
+  function judgeBttlHeavyReactionByInput(ctxBattle, nowMs = performance.now()){
+    if(!ctxBattle) return null;
+    const session = isRecord(ctxBattle.heavyReactSession) ? ctxBattle.heavyReactSession : null;
+    if(!session || session.resolved) return null;
+    if(!isBttlHeavyReactionWindowActive(ctxBattle, nowMs)) return null;
+    const r = getBttlHeavyReactCurrentRadius(session, nowMs);
+    const tier = getTrnGameTier(session, r);
+    const grade = mapTrnTierToHeavyGrade(tier);
+    session.resolved = true;
+    session.grade = grade;
+    session.resolvedAtMs = toNumber(nowMs, performance.now());
+    session.resultUntilMs = session.resolvedAtMs + BTTL_HEAVY_REACT_RESULT_HOLD_MS;
+    return grade;
+  }
+
+  function getBttlHeavyReactionOutcomeAtImpact(ctxBattle, projectile, damage, nowMs = performance.now()){
+    const rawDamage = Math.max(1, Math.floor(toNumber(damage, 1)));
+    const session = isRecord(ctxBattle?.heavyReactSession) ? ctxBattle.heavyReactSession : null;
+    let grade = "BAD";
+    if(session && toNumber(session.projectileId, -1) === toNumber(projectile?.id, -2)){
+      if(Boolean(session.resolved)){
+        grade = String(session.grade || "BAD").trim().toUpperCase();
+      }else{
+        session.resolved = true;
+        session.grade = "BAD";
+        session.resolvedAtMs = toNumber(nowMs, performance.now());
+        session.resultUntilMs = session.resolvedAtMs + BTTL_HEAVY_REACT_RESULT_HOLD_MS;
+      }
+    }
+    if(grade === "NEAR"){
+      return { outcome: "dodge", damage: 0, grade };
+    }
+    if(grade === "OK"){
+      return { outcome: "parry", damage: 0, grade };
+    }
+    if(grade === "SUCCESS"){
+      const reflectDamage = Math.max(1, Math.ceil(rawDamage * BTTL_REFLECT_DAMAGE_MULT));
+      return { outcome: "reflect", damage: 0, reflectDamage, grade };
+    }
+    return { outcome: "hit", damage: rawDamage, grade: "BAD" };
+  }
+
+  function updateBttlHeavyReactionSession(ctxBattle, nowMs = performance.now()){
+    if(!ctxBattle) return;
+    const session = isRecord(ctxBattle.heavyReactSession) ? ctxBattle.heavyReactSession : null;
+    if(!session) return;
+    const now = toNumber(nowMs, performance.now());
+    if(Boolean(session.resolved) && now >= toNumber(session.resultUntilMs, 0)){
+      ctxBattle.heavyReactSession = null;
+    }
+  }
+
   function getBttlSignalTierFromGrade(grade){
     const g = String(grade || "").trim().toUpperCase();
     if(g === "SUCCESS") return 3;
     if(g === "OK") return 2;
     if(g === "NEAR") return 1;
     return 0;
+  }
+
+  function getBttlSignalTierValue(tableByCmd, cmd, tier, fallback = 0){
+    const id = normalizeBttlSignalCommand(cmd);
+    const list = isRecord(tableByCmd) ? tableByCmd[id] : null;
+    const fallbackList = isRecord(tableByCmd) ? tableByCmd.calibrate : null;
+    const src = Array.isArray(list) ? list : (Array.isArray(fallbackList) ? fallbackList : null);
+    if(!Array.isArray(src)) return fallback;
+    const t = clamp(Math.floor(toNumber(tier, 0)), 0, 3);
+    return toNumber(src[t], fallback);
+  }
+
+  function ensureBttlSignalBuffState(ctxBattle){
+    if(!ctxBattle) return null;
+    if(!isRecord(ctxBattle.signalBuff)){
+      ctxBattle.signalBuff = {
+        cmd: "",
+        activeUntilMs: 0,
+        startedAtMs: 0,
+        tier: 0,
+        hitChanceAdj: 0,
+        intervalMult: 1,
+        approachMult: 1,
+        knockbackResist: 0,
+        damageTakenMult: 1,
+        breakTakenMult: 1,
+      };
+    }
+    return ctxBattle.signalBuff;
+  }
+
+  function clearBttlSignalBuffState(ctxBattle){
+    const buff = ensureBttlSignalBuffState(ctxBattle);
+    if(!buff) return;
+    buff.cmd = "";
+    buff.activeUntilMs = 0;
+    buff.startedAtMs = 0;
+    buff.tier = 0;
+    buff.hitChanceAdj = 0;
+    buff.intervalMult = 1;
+    buff.approachMult = 1;
+    buff.knockbackResist = 0;
+    buff.damageTakenMult = 1;
+    buff.breakTakenMult = 1;
+  }
+
+  function activateBttlSignalBuff(ctxBattle, cmdRaw, tierRaw, nowMs = performance.now()){
+    if(!ctxBattle) return null;
+    const cmd = normalizeBttlSignalCommand(cmdRaw);
+    const tier = clamp(Math.floor(toNumber(tierRaw, 0)), 0, 3);
+    const now = toNumber(nowMs, performance.now());
+    const durationMs = Math.max(0, Math.floor(toNumber(BTTL_SIGNAL_DURATION_MS_BY_TIER[tier], 0)));
+    if(durationMs <= 0){
+      clearBttlSignalBuffState(ctxBattle);
+      return null;
+    }
+    const buff = ensureBttlSignalBuffState(ctxBattle);
+    buff.cmd = cmd;
+    buff.startedAtMs = now;
+    buff.activeUntilMs = now + durationMs;
+    buff.tier = tier;
+    buff.hitChanceAdj = getBttlSignalHitBonus(cmd, tier);
+    buff.intervalMult = getBttlSignalIntervalMult(cmd, tier);
+    buff.approachMult = clamp(getBttlSignalTierValue(BTTL_SIGNAL_APPROACH_MULT_BY_TIER, cmd, tier, 1), 1, 3);
+    buff.knockbackResist = clamp(getBttlSignalTierValue(BTTL_SIGNAL_KNOCKBACK_RESIST_BY_TIER, cmd, tier, 0), 0, 0.9);
+    buff.damageTakenMult = Math.max(1, getBttlSignalTierValue(BTTL_SIGNAL_DAMAGE_TAKEN_MULT_BY_TIER, cmd, tier, 1));
+    buff.breakTakenMult = Math.max(1, getBttlSignalTierValue(BTTL_SIGNAL_BREAK_TAKEN_MULT_BY_TIER, cmd, tier, 1));
+    return {
+      cmd,
+      tier,
+      durationMs,
+      activeUntilMs: buff.activeUntilMs,
+      hitChanceAdj: buff.hitChanceAdj,
+      intervalMult: buff.intervalMult,
+      approachMult: buff.approachMult,
+      knockbackResist: buff.knockbackResist,
+      damageTakenMult: buff.damageTakenMult,
+      breakTakenMult: buff.breakTakenMult,
+    };
+  }
+
+  function getBttlActiveSignalBuff(ctxBattle, nowMs = performance.now()){
+    const buff = ensureBttlSignalBuffState(ctxBattle);
+    if(!buff) return null;
+    const now = toNumber(nowMs, performance.now());
+    if(now < toNumber(buff.activeUntilMs, 0) && String(buff.cmd || "").trim().length > 0){
+      return buff;
+    }
+    if(toNumber(buff.activeUntilMs, 0) > 0){
+      clearBttlSignalBuffState(ctxBattle);
+    }
+    return null;
+  }
+
+  function getBttlActiveOverclock(ctxBattle, nowMs = performance.now()){
+    const buff = getBttlActiveSignalBuff(ctxBattle, nowMs);
+    if(!buff) return null;
+    return normalizeBttlSignalCommand(buff.cmd) === "overclock" ? buff : null;
   }
 
   function getBttlSignalHitBonus(cmd, tier){
@@ -4804,7 +7711,7 @@
   }
 
   function getBttlActorShort(owner){
-    return owner === "enemy" ? "EN" : "AL";
+    return owner === "enemy" ? "ENE" : "YOU";
   }
 
   function getBttlOutcomeLogLine(owner, didHit, damage = 0){
@@ -4816,22 +7723,15 @@
     return `${actor} DMG ${dmg}`;
   }
 
-  function getBttlSignalPendingTone(effect){
+  function getBttlSignalBuffTone(effect){
     if(!isRecord(effect)) return "EQ";
     const intervalMult = toNumber(effect.intervalMult, 1);
     const hitAdj = toNumber(effect.hitChanceAdj, 0);
-    const score = ((1 - intervalMult) * 1.4) + (hitAdj * 1.6);
+    const approach = toNumber(effect.approachMult, 1);
+    const score = ((1 - intervalMult) * 1.4) + (hitAdj * 1.6) + ((approach - 1) * 1.2);
     if(score > 0.02) return "UP";
     if(score < -0.02) return "DN";
     return "EQ";
-  }
-
-  function getBttlSignalPendingBadgeText(effect){
-    if(!isRecord(effect)) return "";
-    const cmd = normalizeBttlSignalCommand(effect.cmd);
-    const cmdLabel = BTTL_SIGNAL_CMD_LOG_LABEL[cmd] || "SIG";
-    const tone = getBttlSignalPendingTone(effect);
-    return `${cmdLabel} ${tone}`;
   }
 
   function getBttlSignalProcBadgeText(proc){
@@ -4842,6 +7742,14 @@
     return `${cmdLabel} ${grade}`;
   }
 
+  function getBttlSignalActiveBadgeText(buff){
+    if(!isRecord(buff)) return "";
+    const cmd = normalizeBttlSignalCommand(buff.cmd);
+    if(cmd === "overclock") return "OVRCLK";
+    const item = BTTL_SIGNAL_MENU_ITEMS.find((entry) => normalizeBttlSignalCommand(entry?.id) === cmd);
+    return item ? String(item.label || "").trim().toUpperCase() : "";
+  }
+
   function drawBttlSignalStatusBadge(ctxBattle, field, allyX, allyY, nowMs = performance.now()){
     if(!ctxBattle || !field) return;
     const proc = isRecord(ctxBattle.lastSignalProc) ? ctxBattle.lastSignalProc : null;
@@ -4850,12 +7758,10 @@
     if(proc && !procActive){
       ctxBattle.lastSignalProc = null;
     }
-    const pending = (!procActive && isRecord(ctxBattle.pendingEffect) && ctxBattle.pendingEffect.appliesTo === "nextAllyAct")
-      ? ctxBattle.pendingEffect
-      : null;
+    const activeBuff = !procActive ? getBttlActiveSignalBuff(ctxBattle, nowMs) : null;
     const rawText = procActive
       ? getBttlSignalProcBadgeText(proc)
-      : getBttlSignalPendingBadgeText(pending);
+      : getBttlSignalActiveBadgeText(activeBuff);
     if(rawText.length <= 0) return;
 
     const baseOpt = { scale: 1 };
@@ -4871,11 +7777,13 @@
     const drawY = Math.round(clamp(allyY - 10, yMin, Math.max(yMin, yMax)));
 
     const blinkOn = Math.floor(nowMs / BTTL_SIGNAL_PENDING_BLINK_MS) % 2 === 0;
-    const mainAlpha = procActive ? 0.98 : (blinkOn ? 1.00 : 0.24);
+    const mainAlpha = procActive
+      ? 0.98
+      : (blinkOn ? 0.95 : 0.62);
     ctx.save();
     ctx.fillStyle = procActive
       ? "rgba(198,212,192,0.34)"
-      : (blinkOn ? "rgba(198,212,192,0.28)" : "rgba(198,212,192,0.10)");
+      : (blinkOn ? "rgba(198,212,192,0.28)" : "rgba(198,212,192,0.14)");
     ctx.fillRect(drawX - 1, drawY - 1, Math.max(2, textW + 2), textH + 2);
     ctx.restore();
     drawText(drawX, drawY, text, {
@@ -4890,6 +7798,202 @@
     }
   }
 
+  function drawBttlReactiveAssistBadge(ctxBattle, field, nowMs = performance.now()){
+    if(!ctxBattle || !field) return;
+    const allyAction = getBttlAllyActionId(getBttlAllyAiState(ctxBattle, nowMs).currentAction);
+    const enemyAction = getBttlEnemyActionId(getBttlEnemyAiState(ctxBattle, nowMs).currentAction);
+    const baseX = field.bottomLaneRect.x + 4;
+    const baseY = field.bottomLaneRect.y + 4;
+    drawText(baseX, baseY, `A:${allyAction} E:${enemyAction}`, {
+      scale: 1,
+      color: "rgba(14,20,15,0.52)",
+    });
+
+    const heavyUntilMs = toNumber(ctxBattle.heavyInboundUntilMs, 0);
+    const heavyImpactAtMs = toNumber(ctxBattle.heavyImpactAtMs, 0);
+    if(heavyUntilMs <= 0 || nowMs >= heavyUntilMs){
+      const tuning = getBttlHeavyTuning();
+      const cdRemainMs = Math.max(0, toNumber(ctxBattle.enemyHeavyReadyAtMs, 0) - toNumber(nowMs, performance.now()));
+      const cdSec = (cdRemainMs / 1000).toFixed(1);
+      const rollPct = Math.round(clamp(toNumber(tuning.chanceBase, BTTL_HEAVY_CHANCE_BASE), 0, 1) * 100);
+      drawText(baseX, baseY + 9, `HVY ${cdSec}s R${rollPct}%`, {
+        scale: 1,
+        color: "rgba(14,20,15,0.42)",
+      });
+      return;
+    }
+    drawText(baseX, baseY + 9, "HEAVY IN", {
+      scale: 1,
+      color: "rgba(14,20,15,0.92)",
+    });
+    const actionHint = String(ctxBattle.heavyIncomingActionHint || allyAction).trim();
+    if(actionHint.length > 0){
+      drawText(baseX + 46, baseY + 9, `R:${actionHint}`, {
+        scale: 1,
+        color: "rgba(14,20,15,0.66)",
+      });
+    }
+    if(heavyImpactAtMs > nowMs){
+      const remainMs = Math.max(0, heavyImpactAtMs - nowMs);
+      const remainSec = (remainMs / 1000).toFixed(1);
+      drawText(baseX + 46, baseY + 16, `${remainSec}s`, {
+        scale: 1,
+        color: "rgba(14,20,15,0.58)",
+      });
+    }
+  }
+
+  function drawBttlHeavyReactionCue(ctxBattle, field, enemyX, enemyY, nowMs = performance.now()){
+    if(!ctxBattle || !field) return;
+    const session = isRecord(ctxBattle.heavyReactSession) ? ctxBattle.heavyReactSession : null;
+    if(!session) return;
+    const now = toNumber(nowMs, performance.now());
+    const ringVisibleAtMs = getBttlHeavyRingVisibleAtMs(session);
+    const windowStartAtMs = toNumber(session.windowLatchedAtMs, 0) > 0
+      ? toNumber(session.windowLatchedAtMs, ringVisibleAtMs)
+      : ringVisibleAtMs;
+    const impactAtMs = toNumber(session.impactAtMs, 0);
+    const showWindow = isBttlHeavyReactionWindowActive(ctxBattle, now);
+    const showTelegraph = now <= (impactAtMs + BTTL_HEAVY_REACT_RING_GRACE_MS);
+    if(!showTelegraph && !showWindow && !(session.resolved && now < toNumber(session.resultUntilMs, 0))){
+      return;
+    }
+
+    const fx = Math.round(clamp(
+      toNumber(session.focusX, field.innerRect.x + Math.floor(field.innerRect.w * 0.50)),
+      field.innerRect.x + 12,
+      field.innerRect.x + field.innerRect.w - 12
+    ));
+    const fy = Math.round(clamp(
+      toNumber(session.focusY, field.innerRect.y + Math.floor(field.innerRect.h * 0.50)),
+      field.innerRect.y + 12,
+      field.innerRect.y + field.innerRect.h - 12
+    ));
+    const minR = Math.max(4, toNumber(session.minR, 8));
+    const maxR = Math.max(minR + 6, toNumber(session.maxR, 28));
+    const panelR = Math.max(30, Math.floor(maxR + 14));
+    const enemyBlink = (Math.floor(now / 110) % 2) === 0;
+    if(showTelegraph && enemyBlink){
+      ctx.save();
+      ctx.fillStyle = "rgba(14,20,15,0.10)";
+      ctx.fillRect(enemyX - 2, enemyY - 2, field.spritePx + 4, field.spritePx + 4);
+      ctx.restore();
+    }
+
+    const showResultHold = Boolean(session.resolved) && now < toNumber(session.resultUntilMs, 0);
+    const showParryWindow = showWindow && !session.resolved;
+    if(showParryWindow){
+      // Opaque parry window plate so the cue is isolated from the battle background.
+      ctx.save();
+      ctx.fillStyle = "rgba(191,202,186,0.98)";
+      ctx.beginPath();
+      ctx.arc(fx, fy, panelR, 0, Math.PI * 2, false);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(14,20,15,0.30)";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.restore();
+
+      // Target focus marker near ally-front impact point.
+      drawIdealRing(fx, fy, Math.max(4, minR - 2), 1, "rgba(14,20,15,0.24)");
+    }
+    // Heavy impact limit gauge: circular progress around the parry window.
+    if(showWindow && !session.resolved){
+      const startedAtMs = windowStartAtMs;
+      const untilMs = Math.max(startedAtMs + 80, impactAtMs);
+      const span = Math.max(80, untilMs - startedAtMs);
+      const progress = clamp((now - startedAtMs) / span, 0, 1);
+      const visibleProgress = Math.max(0.02, progress);
+      const gaugeR = Math.max(16, Math.floor(maxR + 10));
+      drawIdealRing(fx, fy, gaugeR, 1, "rgba(14,20,15,0.18)");
+      ctx.save();
+      ctx.strokeStyle = "rgba(14,20,15,0.72)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(fx, fy, gaugeR, -Math.PI / 2, (-Math.PI / 2) + (Math.PI * 2 * visibleProgress), false);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    if(showWindow && now >= windowStartAtMs && !session.resolved){
+      const waveR = getBttlHeavyReactCurrentRadius(session, now);
+      const bandCenterR = clamp(toNumber(session.centerR, 14), minR, maxR);
+      const bandW = Math.max(2, toNumber(session.bandW, BTTL_HEAVY_REACT_BAND_W));
+      const critW = Math.max(2, toNumber(session.critW, BTTL_HEAVY_REACT_CRIT_W));
+      const dist = Math.abs(waveR - bandCenterR);
+      const inBand = dist <= (bandW / 2);
+      const inCrit = dist <= (critW / 2);
+      const bandAlpha = inBand ? 0.24 : 0.15;
+      const critAlpha = inCrit ? 0.34 : 0.20;
+      drawIdealRing(fx, fy, bandCenterR, Math.max(1, bandW * 0.86), `rgba(14,20,15,${bandAlpha.toFixed(3)})`);
+      drawIdealRing(fx, fy, bandCenterR, Math.max(1, critW * 0.84), `rgba(14,20,15,${critAlpha.toFixed(3)})`);
+      drawDistortedRing(
+        fx,
+        fy,
+        waveR,
+        0.9,
+        now * 0.009,
+        2,
+        "rgba(14,20,15,0.60)"
+      );
+      const reactLabel = "C:REACT";
+      const reactScale = 1;
+      const reactMetrics = uiTextMeasure(reactLabel, { scale: reactScale });
+      const reactW = Math.max(24, Math.floor(toNumber(reactMetrics?.width, 0)));
+      const reactH = Math.max(8, Math.floor(toNumber(reactMetrics?.height, 0)));
+      const reactY = Math.round(clamp(
+        fy + panelR + 7,
+        fy + Math.floor(maxR) + 10,
+        (field.innerRect.y + field.innerRect.h) - 10
+      ));
+      const reactRectX = Math.round(fx - Math.floor((reactW + 6) / 2));
+      const reactRectY = Math.round(reactY - 2);
+      ctx.save();
+      ctx.fillStyle = "rgba(191,202,186,0.96)";
+      ctx.fillRect(reactRectX, reactRectY, reactW + 6, reactH + 4);
+      ctx.strokeStyle = "rgba(14,20,15,0.30)";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(reactRectX + 0.5, reactRectY + 0.5, reactW + 5, reactH + 3);
+      ctx.restore();
+      drawText(fx, reactY, reactLabel, {
+        align: "center",
+        scale: reactScale,
+        color: "rgba(14,20,15,0.92)",
+      });
+    }
+
+    if(showResultHold){
+      const grade = String(session.grade || "").trim().toUpperCase();
+      if(grade.length > 0){
+        const resolvedAtMs = toNumber(session.resolvedAtMs, now);
+        const resultDuration = Math.max(1, toNumber(session.resultUntilMs, now) - resolvedAtMs);
+        const progress = clamp((now - resolvedAtMs) / resultDuration, 0, 1);
+        const blinkMs = Math.max(40, Math.floor(toNumber(BTTL_START_INTRO_ENCOUNT_BLINK_MS, 72)));
+        const finalHoldRatio = clamp(toNumber(BTTL_START_INTRO_ENCOUNT_FINAL_HOLD_RATIO, 0.50), 0.10, 0.85);
+        const holdStart = Math.max(0, 1 - finalHoldRatio);
+        const showGrade = (
+          (progress >= holdStart) ||
+          (progress >= 0.04 && (Math.floor((now - resolvedAtMs) / blinkMs) % 2 === 0))
+        );
+        if(showGrade){
+          drawBttlEncountCenterPlate(field.innerRect, field.innerRect, grade, now, {
+            textYOffset: -18,
+            plateH: 36,
+            plateW: Math.max(180, Math.round(field.innerRect.w - 10)),
+            textScale: Math.max(3, Math.floor(toNumber(BTTL_START_INTRO_ENCOUNT_TEXT_SCALE, 5)) - 1),
+            hatchAlpha: toNumber(BTTL_START_INTRO_ENCOUNT_HATCH_ALPHA, 0.08),
+            hatchStep: toNumber(BTTL_START_INTRO_ENCOUNT_HATCH_STEP, 14),
+            drawHatch: false,
+            plateFillColor: "rgba(200,214,194,0.96)",
+            plateStrokeColor: "rgba(14,20,15,0.42)",
+            textShadowColor: "rgba(14,20,15,0.42)",
+            textColor: "rgba(14,20,15,0.98)",
+          });
+        }
+      }
+    }
+  }
+
   function getBttlSignalIntervalMult(cmd, tier){
     const id = normalizeBttlSignalCommand(cmd);
     const list = BTTL_SIGNAL_INTERVAL_MULT_BY_TIER[id] || BTTL_SIGNAL_INTERVAL_MULT_BY_TIER.calibrate;
@@ -4897,7 +8001,7 @@
     return toNumber(list[t], 1);
   }
 
-  function computeBttlAttackIntervalMs(ctxBattle, actorKey, launchEffect = null){
+  function computeBttlAttackIntervalMs(ctxBattle, actorKey, nowMs = performance.now()){
     if(!ctxBattle) return actorKey === "enemy" ? BTTL_ATTACK_INTERVAL_ENEMY_BASE_MS : BTTL_ATTACK_INTERVAL_ALLY_BASE_MS;
     const isEnemy = actorKey === "enemy";
     const source = isEnemy ? ctxBattle.enemy : ctxBattle.ally;
@@ -4914,117 +8018,332 @@
       : BTTL_ATTACK_INTERVAL_HP_PENALTY_MAX_ALLY;
     const hpMult = 1 + ((1 - hpRatio) * hpPenaltyMax);
     let signalMult = 1;
-    if(!isEnemy && isRecord(launchEffect)){
-      signalMult = clamp(toNumber(launchEffect.intervalMult, 1), 0.72, 1.35);
+    if(!isEnemy){
+      const activeSignal = getBttlActiveSignalBuff(ctxBattle, nowMs);
+      if(activeSignal){
+        signalMult = clamp(toNumber(activeSignal.intervalMult, 1), 0.72, 1.35);
+      }
     }
-    const enemyActionMult = isEnemy
+    const tacticalMult = isEnemy
       ? getBttlEnemyActionIntervalMult(getBttlEnemyAiState(ctxBattle).currentAction)
+      : getBttlAllyActionIntervalMult(getBttlAllyAiState(ctxBattle).currentAction);
+    const rangeMult = getBttlRangeIntervalMult(ctxBattle?.rangeState);
+    const breakMult = Boolean(source?.isBreak)
+      ? clamp(toNumber(BTTL_BREAK_INTERVAL_MULT, 1.34), 1, 2.5)
       : 1;
-    const interval = base * sigMult * syncMult * hpMult * signalMult * enemyActionMult;
+    const interval = base * sigMult * syncMult * hpMult * signalMult * tacticalMult * rangeMult * breakMult;
     return clamp(Math.round(interval), BTTL_ATTACK_INTERVAL_MIN_MS, BTTL_ATTACK_INTERVAL_MAX_MS);
   }
 
-  function applyBttlEnemyDefendDamageMitigation(ctxBattle, targetKey, damage){
+  function applyBttlActorDefendDamageMitigation(ctxBattle, targetKey, damage){
     const rawDamage = Math.max(1, Math.floor(toNumber(damage, 1)));
-    if(targetKey !== "enemy"){
-      return { damage: rawDamage, mitigated: false };
+    if(targetKey === "enemy"){
+      const ai = getBttlEnemyAiState(ctxBattle);
+      const action = getBttlEnemyActionId(ai.currentAction);
+      if(action !== BTTL_ENEMY_ACTION.DEFEND){
+        return { damage: rawDamage, mitigated: false };
+      }
+      const mult = clamp(toNumber(BTTL_ENEMY_DEFEND_DMG_MULT, 0.88), 0.50, 1.00);
+      const reduced = Math.max(1, Math.ceil(rawDamage * mult));
+      return { damage: reduced, mitigated: reduced < rawDamage };
     }
-    const ai = getBttlEnemyAiState(ctxBattle);
-    const action = getBttlEnemyActionId(ai.currentAction);
-    if(action !== BTTL_ENEMY_ACTION.DEFEND){
-      return { damage: rawDamage, mitigated: false };
+    if(targetKey === "ally"){
+      const ai = getBttlAllyAiState(ctxBattle);
+      const action = getBttlAllyActionId(ai.currentAction);
+      if(action !== BTTL_ALLY_ACTION.DEFEND){
+        return { damage: rawDamage, mitigated: false };
+      }
+      const mult = clamp(toNumber(BTTL_ALLY_DEFEND_DMG_MULT, 0.90), 0.50, 1.00);
+      const reduced = Math.max(1, Math.ceil(rawDamage * mult));
+      return { damage: reduced, mitigated: reduced < rawDamage };
     }
-    const mult = clamp(toNumber(BTTL_ENEMY_DEFEND_DMG_MULT, 0.88), 0.50, 1.00);
-    const reduced = Math.max(1, Math.ceil(rawDamage * mult));
-    return { damage: reduced, mitigated: reduced < rawDamage };
+    return { damage: rawDamage, mitigated: false };
+  }
+
+  function getBttlHeavyTuning(){
+    if(BTTL_HEAVY_TEST_MODE){
+      return {
+        chanceBase: BTTL_HEAVY_TEST_CHANCE_BASE,
+        cooldownMs: BTTL_HEAVY_TEST_COOLDOWN_MS,
+        initialReadyRatio: BTTL_HEAVY_TEST_INITIAL_READY_RATIO,
+      };
+    }
+    return {
+      chanceBase: BTTL_HEAVY_CHANCE_BASE,
+      cooldownMs: BTTL_HEAVY_COOLDOWN_MS,
+      initialReadyRatio: BTTL_HEAVY_INITIAL_READY_RATIO,
+    };
+  }
+
+  function shouldLaunchEnemyHeavy(ctxBattle, nowMs = performance.now()){
+    if(!ctxBattle) return false;
+    const now = toNumber(nowMs, performance.now());
+    const tuning = getBttlHeavyTuning();
+    const readyAtMs = toNumber(ctxBattle.enemyHeavyReadyAtMs, 0);
+    if(now < readyAtMs){
+      return false;
+    }
+    let chance = toNumber(tuning.chanceBase, BTTL_HEAVY_CHANCE_BASE);
+    chance += getBttlRangeHeavyBonus(ctxBattle?.rangeState);
+    chance = clamp(chance, 0.04, 0.90);
+    if(Math.random() >= chance){
+      return false;
+    }
+    ctxBattle.enemyHeavyReadyAtMs = now + Math.max(300, Math.floor(toNumber(tuning.cooldownMs, BTTL_HEAVY_COOLDOWN_MS)));
+    return true;
+  }
+
+  function computeBttlForwardRingDistance(fromT, toT, ringLen){
+    const len = Math.max(1, toNumber(ringLen, 1));
+    const from = normalizeRingT(toNumber(fromT, 0), len);
+    const to = normalizeRingT(toNumber(toT, 0), len);
+    if(to >= from){
+      return to - from;
+    }
+    return (len - from) + to;
+  }
+
+  function estimateProjectileImpactAtMs(projectile, field, nowMs = performance.now(), speedScale = 1){
+    if(!projectile || !field){
+      return toNumber(nowMs, performance.now());
+    }
+    const scale = clamp(toNumber(speedScale, 1), 0.4, 1.2);
+    const speed = Math.max(1, toNumber(projectile.speed, BTTL_PROJECTILE_SPEED) * scale);
+    const range = getBttlTargetRangeByOwner(field, projectile.owner);
+    const targetT = normalizeRingT(((toNumber(range.start, 0) + toNumber(range.end, 0)) * 0.5), field.ringLen);
+    const dist = computeBttlForwardRingDistance(projectile.t, targetT, field.ringLen);
+    const etaMs = (dist / speed) * 1000;
+    return toNumber(nowMs, performance.now()) + Math.max(0, etaMs);
+  }
+
+  function resolveBttlAllyReactiveDefense(ctxBattle, projectile, damage, nowMs = performance.now()){
+    const rawDamage = Math.max(1, Math.floor(toNumber(damage, 1)));
+    if(!ctxBattle || !projectile || projectile.owner !== "enemy" || projectile.target !== "ally"){
+      return { outcome: "hit", damage: rawDamage };
+    }
+    const isHeavy = Boolean(projectile.isHeavy);
+    if(!isHeavy){
+      // Heavy-only defense system: normal shots do not open dodge/parry windows.
+      return { outcome: "hit", damage: rawDamage };
+    }
+    return getBttlHeavyReactionOutcomeAtImpact(ctxBattle, projectile, rawDamage, nowMs);
   }
 
   function consumeBttlSignalCost(ctxBattle, cmd){
     if(!ctxBattle) return 0;
-    const id = normalizeBttlSignalCommand(cmd);
-    const cost = Math.max(0, Math.floor(toNumber(BTTL_SIGNAL_COST_BY_CMD[id], 0)));
+    ensureBttlActorResourceState(ctxBattle.ally);
+    const cost = getBttlSignalCost(cmd);
     if(cost <= 0) return 0;
-    const hpNow = Math.max(0, Math.floor(toNumber(ctxBattle.ally?.hp, 0)));
-    const hpNext = Math.max(0, hpNow - cost);
-    ctxBattle.ally.hp = hpNext;
-    return hpNow - hpNext;
+    const staNow = Math.max(0, Math.floor(toNumber(ctxBattle.ally?.sta, 0)));
+    if(staNow < cost) return 0;
+    const staNext = Math.max(0, staNow - cost);
+    ctxBattle.ally.sta = staNext;
+    return staNow - staNext;
+  }
+
+  function updateBttlStaminaState(ctxBattle, dtMs = 16){
+    if(!ctxBattle) return;
+    const dtSec = Math.max(0, toNumber(dtMs, 0)) / 1000;
+    if(dtSec <= 0) return;
+    const recoverPerSec = Math.max(0, toNumber(BTTL_STA_RECOVERY_PER_SEC, 0));
+    if(recoverPerSec <= 0) return;
+    const recoverAmount = recoverPerSec * dtSec;
+    for(const key of ["ally", "enemy"]){
+      const actor = isRecord(ctxBattle[key]) ? ctxBattle[key] : null;
+      if(!actor) continue;
+      ensureBttlActorResourceState(actor);
+      if(actor.sta >= actor.maxSta) continue;
+      actor.sta = clamp(toNumber(actor.sta, 0) + recoverAmount, 0, actor.maxSta);
+    }
   }
 
   function resolveBttlProjectileOutcome(ctxBattle, projectile, nowMs = performance.now(), forceMiss = false){
     if(!ctxBattle || !projectile || !projectile.alive) return;
     projectile.alive = false;
+    const isShortAttack = Boolean(projectile.shortDirect) && normalizeBttlRangeStateId(projectile.rangeStateAtLaunch) === "short";
+    if(isShortAttack){
+      queueBttlShortGateSlashFx(
+        ctxBattle,
+        projectile.target === "ally" ? "ally" : "enemy",
+        projectile.owner,
+        Boolean(projectile.isHeavy),
+        getBttlFieldGeometry(),
+        nowMs
+      );
+    }
     if(!forceMiss && projectile.willHit){
       const targetKey = projectile.target === "ally" ? "ally" : "enemy";
       const target = ctxBattle[targetKey];
       const hpNow = Math.max(0, Math.floor(toNumber(target?.hp, 0)));
-      const damage = Math.max(1, Math.floor(toNumber(projectile.damage, 1)));
-      const dmgResolved = applyBttlEnemyDefendDamageMitigation(ctxBattle, targetKey, damage);
+      let damage = Math.max(1, Math.floor(toNumber(projectile.damage, 1)));
+
+      // Phase 1/2/3: ally-side reactive defense (dodge/parry/reflect). Heavy always goes through this gate.
+      if(targetKey === "ally" && projectile.owner === "enemy"){
+        const reaction = resolveBttlAllyReactiveDefense(ctxBattle, projectile, damage, nowMs);
+        const allyAi = getBttlAllyAiState(ctxBattle, nowMs);
+        if(reaction.outcome === "dodge"){
+          allyAi.lastDodgeAtMs = toNumber(nowMs, performance.now());
+          noteBttlShotOutcome(ctxBattle, projectile.owner, false, nowMs);
+          pushBttlLog(ctxBattle, "DODGE");
+          if(isShortAttack){
+            applyBttlShortRangeRecoil(ctxBattle, nowMs, projectile.owner);
+          }
+          return;
+        }
+        if(reaction.outcome === "parry"){
+          allyAi.lastParryAtMs = toNumber(nowMs, performance.now());
+          ctxBattle.nextEnemyActAtMs = Math.max(
+            toNumber(ctxBattle.nextEnemyActAtMs, nowMs),
+            toNumber(nowMs, performance.now()) + BTTL_PARRY_ENEMY_DELAY_MS
+          );
+          noteBttlShotOutcome(ctxBattle, projectile.owner, false, nowMs);
+          pushBttlLog(ctxBattle, "PARRY");
+          applyBttlBreakDelta(ctxBattle, "enemy", BTTL_BREAK_GAIN_PARRY, nowMs, { forcePlusLog: true });
+          if(isShortAttack){
+            applyBttlShortRangeRecoil(ctxBattle, nowMs, projectile.owner);
+          }
+          return;
+        }
+        if(reaction.outcome === "reflect"){
+          const now = toNumber(nowMs, performance.now());
+          allyAi.lastParryAtMs = now;
+          allyAi.lastReflectAtMs = now;
+          noteBttlShotOutcome(ctxBattle, projectile.owner, false, nowMs);
+          pushBttlLog(ctxBattle, "REFLECT");
+          const enemy = ctxBattle.enemy;
+          const enemyHpNow = Math.max(0, Math.floor(toNumber(enemy?.hp, 0)));
+          const reflectedRaw = Math.max(1, Math.floor(toNumber(reaction.reflectDamage, damage)));
+          const reflectedResolved = applyBttlActorDefendDamageMitigation(ctxBattle, "enemy", reflectedRaw);
+          const hpLocked = BTTL_DEBUG_ENEMY_HP_LOCK;
+          const reflectedApplied = hpLocked ? 0 : reflectedResolved.damage;
+          enemy.hp = Math.max(0, enemyHpNow - reflectedApplied);
+          enemy.hitFlashUntilMs = nowMs + BTTL_HIT_FLASH_MS;
+          enemy.knockUntilMs = nowMs + BTTL_KNOCK_MS;
+          enemy.knockDir = 1;
+          noteBttlShotOutcome(ctxBattle, "ally", reflectedApplied > 0, nowMs);
+          pushBttlLog(ctxBattle, getBttlOutcomeLogLine("ally", true, reflectedApplied));
+          applyBttlBreakDelta(ctxBattle, "enemy", BTTL_BREAK_GAIN_REFLECT, nowMs, { forcePlusLog: true });
+          if(isShortAttack){
+            applyBttlShortRangeRecoil(ctxBattle, nowMs, projectile.owner);
+          }
+          return;
+        }
+        if(Boolean(projectile.isHeavy) && String(reaction.outcome || "") === "hit"){
+          pushBttlLog(ctxBattle, "REACT BAD");
+        }
+        damage = Math.max(1, Math.floor(toNumber(reaction.damage, damage)));
+      }
+      const allyOverclockPenalty = (targetKey === "ally")
+        ? getBttlActiveOverclock(ctxBattle, nowMs)
+        : null;
+      if(allyOverclockPenalty){
+        damage = Math.max(1, Math.ceil(damage * clamp(toNumber(allyOverclockPenalty.damageTakenMult, 1), 1, 3)));
+      }
+
+      const dmgResolved = applyBttlActorDefendDamageMitigation(ctxBattle, targetKey, damage);
       const hpLocked = BTTL_DEBUG_ENEMY_HP_LOCK && targetKey === "enemy";
       const appliedDamage = hpLocked ? 0 : dmgResolved.damage;
       target.hp = Math.max(0, hpNow - appliedDamage);
       target.hitFlashUntilMs = nowMs + BTTL_HIT_FLASH_MS;
+      if(normalizeBttlRangeStateId(projectile.rangeStateAtLaunch) === "short"){
+        target.meleeHitFlashUntilMs = nowMs + BTTL_RANGE_SHORT_HIT_FX_MS;
+      }
       target.knockUntilMs = nowMs + BTTL_KNOCK_MS;
       target.knockDir = targetKey === "enemy" ? 1 : -1;
       noteBttlShotOutcome(ctxBattle, projectile.owner, true, nowMs);
-      if(dmgResolved.mitigated && !hpLocked && BTTL_ENEMY_AI_AUDIT_LOG){
+      if(dmgResolved.mitigated && targetKey === "enemy" && !hpLocked && BTTL_ENEMY_AI_AUDIT_LOG){
         pushBttlLog(ctxBattle, "EN DEF DMG↓");
       }
       pushBttlLog(ctxBattle, getBttlOutcomeLogLine(projectile.owner, true, appliedDamage));
+      const breakBaseDamage = hpLocked ? toNumber(dmgResolved.damage, appliedDamage) : appliedDamage;
+      let breakGain = getBttlBreakGainByHit(projectile, breakBaseDamage);
+      if(targetKey === "ally" && allyOverclockPenalty){
+        breakGain = Math.max(0, Math.round(
+          breakGain * clamp(toNumber(allyOverclockPenalty.breakTakenMult, 1), 1, 3)
+        ));
+      }
+      applyBttlBreakDelta(ctxBattle, targetKey, breakGain, nowMs);
+      if(isShortAttack){
+        applyBttlShortRangeRecoil(ctxBattle, nowMs, projectile.owner);
+      }else{
+        applyBttlRangedHitKnockback(ctxBattle, projectile.owner, nowMs);
+      }
       return;
     }
     noteBttlShotOutcome(ctxBattle, projectile.owner, false, nowMs);
     pushBttlLog(ctxBattle, getBttlOutcomeLogLine(projectile.owner, false, 0));
+    if(isShortAttack){
+      applyBttlBreakDelta(ctxBattle, projectile.target === "enemy" ? "enemy" : "ally", BTTL_BREAK_GAIN_SHORT_PRESSURE_MISS, nowMs);
+    }
+    if(isShortAttack){
+      applyBttlShortRangeRecoil(ctxBattle, nowMs, projectile.owner);
+    }
   }
 
   function beginBttlRealtimeAttack(ctxBattle, attacker, nowMs = performance.now()){
     if(!ctxBattle) return null;
     const actorKey = attacker === "ally" ? "ally" : "enemy";
     const targetKey = actorKey === "enemy" ? "ally" : "enemy";
-    let consumedEffect = null;
-    if(
-      actorKey === "ally" &&
-      isRecord(ctxBattle.pendingEffect) &&
-      ctxBattle.pendingEffect.appliesTo === "nextAllyAct"
-    ){
-      consumedEffect = { ...ctxBattle.pendingEffect };
-      ctxBattle.pendingEffect = null;
-    }
+    const isEnemy = actorKey === "enemy";
+    const activeSignal = (!isEnemy) ? getBttlActiveSignalBuff(ctxBattle, nowMs) : null;
     const hitChanceBase = clamp(
       toNumber(ctxBattle[actorKey]?.hitChance, 0.5),
       BTTL_HIT_MIN,
       BTTL_HIT_MAX
     );
-    const hitChanceAdj = toNumber(consumedEffect?.hitChanceAdj, 0);
+    const hitChanceAdj = toNumber(activeSignal?.hitChanceAdj, 0);
     const hitChance = clamp(hitChanceBase + hitChanceAdj, BTTL_HIT_MIN, BTTL_HIT_MAX);
     const hit = Math.random() < hitChance;
-    const damage = rollBttlDamage(actorKey, ctxBattle);
+    const launchHeavy = isEnemy && shouldLaunchEnemyHeavy(ctxBattle, nowMs);
+    let damage = rollBttlDamage(actorKey, ctxBattle);
+    if(launchHeavy){
+      damage = Math.max(1, damage + BTTL_HEAVY_DAMAGE_BONUS);
+    }
     const field = getBttlFieldGeometry();
-    const projectile = createBttlProjectile(actorKey, field);
+    const projectile = createBttlProjectile(actorKey, field, ctxBattle);
     projectile.target = targetKey;
     projectile.willHit = hit;
     projectile.damage = damage;
-    projectile.meta = consumedEffect
+    const launchRangeState = normalizeBttlRangeStateId(ctxBattle?.rangeState);
+    projectile.rangeStateAtLaunch = launchRangeState;
+    projectile.shortDirect = launchRangeState === "short";
+    if(launchHeavy){
+      projectile.isHeavy = true;
+      projectile.speed = Math.max(24, Math.floor(toNumber(projectile.speed, BTTL_PROJECTILE_SPEED) * BTTL_HEAVY_SPEED_MULT));
+    }
+    if(projectile.shortDirect){
+      startBttlShortLunge(ctxBattle, actorKey, nowMs);
+      if(projectile.isHeavy){
+        const teleMin = Math.max(120, Math.floor(toNumber(BTTL_SHORT_HEAVY_TELEGRAPH_MIN_MS, BTTL_HEAVY_TELEGRAPH_MIN_MS)));
+        const teleMaxRaw = Math.floor(toNumber(BTTL_SHORT_HEAVY_TELEGRAPH_MAX_MS, BTTL_HEAVY_TELEGRAPH_MAX_MS));
+        const teleMax = Math.max(teleMin + 40, teleMaxRaw);
+        const teleRand = teleMin + Math.floor(Math.random() * Math.max(1, (teleMax - teleMin + 1)));
+        projectile.impactAtMs = toNumber(nowMs, performance.now()) + teleRand;
+      }else{
+        projectile.impactAtMs = toNumber(nowMs, performance.now()) + Math.max(40, Math.floor(toNumber(BTTL_SHORT_DIRECT_IMPACT_DELAY_MS, 110)));
+      }
+    }else{
+      projectile.impactAtMs = estimateProjectileImpactAtMs(projectile, field, nowMs);
+    }
+    if(launchHeavy){
+      startBttlHeavyReactSession(ctxBattle, projectile, field, nowMs);
+      pushBttlLog(ctxBattle, "HEAVY IN");
+    }
+    projectile.meta = activeSignal
       ? {
-        cmd: consumedEffect.cmd,
-        tier: consumedEffect.tier,
+        cmd: normalizeBttlSignalCommand(activeSignal.cmd),
+        tier: clamp(Math.floor(toNumber(activeSignal.tier, 0)), 0, 3),
         hitChanceAdj,
-        intervalMult: toNumber(consumedEffect.intervalMult, 1),
+        intervalMult: toNumber(activeSignal.intervalMult, 1),
       }
       : null;
     const pool = Array.isArray(ctxBattle.projectiles) ? ctxBattle.projectiles : [];
     pool.push(projectile);
     ctxBattle.projectiles = pool;
-    if(actorKey === "ally" && isRecord(consumedEffect)){
-      ctxBattle.lastSignalProc = {
-        cmd: normalizeBttlSignalCommand(consumedEffect.cmd),
-        grade: String(consumedEffect.grade || "BAD").trim().toUpperCase(),
-        untilMs: toNumber(nowMs, performance.now()) + BTTL_SIGNAL_PROC_FLASH_MS,
-      };
-    }
-    return consumedEffect;
+    return activeSignal;
   }
 
-  function updateBttlRealtimeProjectiles(ctxBattle, nowMs = performance.now()){
+  function updateBttlRealtimeProjectiles(ctxBattle, nowMs = performance.now(), speedScale = 1){
     if(!ctxBattle) return;
     const list = Array.isArray(ctxBattle.projectiles) ? ctxBattle.projectiles : [];
     if(list.length <= 0){
@@ -5034,11 +8353,19 @@
     const field = getBttlFieldGeometry();
     for(const projectile of list){
       if(!projectile?.alive) continue;
+      if(Boolean(projectile.shortDirect)){
+        const impactAtMs = toNumber(projectile.impactAtMs, 0);
+        if(impactAtMs > 0 && nowMs >= impactAtMs){
+          resolveBttlProjectileOutcome(ctxBattle, projectile, nowMs, !projectile.willHit);
+        }
+        continue;
+      }
       const dtSec = clamp((nowMs - toNumber(projectile.lastUpdateMs, nowMs)) / 1000, 0, 0.05);
       projectile.lastUpdateMs = nowMs;
       projectile.prevT = projectile.t;
-      projectile.t = normalizeRingT(projectile.t + (toNumber(projectile.speed, BTTL_PROJECTILE_SPEED) * dtSec), field.ringLen);
-      projectile.distance = Math.max(0, toNumber(projectile.distance, 0)) + (toNumber(projectile.speed, BTTL_PROJECTILE_SPEED) * dtSec);
+      const scaledSpeed = Math.max(1, toNumber(projectile.speed, BTTL_PROJECTILE_SPEED) * clamp(toNumber(speedScale, 1), 0.4, 1.2));
+      projectile.t = normalizeRingT(projectile.t + (scaledSpeed * dtSec), field.ringLen);
+      projectile.distance = Math.max(0, toNumber(projectile.distance, 0)) + (scaledSpeed * dtSec);
       const range = getBttlTargetRangeByOwner(field, projectile.owner);
       const touchedRange = didRingSegmentHitRange(
         projectile.prevT,
@@ -5054,6 +8381,48 @@
       }
     }
     ctxBattle.projectiles = list.filter((projectile) => Boolean(projectile?.alive));
+  }
+
+  function updateBttlHeavyTelegraphState(ctxBattle, nowMs = performance.now(), speedScale = 1){
+    if(!ctxBattle) return;
+    const list = Array.isArray(ctxBattle.projectiles) ? ctxBattle.projectiles : [];
+    const now = toNumber(nowMs, performance.now());
+    const field = getBttlFieldGeometry();
+    let nextImpactAtMs = 0;
+    let nextProjectile = null;
+    for(const projectile of list){
+      if(!projectile?.alive) continue;
+      if(projectile.owner !== "enemy" || projectile.target !== "ally" || !projectile.isHeavy) continue;
+      const impactAtMs = Boolean(projectile.shortDirect)
+        ? toNumber(projectile.impactAtMs, now)
+        : estimateProjectileImpactAtMs(projectile, field, now, speedScale);
+      projectile.impactAtMs = impactAtMs;
+      if(nextImpactAtMs <= 0 || (impactAtMs > 0 && impactAtMs < nextImpactAtMs)){
+        nextImpactAtMs = impactAtMs;
+        nextProjectile = projectile;
+      }
+    }
+    if(nextImpactAtMs > 0){
+      ctxBattle.heavyImpactAtMs = nextImpactAtMs;
+      ctxBattle.heavyInboundUntilMs = nextImpactAtMs;
+      const session = isRecord(ctxBattle.heavyReactSession) ? ctxBattle.heavyReactSession : null;
+      if(
+        session &&
+        !session.resolved &&
+        nextProjectile &&
+        toNumber(session.projectileId, -1) === toNumber(nextProjectile.id, -2)
+      ){
+        session.impactAtMs = nextImpactAtMs;
+        session.ringVisibleAtMs = getBttlHeavyRingVisibleAtMs(session);
+      }
+      return;
+    }
+    if(now >= toNumber(ctxBattle.heavyInboundUntilMs, 0)){
+      ctxBattle.heavyInboundStartedAtMs = 0;
+      ctxBattle.heavyInboundUntilMs = 0;
+      ctxBattle.heavyImpactAtMs = 0;
+      ctxBattle.heavyIncomingActionHint = "";
+    }
   }
 
   function enterBttlPlayerWindow(ctxBattle, nowMs = performance.now()){
@@ -5073,8 +8442,7 @@
     if(getBttlSignalCooldownRemainMs(ctxBattle, commandId, now) > 0){
       return false;
     }
-    const costApplied = consumeBttlSignalCost(ctxBattle, commandId);
-    if(costApplied <= 0){
+    if(!canConsumeBttlSignalCost(ctxBattle, commandId)){
       pushBttlLog(ctxBattle, "NO STA");
       return false;
     }
@@ -5126,7 +8494,6 @@
       critW,
       nearMargin: Math.max(1, Math.floor(toNumber(cfg.nearMargin, TRN_BASE_NEAR_MARGIN) * 0.8)),
       internalP: getTrnInternalSuccessBase(mode),
-      costApplied,
       wasInBand: false,
       wasInCrit: false,
       bandHitFlashUntilMs: 0,
@@ -5148,26 +8515,50 @@
     const feedbackGrade = resolveTrnFeedbackGrade(finalTier, timeout);
     triggerBttlSignalStopFx(ctxBattle, feedbackGrade, toNumber(nowMs, performance.now()));
     const cmd = normalizeBttlSignalCommand(session.cmd);
+    const costApplied = consumeBttlSignalCost(ctxBattle, cmd);
+    if(costApplied <= 0 && getBttlSignalCost(cmd) > 0){
+      pushBttlLog(ctxBattle, "NO STA");
+      ctxBattle.signalSession = null;
+      ctxBattle.signalResult = {
+        cmd,
+        tier: 0,
+        grade: "BAD",
+        untilMs: toNumber(nowMs, performance.now()) + BTTL_SIGNAL_GAME_RESULT_HOLD_MS,
+        buffDurationMs: 0,
+        buffActive: false,
+      };
+      ctxBattle.rightPaneMode = BTTL_RIGHTPANE_MODE.SIGNAL_GAME;
+      return;
+    }
+    if(costApplied > 0){
+      addBttlSignalUseMetric(ctxBattle, cmd, 1);
+    }
     const tier = getBttlSignalTierFromGrade(feedbackGrade);
-    const hitChanceAdj = getBttlSignalHitBonus(cmd, tier);
-    const intervalMult = getBttlSignalIntervalMult(cmd, tier);
-    ctxBattle.pendingEffect = {
-      cmd,
-      tier,
-      grade: feedbackGrade,
-      hitChanceAdj,
-      intervalMult,
-      appliesTo: "nextAllyAct",
-    };
+    const now = toNumber(nowMs, performance.now());
+    const buffApplied = activateBttlSignalBuff(ctxBattle, cmd, tier, now);
     const cmdLabel = BTTL_SIGNAL_CMD_LOG_LABEL[cmd] || "SIG";
     const gradeLabel = feedbackGrade === "TIMEOUT" ? "BAD" : feedbackGrade;
     const gradeShort = getBttlSignalGradeShort(gradeLabel);
     pushBttlLog(ctxBattle, `${cmdLabel} ${gradeShort}`);
+    if(buffApplied){
+      const onLabel = cmd === "overclock"
+        ? "OVRCLK ON"
+        : `${cmdLabel} ON`;
+      pushBttlLog(ctxBattle, onLabel);
+      ctxBattle.lastSignalProc = {
+        cmd,
+        grade: String(gradeLabel || "BAD").trim().toUpperCase(),
+        untilMs: now + BTTL_SIGNAL_PROC_FLASH_MS,
+      };
+    }
     ctxBattle.signalSession = null;
-    const now = toNumber(nowMs, performance.now());
     ctxBattle.signalResult = {
+      cmd,
+      tier,
       grade: gradeLabel,
       untilMs: now + BTTL_SIGNAL_GAME_RESULT_HOLD_MS,
+      buffDurationMs: Math.max(0, Math.floor(toNumber(buffApplied?.durationMs, 0))),
+      buffActive: Boolean(buffApplied),
     };
     ctxBattle.signalGlobalCooldownUntilMs = now + BTTL_SIGNAL_GCD_MS;
     const byCmd = isRecord(ctxBattle.signalModeCooldownUntilByCmd)
@@ -5178,13 +8569,20 @@
     ctxBattle.rightPaneMode = BTTL_RIGHTPANE_MODE.SIGNAL_GAME;
   }
 
-  function createBttlProjectile(owner, field){
+  function createBttlProjectile(owner, field, ctxBattle = null){
     const spawnOffset = 1;
     const startT = owner === "enemy"
       ? spawnOffset
       : field.topBattleLen + spawnOffset;
     const nowMs = performance.now();
+    let projId = 0;
+    if(isRecord(ctxBattle)){
+      const seq = Math.max(1, Math.floor(toNumber(ctxBattle.projectileSeq, 1)));
+      projId = seq;
+      ctxBattle.projectileSeq = seq + 1;
+    }
     return {
+      id: projId,
       t: normalizeRingT(startT, field.ringLen),
       prevT: normalizeRingT(startT, field.ringLen),
       speed: getBttlProjectileSpeed(),
@@ -5195,6 +8593,9 @@
       target: owner === "enemy" ? "ally" : "enemy",
       willHit: false,
       damage: 1,
+      rangeStateAtLaunch: "mid",
+      shortDirect: false,
+      impactAtMs: 0,
       meta: null,
     };
   }
@@ -5209,22 +8610,45 @@
     return 1 + Math.floor(Math.random() * 3); // 1..3
   }
 
-  function createBttlContext(nowMs = performance.now()){
+  function createBttlContext(nowMs = performance.now(), options = {}){
+    const hpMax = getRuntimeMax("hp", 100);
+    const hpNow = clamp(Math.floor(getRuntimeStat("hp", hpMax)), 0, hpMax);
     const staminaMax = getRuntimeMax("stamina", 100);
     const staNow = clamp(Math.floor(getRuntimeStat("stamina", staminaMax)), 0, staminaMax);
     const ad = clamp(toNumber(state.detailed?.adIntegrity, 100), 0, 100);
     const sig = clamp(toNumber(state.detailed?.signalQuality, 100), 0, 100);
     const sync = resolveSyncRate(ad, sig);
-    const allyHp = Math.max(0, staNow);
+    const allyHp = Math.max(0, hpNow);
     const enemyHp = clamp(
       Math.round(Math.max(1, allyHp) * BTTL_ENEMY_HP_RATIO),
       BTTL_ENEMY_HP_MIN,
       BTTL_ENEMY_HP_MAX
     );
+    const enemySta = clamp(
+      Math.round(Math.max(1, enemyHp) * 0.90),
+      1,
+      Math.max(1, enemyHp)
+    );
+    const introType = resolveBttlStartIntroType(options, enemyHp);
+    const introDurationMs = getBttlStartIntroDurationMs(introType);
+    const introStartedAtMs = toNumber(nowMs, performance.now());
+    const introUntilMs = introStartedAtMs + introDurationMs;
     const ctxBattle = {
       phase: BTTL_STATE.INIT,
       phaseStartedAtMs: toNumber(nowMs, performance.now()),
+      startIntroType: introType,
+      startIntroActive: true,
+      startIntroStartedAtMs: introStartedAtMs,
+      startIntroDurationMs: introDurationMs,
+      startIntroUntilMs: introUntilMs,
+      endOutroType: "",
+      endOutroActive: false,
+      endOutroStartedAtMs: 0,
+      endOutroDurationMs: 0,
+      endOutroUntilMs: 0,
+      endOutroHandoffDone: false,
       turn: 0,
+      lastTickAtMs: toNumber(nowMs, performance.now()),
       actorIndex: 0, // 0: enemy, 1: ally
       rightPaneMode: BTTL_RIGHTPANE_MODE.SIGNAL_MENU,
       signalMenuIndex: 0,
@@ -5232,48 +8656,111 @@
       signalResult: null,
       signalGlobalCooldownUntilMs: 0,
       signalModeCooldownUntilByCmd: {},
-      pendingEffect: null,
+      signalBuff: {
+        cmd: "",
+        activeUntilMs: 0,
+        startedAtMs: 0,
+        tier: 0,
+        hitChanceAdj: 0,
+        intervalMult: 1,
+        approachMult: 1,
+        knockbackResist: 0,
+        damageTakenMult: 1,
+        breakTakenMult: 1,
+      },
       lastSignalProc: null,
       signalFxOkCenterUntilMs: 0,
       signalFxSuccessCenterUntilMs: 0,
       signalFxSuccessOuterRippleUntilMs: 0,
       signalFxBadShakeUntilMs: 0,
       signalFxBadShakeDir: 0,
+      heavyInboundStartedAtMs: 0,
+      heavyInboundUntilMs: 0,
+      heavyImpactAtMs: 0,
+      heavyIncomingActionHint: "",
+      heavyReactSession: null,
       enemyAi: createBttlEnemyAiState(nowMs),
+      allyAi: createBttlAllyAiState(nowMs),
+      enemyHeavyReadyAtMs: toNumber(nowMs, performance.now()) + Math.round(getBttlHeavyTuning().cooldownMs * getBttlHeavyTuning().initialReadyRatio),
+      projectileSeq: 1,
       projectiles: [],
-      nextEnemyActAtMs: toNumber(nowMs, performance.now()) + BTTL_INIT_MS + 220,
-      nextAllyActAtMs: toNumber(nowMs, performance.now()) + BTTL_INIT_MS + 120,
+      shortGateSlashFx: [],
+      enemyRangePos: BTTL_RANGE_INIT_ENEMY_POS,
+      allyRangePos: BTTL_RANGE_INIT_ALLY_POS,
+      enemyRangeVisualPos: BTTL_RANGE_INIT_ENEMY_POS,
+      allyRangeVisualPos: BTTL_RANGE_INIT_ALLY_POS,
+      rangeDistance: Math.abs(BTTL_RANGE_INIT_ALLY_POS - BTTL_RANGE_INIT_ENEMY_POS),
+      rangeMidpoint: (BTTL_RANGE_INIT_ALLY_POS + BTTL_RANGE_INIT_ENEMY_POS) * 0.5,
+      rangeState: getBttlRangeStateByDistance(Math.abs(BTTL_RANGE_INIT_ALLY_POS - BTTL_RANGE_INIT_ENEMY_POS)),
+      enemyRangeIntent: BTTL_RANGE_INTENT.HOLD,
+      allyRangeIntent: BTTL_RANGE_INTENT.HOLD,
+      rangeLastUpdateAtMs: toNumber(nowMs, performance.now()),
+      rangeLastIntentLogAtMs: 0,
+      rangeLastStateLogAtMs: 0,
+      rangeMarkerShakeStartedAtMs: 0,
+      rangeMarkerShakeUntilMs: 0,
+      nextEnemyActAtMs: introUntilMs + 220,
+      nextAllyActAtMs: introUntilMs + 120,
       ally: {
         hp: allyHp,
-        maxHp: allyHp,
+        maxHp: Math.max(1, hpMax),
+        sta: staNow,
+        maxSta: Math.max(1, staminaMax),
         sig,
         sync,
+        breakValue: 0,
+        breakMax: BTTL_BREAK_MAX,
+        isBreak: false,
+        breakUntilMs: 0,
+        breakRecoverResumeAtMs: 0,
+        breakHighLogged: false,
+        breakLastPlusLogAtMs: 0,
         hitChance: computeBttlHitChance(sig, sync),
         hitFlashUntilMs: 0,
+        meleeHitFlashUntilMs: 0,
         knockUntilMs: 0,
         knockDir: -1,
+        lungeStartedAtMs: 0,
+        lungeUntilMs: 0,
+        lungeDir: 0,
       },
       enemy: {
         hp: enemyHp,
         maxHp: enemyHp,
+        sta: enemySta,
+        maxSta: enemySta,
         sig: BTTL_ENEMY_SIG,
         sync: BTTL_ENEMY_SYNC,
+        breakValue: 0,
+        breakMax: BTTL_BREAK_MAX,
+        isBreak: false,
+        breakUntilMs: 0,
+        breakRecoverResumeAtMs: 0,
+        breakHighLogged: false,
+        breakLastPlusLogAtMs: 0,
         hitChance: computeBttlHitChance(BTTL_ENEMY_SIG, BTTL_ENEMY_SYNC),
         hitFlashUntilMs: 0,
+        meleeHitFlashUntilMs: 0,
         knockUntilMs: 0,
         knockDir: 1,
+        lungeStartedAtMs: 0,
+        lungeUntilMs: 0,
+        lungeDir: 0,
       },
       logs: [],
       action: null,
       result: null,
       resultFlavor: "",
+      resultMetrics: createBttlResultMetrics(nowMs),
+      resultMetricsCommitted: false,
       settled: false,
     };
     pushBttlLog(ctxBattle, "BTTL START");
+    pushBttlLog(ctxBattle, introType === BTTL_START_INTRO_TYPE.WARNING ? "WARNING!!" : "ENCOUNT");
     if(allyHp <= 0){
-      pushBttlLog(ctxBattle, "NO STA");
+      pushBttlLog(ctxBattle, "LOSE");
       ctxBattle.result = "LOSE";
-      ctxBattle.resultFlavor = "エネルギー切れ。休息が必要。";
+      ctxBattle.resultFlavor = "戦闘不能。出力を維持できない。";
       ctxBattle.phase = BTTL_STATE.RESULT;
       pushBttlLog(ctxBattle, "LOSE");
       ctxBattle.settled = true;
@@ -5286,149 +8773,31 @@
     const normalized = String(result || "LOSE").toUpperCase() === "WIN" ? "WIN" : "LOSE";
     ctxBattle.result = normalized;
     ctxBattle.resultFlavor = pickBttlResultFlavor(normalized);
-    ctxBattle.phase = BTTL_STATE.RESULT;
-    ctxBattle.phaseStartedAtMs = toNumber(nowMs, performance.now());
     pushBttlLog(ctxBattle, normalized);
-
-    const detail = isRecord(state.detailed)
-      ? state.detailed
-      : createDefaultDetailedState(state.monster?.id || "mon001");
-    state.detailed = detail;
-    const count = Math.max(0, Math.floor(toNumber(detail.battleCount, 0))) + 1;
-    detail.battleCount = count;
-    const prevWins = Math.max(0, Math.floor(toNumber(detail.battleWins, 0)));
-    const wins = normalized === "WIN" ? prevWins + 1 : prevWins;
-    detail.battleWins = clamp(wins, 0, count);
-    detail.lastUpdateAt = Date.now();
-    saveDetailedState();
+    commitBttlResultMetrics(ctxBattle, normalized, nowMs);
 
     ctxBattle.settled = true;
+    startBttlEndOutro(
+      ctxBattle,
+      normalized === "WIN" ? BTTL_END_OUTRO_TYPE.WIN : BTTL_END_OUTRO_TYPE.LOST,
+      nowMs
+    );
   }
 
   function abortBttlBattle(ctxBattle, nowMs = performance.now()){
-    if(!ctxBattle || ctxBattle.phase === BTTL_STATE.RESULT) return;
+    if(!ctxBattle || ctxBattle.phase === BTTL_STATE.RESULT || ctxBattle.phase === BTTL_STATE.OUTRO) return;
     ctxBattle.projectiles = [];
     ctxBattle.signalSession = null;
     ctxBattle.signalResult = null;
-    ctxBattle.pendingEffect = null;
     ctxBattle.lastSignalProc = null;
+    clearBttlSignalBuffState(ctxBattle);
     ctxBattle.rightPaneMode = BTTL_RIGHTPANE_MODE.SIGNAL_MENU;
     ctxBattle.result = "ABORT";
     ctxBattle.resultFlavor = "手動中断。戦闘を終了した。";
-    ctxBattle.phase = BTTL_STATE.RESULT;
-    ctxBattle.phaseStartedAtMs = toNumber(nowMs, performance.now());
     pushBttlLog(ctxBattle, "ABORT");
+    commitBttlResultMetrics(ctxBattle, "ABORT", nowMs);
     ctxBattle.settled = true;
-  }
-
-  function resolveBttlActionOutcome(ctxBattle, action, nowMs = performance.now(), forceMiss = false){
-    if(!ctxBattle || !action || action.outcomeApplied) return;
-    action.outcomeApplied = true;
-    action.resolved = true;
-    action.resolvedAtMs = toNumber(nowMs, performance.now());
-    if(action.projectile) action.projectile.alive = false;
-
-    if(!forceMiss && action.willHit){
-      const targetKey = action.target === "ally" ? "ally" : "enemy";
-      const target = ctxBattle[targetKey];
-      const hpNow = Math.max(0, Math.floor(toNumber(target?.hp, 0)));
-      const damage = Math.max(1, Math.floor(toNumber(action.damage, 1)));
-      const dmgResolved = applyBttlEnemyDefendDamageMitigation(ctxBattle, targetKey, damage);
-      const hpLocked = BTTL_DEBUG_ENEMY_HP_LOCK && targetKey === "enemy";
-      const appliedDamage = hpLocked ? 0 : dmgResolved.damage;
-      const hpNext = Math.max(0, hpNow - appliedDamage);
-      target.hp = hpNext;
-      target.hitFlashUntilMs = nowMs + BTTL_HIT_FLASH_MS;
-      target.knockUntilMs = nowMs + BTTL_KNOCK_MS;
-      target.knockDir = targetKey === "enemy" ? 1 : -1;
-      noteBttlShotOutcome(ctxBattle, action.attacker, true, nowMs);
-      if(dmgResolved.mitigated && !hpLocked && BTTL_ENEMY_AI_AUDIT_LOG){
-        pushBttlLog(ctxBattle, "EN DEF DMG↓");
-      }
-      pushBttlLog(ctxBattle, getBttlOutcomeLogLine(action.attacker, true, appliedDamage));
-      return;
-    }
-    noteBttlShotOutcome(ctxBattle, action.attacker, false, nowMs);
-    pushBttlLog(ctxBattle, getBttlOutcomeLogLine(action.attacker, false, 0));
-  }
-
-  function beginBttlAction(ctxBattle, attacker, nowMs = performance.now()){
-    if(!ctxBattle) return;
-    const actorKey = attacker === "ally" ? "ally" : "enemy";
-    const targetKey = actorKey === "enemy" ? "ally" : "enemy";
-    let consumedEffect = null;
-    if(
-      actorKey === "ally" &&
-      isRecord(ctxBattle.pendingEffect) &&
-      ctxBattle.pendingEffect.appliesTo === "nextAllyAct"
-    ){
-      consumedEffect = { ...ctxBattle.pendingEffect };
-      ctxBattle.pendingEffect = null;
-    }
-    const hitChanceBase = clamp(
-      toNumber(ctxBattle[actorKey]?.hitChance, 0.5),
-      BTTL_HIT_MIN,
-      BTTL_HIT_MAX
-    );
-    const hitChanceAdj = toNumber(consumedEffect?.hitChanceAdj, 0);
-    const hitChance = clamp(hitChanceBase + hitChanceAdj, BTTL_HIT_MIN, BTTL_HIT_MAX);
-    const hit = Math.random() < hitChance;
-    const damage = rollBttlDamage(actorKey, ctxBattle);
-    const field = getBttlFieldGeometry();
-    const projectile = createBttlProjectile(actorKey, field);
-    projectile.meta = consumedEffect
-      ? {
-        cmd: consumedEffect.cmd,
-        tier: consumedEffect.tier,
-        hitChanceAdj,
-      }
-      : null;
-    ctxBattle.action = {
-      attacker: actorKey,
-      target: targetKey,
-      startedAtMs: toNumber(nowMs, performance.now()),
-      lastUpdateMs: toNumber(nowMs, performance.now()),
-      projectile,
-      resolved: false,
-      resolvedAtMs: 0,
-      willHit: hit,
-      damage,
-      hitChanceBase,
-      hitChanceAdj,
-      hitChance,
-      outcomeApplied: false,
-      finished: false,
-    };
-  }
-
-  function updateBttlAction(ctxBattle, nowMs = performance.now()){
-    if(!ctxBattle || !ctxBattle.action) return;
-    const action = ctxBattle.action;
-    if(!action.resolved && action.projectile?.alive){
-      const field = getBttlFieldGeometry();
-      const projectile = action.projectile;
-      const dtSec = clamp((nowMs - toNumber(action.lastUpdateMs, nowMs)) / 1000, 0, 0.05);
-      action.lastUpdateMs = nowMs;
-      projectile.prevT = projectile.t;
-      projectile.t = normalizeRingT(projectile.t + (projectile.speed * dtSec), field.ringLen);
-      projectile.distance += projectile.speed * dtSec;
-      const range = getBttlTargetRangeByOwner(field, projectile.owner);
-      const touchedRange = didRingSegmentHitRange(
-        projectile.prevT,
-        projectile.t,
-        range.start,
-        range.end,
-        field.ringLen
-      );
-      if(touchedRange){
-        resolveBttlActionOutcome(ctxBattle, action, nowMs, !action.willHit);
-      }else if(projectile.distance >= (field.ringLen + BTTL_PROJECTILE_MISS_EXTRA_PX)){
-        resolveBttlActionOutcome(ctxBattle, action, nowMs, true);
-      }
-    }
-    if(action.resolved && (nowMs - toNumber(action.resolvedAtMs, nowMs)) >= BTTL_ACTION_POST_RESOLVE_MS){
-      action.finished = true;
-    }
+    startBttlEndOutro(ctxBattle, BTTL_END_OUTRO_TYPE.LOST, nowMs);
   }
 
   function buildBttlResultLogText(ctxBattle){
@@ -5463,6 +8832,8 @@
   function closeBttlResultLogToMenu(){
     state.bttl = null;
     state.bttlResultLogText = "";
+    uiState.bttlResultReveal = null;
+    setBttlRevealOverlayVisual(0, "black");
     state.screen = "menu";
     setOverlayMode(null);
     hideOverlayLog();
@@ -5475,9 +8846,18 @@
     }
     const ctxBattle = state.bttl;
     if(!ctxBattle) return;
+    ensureBttlActorResourceState(ctxBattle.ally);
+    ensureBttlActorResourceState(ctxBattle.enemy);
 
     if(ctxBattle.phase === BTTL_STATE.INIT){
-      if((nowMs - toNumber(ctxBattle.phaseStartedAtMs, nowMs)) >= BTTL_INIT_MS){
+      if(isBttlStartIntroActive(ctxBattle, nowMs)){
+        return;
+      }
+      const introUntilMs = toNumber(ctxBattle.startIntroUntilMs, 0);
+      const initFallbackUntilMs = toNumber(ctxBattle.phaseStartedAtMs, nowMs) + BTTL_INIT_MS;
+      const readyAtMs = Math.max(introUntilMs, initFallbackUntilMs);
+      if(nowMs >= readyAtMs){
+        ctxBattle.startIntroActive = false;
         ctxBattle.phase = BTTL_STATE.TURN;
         ctxBattle.phaseStartedAtMs = nowMs;
         ctxBattle.turn = 0;
@@ -5485,16 +8865,63 @@
       return;
     }
 
+    if(ctxBattle.phase === BTTL_STATE.OUTRO){
+      const elapsed = Math.max(0, toNumber(nowMs, performance.now()) - toNumber(ctxBattle.endOutroStartedAtMs, nowMs));
+      const outroType = normalizeBttlEndOutroType(ctxBattle.endOutroType);
+      const timing = getBttlEndOutroTiming(outroType);
+      if(!Boolean(ctxBattle.endOutroHandoffDone) && elapsed >= toNumber(timing.handoffAt, Number.MAX_SAFE_INTEGER)){
+        ctxBattle.endOutroHandoffDone = true;
+        const initialAlpha = clamp(computeBttlEndOutroHandoffAlpha(outroType, elapsed, timing), 0.55, 1);
+        uiState.bttlResultReveal = {
+          mode: outroType === BTTL_END_OUTRO_TYPE.WIN ? "white" : "black",
+          startedAtMs: toNumber(nowMs, performance.now()),
+          durationMs: Math.max(120, Math.floor(toNumber(timing.fadeOutMs, 360))),
+          initialAlpha,
+        };
+        ctxBattle.endOutroActive = false;
+        ctxBattle.phase = BTTL_STATE.RESULT;
+        ctxBattle.phaseStartedAtMs = nowMs;
+        openBttlResultLog(ctxBattle);
+        return;
+      }
+      if(isBttlEndOutroActive(ctxBattle, nowMs)){
+        return;
+      }
+      // Safety fallback: if handoff somehow didn't happen, force RESULT transition.
+      ctxBattle.endOutroActive = false;
+      ctxBattle.phase = BTTL_STATE.RESULT;
+      ctxBattle.phaseStartedAtMs = nowMs;
+      openBttlResultLog(ctxBattle);
+      return;
+    }
+
     if(ctxBattle.phase === BTTL_STATE.TURN){
+      const turnDeltaMs = clamp(
+        toNumber(nowMs, performance.now()) - toNumber(ctxBattle.lastTickAtMs, nowMs),
+        0,
+        80
+      );
+      ctxBattle.lastTickAtMs = toNumber(nowMs, performance.now());
+      const heavyWindowActive = isBttlHeavyReactionWindowActive(ctxBattle, nowMs);
+      const timeScale = heavyWindowActive ? BTTL_HEAVY_REACT_SLOW_SCALE : 1;
+
       const paneMode = String(ctxBattle.rightPaneMode || BTTL_RIGHTPANE_MODE.SIGNAL_MENU);
       if(paneMode === BTTL_RIGHTPANE_MODE.SIGNAL_GAME){
         if(ctxBattle.signalSession){
+          if(heavyWindowActive){
+            const delayMs = turnDeltaMs * (1 - timeScale);
+            ctxBattle.signalSession.startedAtMs = toNumber(ctxBattle.signalSession.startedAtMs, nowMs) + delayMs;
+          }
           const elapsed = nowMs - toNumber(ctxBattle.signalSession.startedAtMs, nowMs);
           if(elapsed >= BTTL_SIGNAL_GAME_MAX_MS){
             finishBttlSignalGame(ctxBattle, "FAIL", nowMs, { timeout: true });
           }
         }else{
           const holdUntil = toNumber(ctxBattle.signalResult?.untilMs, 0);
+          if(heavyWindowActive && holdUntil > 0){
+            const delayMs = turnDeltaMs * (1 - timeScale);
+            ctxBattle.signalResult.untilMs = holdUntil + delayMs;
+          }
           if(holdUntil > 0 && nowMs >= holdUntil){
             ctxBattle.signalResult = null;
             clearBttlSignalSuccessFx(ctxBattle);
@@ -5504,9 +8931,19 @@
           }
         }
       }
-
-      updateBttlRealtimeProjectiles(ctxBattle, nowMs);
+      if(heavyWindowActive){
+        const delayMs = turnDeltaMs * (1 - timeScale);
+        ctxBattle.nextEnemyActAtMs = toNumber(ctxBattle.nextEnemyActAtMs, nowMs) + delayMs;
+        ctxBattle.nextAllyActAtMs = toNumber(ctxBattle.nextAllyActAtMs, nowMs) + delayMs;
+      }
+      updateBttlRealtimeProjectiles(ctxBattle, nowMs, timeScale);
+      updateBttlHeavyTelegraphState(ctxBattle, nowMs, timeScale);
+      updateBttlHeavyReactionSession(ctxBattle, nowMs);
       updateBttlEnemyActionAi(ctxBattle, nowMs);
+      updateBttlAllyActionAi(ctxBattle, nowMs);
+      updateBttlRangeRealtime(ctxBattle, nowMs, timeScale);
+      updateBttlStaminaState(ctxBattle, turnDeltaMs * timeScale);
+      updateBttlBreakState(ctxBattle, nowMs, turnDeltaMs * timeScale);
 
       let allyHp = Math.max(0, Math.floor(toNumber(ctxBattle.ally?.hp, 0)));
       let enemyHp = Math.max(0, Math.floor(toNumber(ctxBattle.enemy?.hp, 0)));
@@ -5521,13 +8958,13 @@
 
       if(nowMs >= toNumber(ctxBattle.nextEnemyActAtMs, nowMs)){
         beginBttlRealtimeAttack(ctxBattle, "enemy", nowMs);
-        const enemyInterval = computeBttlAttackIntervalMs(ctxBattle, "enemy");
+        const enemyInterval = computeBttlAttackIntervalMs(ctxBattle, "enemy", nowMs);
         ctxBattle.nextEnemyActAtMs = nowMs + enemyInterval;
         ctxBattle.turn += 1;
       }
       if(nowMs >= toNumber(ctxBattle.nextAllyActAtMs, nowMs)){
-        const allyLaunchEffect = beginBttlRealtimeAttack(ctxBattle, "ally", nowMs);
-        const allyInterval = computeBttlAttackIntervalMs(ctxBattle, "ally", allyLaunchEffect);
+        beginBttlRealtimeAttack(ctxBattle, "ally", nowMs);
+        const allyInterval = computeBttlAttackIntervalMs(ctxBattle, "ally", nowMs);
         ctxBattle.nextAllyActAtMs = nowMs + allyInterval;
       }
 
@@ -5584,6 +9021,7 @@
     const logTopY = rightInner.y + 16;
     const maxLines = Math.max(1, Math.min(BTTL_LOG_DRAW_LINES, Math.floor((rightInner.h - 18) / lineGap)));
     const logLines = allLogs.slice(-maxLines);
+    const isLogOverflow = allLogs.length > maxLines;
     if(logLines.length <= 0){
       drawText(right.x + 8, logTopY, "---", { scale: 1, color: "rgba(14,20,15,0.52)" });
       return;
@@ -5591,18 +9029,8 @@
     for(let i = 0; i < logLines.length; i++){
       const source = String(logLines[i] || "").trim();
       const fitted = fitTrnRightPaneText(source, right.w - 16, { scale: 1 });
-      drawText(right.x + 8, logTopY + (i * lineGap), fitted, { scale: 1, color: "rgba(14,20,15,0.90)" });
-    }
-    if(allLogs.length > maxLines){
-      const fadeH = Math.max(lineGap + 2, 10);
-      const fadeY = logTopY;
-      ctx.save();
-      const fade = ctx.createLinearGradient(0, fadeY, 0, fadeY + fadeH);
-      fade.addColorStop(0, "rgba(198,212,192,0.95)");
-      fade.addColorStop(1, "rgba(198,212,192,0.00)");
-      ctx.fillStyle = fade;
-      ctx.fillRect(rightInner.x + 1, fadeY, Math.max(2, rightInner.w - 2), fadeH);
-      ctx.restore();
+      const color = (isLogOverflow && i === 0) ? "rgba(14,20,15,0.46)" : "rgba(14,20,15,0.90)";
+      drawText(right.x + 8, logTopY + (i * lineGap), fitted, { scale: 1, color });
     }
   }
 
@@ -5610,6 +9038,7 @@
     const id = normalizeBttlSignalCommand(cmd);
     if(id === "boost") return "強化同期";
     if(id === "stabilize") return "安定化";
+    if(id === "overclock") return "過駆動";
     return "再較正";
   }
 
@@ -5631,13 +9060,25 @@
     let out = "";
     if(base === "BTTL START"){
       out = "戦闘開始";
-    }else if(base === "EN SHOT"){
+    }else if(base === "APPROACH"){
+      out = "間合いを詰める";
+    }else if(base === "RETREAT"){
+      out = "距離を取る";
+    }else if(base === "HOLD"){
+      out = "間合いを維持";
+    }else if(base === "RANGE SHORT"){
+      out = "レンジ SHORT";
+    }else if(base === "RANGE MID"){
+      out = "レンジ MID";
+    }else if(base === "RANGE LONG"){
+      out = "レンジ LONG";
+    }else if(base === "ENE SHOT" || base === "EN SHOT"){
       out = "敵が射出";
-    }else if(base === "AL SHOT"){
+    }else if(base === "YOU SHOT" || base === "AL SHOT"){
       out = "味方が射出";
-    }else if(base === "EN MISS"){
+    }else if(base === "ENE MISS" || base === "EN MISS"){
       out = "敵の攻撃は外れた";
-    }else if(base === "AL MISS"){
+    }else if(base === "YOU MISS" || base === "AL MISS"){
       out = "味方の攻撃は外れた";
     }else if(base === "NO STA"){
       out = "スタミナ不足";
@@ -5647,22 +9088,55 @@
       out = "敵を撃破";
     }else if(base === "LOSE"){
       out = "味方が停止";
+    }else if(base === "EN BRK+"){
+      out = "敵BREAK上昇";
+    }else if(base === "AL BRK+"){
+      out = "味方BREAK上昇";
+    }else if(base === "EN BRK HIGH"){
+      out = "敵BREAK高";
+    }else if(base === "AL BRK HIGH"){
+      out = "味方BREAK高";
+    }else if(base === "EN BREAK"){
+      out = "敵BREAK発生";
+    }else if(base === "AL BREAK"){
+      out = "味方BREAK発生";
+    }else if(base === "EN RECOVER"){
+      out = "敵BREAK回復";
+    }else if(base === "AL RECOVER"){
+      out = "味方BREAK回復";
     }else{
-      let m = base.match(/^EN DMG (\d+)$/);
+      let m = base.match(/^(?:ENE|EN) DMG (\d+)$/);
       if(m){
         out = `味方に ${Math.max(0, Math.floor(toNumber(m[1], 0)))} ダメージ`;
       }else{
-        m = base.match(/^AL DMG (\d+)$/);
+        m = base.match(/^(?:YOU|AL) DMG (\d+)$/);
         if(m){
           out = `敵に ${Math.max(0, Math.floor(toNumber(m[1], 0)))} ダメージ`;
         }else{
-          m = base.match(/^(BST|STB|CAL)\s+(BAD|NEAR|OK|SUC)$/);
+          m = base.match(/^(BST|STB|CAL|OVC)\s+(BAD|NEAR|OK|SUC)$/);
           if(m){
-            const cmd = m[1] === "BST" ? "boost" : (m[1] === "STB" ? "stabilize" : "calibrate");
+            let cmd = "calibrate";
+            if(m[1] === "BST"){
+              cmd = "boost";
+            }else if(m[1] === "STB"){
+              cmd = "stabilize";
+            }else if(m[1] === "OVC"){
+              cmd = "overclock";
+            }
             const grade = m[2] === "SUC" ? "SUCCESS" : m[2];
             out = `${getBttlSignalCommandLabelJa(cmd)} ${getBttlSignalGradeJa(grade)}`;
           }else{
-            out = base;
+            if(base === "BST ON"){
+              out = "強化同期 起動";
+            }else if(base === "STB ON"){
+              out = "安定化 起動";
+            }else if(base === "CAL ON"){
+              out = "再較正 起動";
+            }else if(base === "OVRCLK ON"){
+              out = "過駆動 起動";
+            }else{
+              out = base;
+            }
           }
         }
       }
@@ -5673,9 +9147,316 @@
     return out;
   }
 
-  function getBttlBottomNarrativeLines(ctxBattle, paneMode){
+  function stripBttlLogRepeatSuffix(rawText){
+    const source = String(rawText ?? "").trim();
+    if(source.length <= 0) return "";
+    const m = source.match(/^(.*)\sx\d+$/i);
+    return m ? String(m[1] || "").trim() : source;
+  }
+
+  function getBttlBottomNarrativeState(ctxBattle){
+    if(!ctxBattle) return null;
+    if(!isRecord(ctxBattle.bottomNarrative)){
+      ctxBattle.bottomNarrative = {
+        lines: [],
+        lastText: "",
+        lastCategory: "",
+        lastKind: "",
+        lastPushAtMs: 0,
+        lastSummaryAtMs: 0,
+        lastSeenLogBase: "",
+        lastEnemyAction: "",
+        lastKindAtByKind: {},
+      };
+    }
+    return ctxBattle.bottomNarrative;
+  }
+
+  function pickBttlBottomNarrativeText(kind, exclude = ""){
+    const list = BTTL_BOTTOM_NARRATIVE_LINES_BY_KIND[String(kind || "")] || null;
+    if(!Array.isArray(list) || list.length <= 0){
+      return "";
+    }
+    const cleanExclude = String(exclude || "").trim();
+    const choices = cleanExclude.length > 0
+      ? list.filter((line) => String(line || "").trim() !== cleanExclude)
+      : list.slice();
+    const pool = choices.length > 0 ? choices : list;
+    const idx = Math.floor(Math.random() * pool.length);
+    return String(pool[idx] || pool[0] || "").trim();
+  }
+
+  function pushBttlBottomNarrativeLine(ctxBattle, kind, category, nowMs = performance.now(), options = {}){
+    const memory = getBttlBottomNarrativeState(ctxBattle);
+    if(!memory) return false;
+    const now = toNumber(nowMs, performance.now());
+    const priority = Math.floor(toNumber(options.priority, 0));
+    const force = Boolean(options.force);
+    const safeKind = String(kind || "").trim();
+    const safeCategory = String(category || "").trim();
+    let text = String(options.text || pickBttlBottomNarrativeText(safeKind, memory.lastText)).trim();
+    if(text.length <= 0){
+      return false;
+    }
+    const elapsed = now - toNumber(memory.lastPushAtMs, 0);
+    const baseMinInterval = priority >= 95
+      ? Math.max(420, Math.floor(BTTL_BOTTOM_NARRATIVE_IMPORTANT_INTERVAL_MS * 0.66))
+      : (priority >= 80 ? BTTL_BOTTOM_NARRATIVE_IMPORTANT_INTERVAL_MS : BTTL_BOTTOM_NARRATIVE_MIN_INTERVAL_MS);
+    const categoryMinInterval = Math.max(
+      0,
+      toNumber(BTTL_BOTTOM_NARRATIVE_CATEGORY_MIN_INTERVAL_MS[safeCategory], 0)
+    );
+    const minInterval = Math.max(baseMinInterval, categoryMinInterval);
+    if(!force && elapsed < minInterval){
+      return false;
+    }
+    const kindCooldown = Math.max(
+      minInterval,
+      toNumber(BTTL_BOTTOM_NARRATIVE_KIND_COOLDOWN_MS[safeCategory], minInterval + 900)
+    );
+    const lastKindAt = Math.max(
+      0,
+      toNumber(isRecord(memory.lastKindAtByKind) ? memory.lastKindAtByKind[safeKind] : 0, 0)
+    );
+    if(!force && safeKind.length > 0 && lastKindAt > 0 && (now - lastKindAt) < kindCooldown){
+      return false;
+    }
+    if(
+      !force &&
+      text === String(memory.lastText || "").trim() &&
+      elapsed < BTTL_BOTTOM_NARRATIVE_DUPLICATE_BLOCK_MS
+    ){
+      return false;
+    }
+    const lines = Array.isArray(memory.lines) ? memory.lines.slice() : [];
+    lines.push({
+      text,
+      category: safeCategory,
+      kind: safeKind,
+      atMs: now,
+    });
+    while(lines.length > BTTL_BOTTOM_JP_MAX_LINES){
+      lines.shift();
+    }
+    memory.lines = lines;
+    memory.lastText = text;
+    memory.lastCategory = safeCategory;
+    memory.lastKind = safeKind;
+    memory.lastPushAtMs = now;
+    if(!isRecord(memory.lastKindAtByKind)){
+      memory.lastKindAtByKind = {};
+    }
+    if(safeKind.length > 0){
+      memory.lastKindAtByKind[safeKind] = now;
+    }
+    return true;
+  }
+
+  function parseBttlBottomNarrativeEvent(rawText){
+    const base = stripBttlLogRepeatSuffix(rawText);
+    if(base.length <= 0) return null;
+    if(base === "BTTL START"){
+      return { kind: "atmosphere_start", category: "atmosphere", priority: 95 };
+    }
+    if(base === "HEAVY IN"){
+      return { kind: "alert_heavy", category: "alert", priority: 100 };
+    }
+    if(base === "APPROACH"){
+      return { kind: "range_approach", category: "hint", priority: 78 };
+    }
+    if(base === "RETREAT"){
+      return { kind: "range_retreat", category: "hint", priority: 78 };
+    }
+    if(base === "HOLD"){
+      return { kind: "range_hold", category: "hint", priority: 74 };
+    }
+    if(base === "RANGE SHORT"){
+      return { kind: "range_short", category: "flow", priority: 84 };
+    }
+    if(base === "RANGE MID"){
+      return { kind: "range_mid", category: "flow", priority: 78 };
+    }
+    if(base === "RANGE LONG"){
+      return { kind: "range_long", category: "flow", priority: 80 };
+    }
+    if(base === "DODGE"){
+      return { kind: "alert_dodge", category: "alert", priority: 100 };
+    }
+    if(base === "PARRY"){
+      return { kind: "alert_parry", category: "alert", priority: 100 };
+    }
+    if(base === "REFLECT"){
+      return { kind: "alert_reflect", category: "alert", priority: 100 };
+    }
+    if(base === "REACT BAD"){
+      return { kind: "alert_bad", category: "alert", priority: 96 };
+    }
+    if(base === "EN BRK+"){
+      return { kind: "break_rise_enemy", category: "flow", priority: 78 };
+    }
+    if(base === "AL BRK+"){
+      return { kind: "break_rise_ally", category: "flow", priority: 82 };
+    }
+    if(base === "EN BRK HIGH"){
+      return { kind: "break_high_enemy", category: "alert", priority: 92 };
+    }
+    if(base === "AL BRK HIGH"){
+      return { kind: "break_high_ally", category: "alert", priority: 94 };
+    }
+    if(base === "EN BREAK"){
+      return { kind: "break_enemy", category: "alert", priority: 100 };
+    }
+    if(base === "AL BREAK"){
+      return { kind: "break_ally", category: "alert", priority: 100 };
+    }
+    if(base === "EN RECOVER"){
+      return { kind: "break_recover_enemy", category: "flow", priority: 86 };
+    }
+    if(base === "AL RECOVER"){
+      return { kind: "break_recover_ally", category: "flow", priority: 88 };
+    }
+    if(base === "EN DEF" || base === "ENE DEF" || base === "EN DEF DMG↓"){
+      return { kind: "hint_enemy_defend", category: "hint", priority: 88 };
+    }
+    if(base === "ENE MISS" || base === "EN MISS"){
+      return { kind: "cause_ene_miss", category: "cause", priority: 66 };
+    }
+    if(base === "YOU MISS" || base === "AL MISS"){
+      return { kind: "cause_you_miss", category: "cause", priority: 72 };
+    }
+    let m = base.match(/^(?:YOU|AL) DMG (\d+)$/);
+    if(m){
+      return { kind: "cause_you_dmg", category: "cause", priority: 70 };
+    }
+    m = base.match(/^(?:ENE|EN) DMG (\d+)$/);
+    if(m){
+      return { kind: "cause_ene_dmg", category: "cause", priority: 74 };
+    }
+    m = base.match(/^(BST|STB|CAL|OVC)\s+(BAD|NEAR|OK|SUC)$/);
+    if(m){
+      const cmd = m[1];
+      const grade = m[2];
+      if(cmd === "OVC"){
+        if(grade === "BAD" || grade === "NEAR"){
+          return { kind: "signal_ovc_bad", category: "signal", priority: 84 };
+        }
+        return { kind: "signal_ovc_ok", category: "signal", priority: 90 };
+      }
+      if(grade === "BAD" || grade === "NEAR"){
+        return { kind: "signal_bad", category: "signal", priority: 84 };
+      }
+      if(cmd === "BST"){
+        return { kind: "signal_bst_ok", category: "signal", priority: 86 };
+      }
+      if(cmd === "STB"){
+        return { kind: "signal_stb_ok", category: "signal", priority: 86 };
+      }
+      return { kind: "signal_cal_ok", category: "signal", priority: 86 };
+    }
+    if(base === "OVRCLK ON"){
+      return { kind: "signal_ovc_ok", category: "signal", priority: 92 };
+    }
+    if(base === "BST ON"){
+      return { kind: "signal_bst_ok", category: "signal", priority: 90 };
+    }
+    if(base === "STB ON"){
+      return { kind: "signal_stb_ok", category: "signal", priority: 90 };
+    }
+    if(base === "CAL ON"){
+      return { kind: "signal_cal_ok", category: "signal", priority: 90 };
+    }
+    if(base === "NO STA"){
+      return {
+        kind: "atmosphere_idle",
+        category: "atmosphere",
+        priority: 96,
+        text: "エネルギー切れ。休息が必要。",
+      };
+    }
+    if(base === "ABORT"){
+      return {
+        kind: "atmosphere_idle",
+        category: "atmosphere",
+        priority: 90,
+        text: "観測中断。記録を保存した。",
+      };
+    }
+    return null;
+  }
+
+  function maybePushBttlBottomSummary(ctxBattle, nowMs = performance.now()){
+    const memory = getBttlBottomNarrativeState(ctxBattle);
+    if(!memory) return;
+    const now = toNumber(nowMs, performance.now());
+    const elapsedSummary = now - toNumber(memory.lastSummaryAtMs, 0);
+    if(elapsedSummary < BTTL_BOTTOM_NARRATIVE_SUMMARY_INTERVAL_MS){
+      return;
+    }
+    const elapsedPush = now - toNumber(memory.lastPushAtMs, 0);
+    if(elapsedPush < BTTL_BOTTOM_NARRATIVE_MIN_INTERVAL_MS){
+      return;
+    }
+    const allyHp = Math.max(0, toNumber(ctxBattle?.ally?.hp, 0));
+    const allyMax = Math.max(1, toNumber(ctxBattle?.ally?.maxHp, 1));
+    const enemyHp = Math.max(0, toNumber(ctxBattle?.enemy?.hp, 0));
+    const enemyMax = Math.max(1, toNumber(ctxBattle?.enemy?.maxHp, 1));
+    const allyRatio = clamp(allyHp / allyMax, 0, 1);
+    const enemyRatio = clamp(enemyHp / enemyMax, 0, 1);
+    const ai = getBttlEnemyAiState(ctxBattle, now);
+    const allyHitRate = getBttlRecentHitRate(ai.recentAllyShots);
+    const enemyHitRate = getBttlRecentHitRate(ai.recentEnemyShots);
+    let kind = "flow_even";
+    if((allyRatio - enemyRatio) > 0.16 && allyHitRate >= (enemyHitRate - 0.05)){
+      kind = "flow_advantage";
+    }else if((enemyRatio - allyRatio) > 0.16 || enemyHitRate >= (allyHitRate + 0.24)){
+      kind = "flow_pressure";
+    }
+    if(pushBttlBottomNarrativeLine(ctxBattle, kind, "flow", now, { priority: 42 })){
+      memory.lastSummaryAtMs = now;
+    }
+  }
+
+  function updateBttlBottomNarrative(ctxBattle, nowMs = performance.now()){
+    const memory = getBttlBottomNarrativeState(ctxBattle);
+    if(!memory) return;
+    const now = toNumber(nowMs, performance.now());
+    const actionId = getBttlEnemyActionId(ctxBattle?.enemyAi?.currentAction);
+    if(actionId !== String(memory.lastEnemyAction || "")){
+      memory.lastEnemyAction = actionId;
+      if(actionId === BTTL_ENEMY_ACTION.DEFEND){
+        pushBttlBottomNarrativeLine(ctxBattle, "hint_enemy_defend", "hint", now, { priority: 88 });
+      }
+    }
+    const allLogs = Array.isArray(ctxBattle?.logs) ? ctxBattle.logs : [];
+    const latestBase = stripBttlLogRepeatSuffix(allLogs[allLogs.length - 1] || "");
+    if(latestBase.length > 0 && latestBase !== String(memory.lastSeenLogBase || "")){
+      memory.lastSeenLogBase = latestBase;
+      const evt = parseBttlBottomNarrativeEvent(latestBase);
+      if(evt){
+        pushBttlBottomNarrativeLine(ctxBattle, evt.kind, evt.category, now, {
+          priority: evt.priority,
+          text: evt.text,
+        });
+      }
+    }
+    maybePushBttlBottomSummary(ctxBattle, now);
+    if(!Array.isArray(memory.lines) || memory.lines.length <= 0){
+      pushBttlBottomNarrativeLine(ctxBattle, "atmosphere_start", "atmosphere", now, {
+        priority: 95,
+        force: true,
+      });
+    }
+  }
+
+  function getBttlBottomNarrativeLines(ctxBattle, paneMode, nowMs = performance.now()){
     const mode = String(paneMode || "");
     if(mode === BTTL_RIGHTPANE_MODE.SIGNAL_GAME){
+      if(isBttlHeavyReactionWindowActive(ctxBattle, nowMs)){
+        return [
+          "重攻撃接近  Cで反応",
+          "他操作は一時停止",
+        ];
+      }
       if(ctxBattle?.signalSession){
         const cmdJa = getBttlSignalCommandLabelJa(ctxBattle.signalSession.cmd);
         return [
@@ -5685,24 +9466,60 @@
       }
       if(ctxBattle?.signalResult){
         const resultJa = getBttlSignalGradeJa(ctxBattle.signalResult.grade);
+        const resultCmd = normalizeBttlSignalCommand(ctxBattle.signalResult.cmd);
+        const active = Boolean(ctxBattle.signalResult.buffActive);
+        const durationMs = Math.max(0, Math.floor(toNumber(ctxBattle.signalResult.buffDurationMs, 0)));
+        const secText = (durationMs > 0) ? `${(durationMs / 1000).toFixed(1)}s` : "0.0s";
+        if(!active){
+          if(resultCmd === "overclock"){
+            return [
+              `介入結果 ${resultJa}`,
+              "過駆動は不発",
+            ];
+          }
+          return [
+            `介入結果 ${resultJa}`,
+            "補正は不成立",
+          ];
+        }
+        if(resultCmd === "boost"){
+          return [
+            `介入結果 ${resultJa}`,
+            "強化同期 起動",
+            `攻勢補正 ${secText}`,
+          ];
+        }
+        if(resultCmd === "stabilize"){
+          return [
+            `介入結果 ${resultJa}`,
+            "安定化 起動",
+            `収束補正 ${secText}`,
+          ];
+        }
+        if(resultCmd === "overclock"){
+          return [
+            `介入結果 ${resultJa}`,
+            "過駆動 起動",
+            `接近補助 ${secText}`,
+          ];
+        }
         return [
           `介入結果 ${resultJa}`,
-          "次の味方弾1発に反映",
+          "再較正 起動",
+          `汎用補正 ${secText}`,
         ];
       }
     }
-    const allLogs = Array.isArray(ctxBattle?.logs) ? ctxBattle.logs : [];
-    const recent = allLogs
-      .slice(-(BTTL_BOTTOM_JP_MAX_LINES + 2))
-      .map(toBttlJpLogLine)
+    updateBttlBottomNarrative(ctxBattle, nowMs);
+    const memory = getBttlBottomNarrativeState(ctxBattle);
+    const rows = Array.isArray(memory?.lines) ? memory.lines : [];
+    const out = rows
+      .map((row) => String(row?.text || "").trim())
       .filter((line) => line.length > 0);
-    if(recent.length <= 0){
-      return ["戦闘中...", "介入タイミングを選択"];
+    if(out.length <= 0){
+      return ["観測中...", "戦況を解析している。"];
     }
-    while(recent.length < 2){
-      recent.unshift("戦闘中...");
-    }
-    return recent.slice(-BTTL_BOTTOM_JP_MAX_LINES);
+    return out.slice(-BTTL_BOTTOM_NARRATIVE_DRAW_LINES);
   }
 
   function drawBttlBottomPane(ctxBattle, bottom, paneMode, nowMs = performance.now()){
@@ -5713,14 +9530,17 @@
       h: Math.max(20, bottom.h - 8),
     };
     drawBox(inner.x, inner.y, inner.w, inner.h);
-    const lines = getBttlBottomNarrativeLines(ctxBattle, paneMode).slice(-BTTL_BOTTOM_JP_MAX_LINES);
-    const jpLines = lines.map((line) => fitJaText(line, inner.w - 6, 11));
+    const lines = getBttlBottomNarrativeLines(ctxBattle, paneMode, nowMs).slice(-BTTL_BOTTOM_JP_MAX_LINES);
+    const jpLines = lines.map((line) => fitJaText(line, inner.w - 6, 10));
     showBttlBottomPaneOverlay(jpLines, {
       x: inner.x + 2,
       y: inner.y + 2,
       w: Math.max(8, inner.w - 4),
       h: Math.max(8, inner.h - 4),
     });
+    if(overlayBottomPane){
+      overlayBottomPane.style.opacity = isBttlHeavyReactionWindowActive(ctxBattle, nowMs) ? "0.62" : "1";
+    }
   }
 
   function drawBttlRightPaneSignalMenu(ctxBattle, right, rightInner){
@@ -5788,32 +9608,23 @@
     const maxMiniLines = Math.max(1, Math.min(10, Math.floor(availableH / miniLineGap)));
     const allLogs = Array.isArray(ctxBattle.logs) ? ctxBattle.logs : [];
     const miniLogs = allLogs.slice(-maxMiniLines);
+    const isMiniOverflow = allLogs.length > maxMiniLines;
     if(miniLogs.length <= 0){
       drawText(logBoxX + 2, logBoxY + 14, "---", { scale: 1, color: "rgba(14,20,15,0.48)" });
       return;
     }
     for(let i = 0; i < miniLogs.length; i++){
       const fitted = fitTrnRightPaneText(String(miniLogs[i] || "").trim(), logBoxW - 6, { scale: 1 });
-      drawText(logBoxX + 2, logBoxY + 14 + (i * miniLineGap), fitted, { scale: 1, color: "rgba(14,20,15,0.86)" });
+      const color = (isMiniOverflow && i === 0) ? "rgba(14,20,15,0.42)" : "rgba(14,20,15,0.86)";
+      drawText(logBoxX + 2, logBoxY + 14 + (i * miniLineGap), fitted, { scale: 1, color });
     }
 
-    // Head fade appears only after the log starts pushing older rows upward.
-    if(allLogs.length > maxMiniLines){
-      const fadeH = Math.max(miniLineGap + 2, 12);
-      const fadeY = logBoxY + 12;
-      ctx.save();
-      const fade = ctx.createLinearGradient(0, fadeY, 0, fadeY + fadeH);
-      fade.addColorStop(0, "rgba(198,212,192,0.95)");
-      fade.addColorStop(1, "rgba(198,212,192,0.00)");
-      ctx.fillStyle = fade;
-      ctx.fillRect(logBoxX + 1, fadeY, Math.max(2, logBoxW - 2), fadeH);
-      ctx.restore();
-    }
   }
 
   function drawBttlRightPaneSignalGame(ctxBattle, right, nowMs){
     const metrics = getBttlSignalGameMetrics(getBttlFieldGeometry());
     const rightInner = metrics.rightInner;
+    const heavyWindowActive = isBttlHeavyReactionWindowActive(ctxBattle, nowMs);
     const badShakeUntilMs = toNumber(ctxBattle.signalFxBadShakeUntilMs, 0);
     const isBadShakeActive = nowMs < badShakeUntilMs;
     const shakeX = isBadShakeActive ? (Math.sign(toNumber(ctxBattle.signalFxBadShakeDir, 1)) || 1) : 0;
@@ -5920,7 +9731,7 @@
         );
         drawIdealRing(ringCx, ringCy, metrics.minR, 1, "rgba(14,20,15,0.20)");
         drawIdealRing(ringCx, ringCy, metrics.maxR, 1, "rgba(14,20,15,0.16)");
-        drawText(metrics.footerRect.x, metrics.footerRect.y + 4, "A:STOP B:BACK", { scale: 1 });
+        drawText(metrics.footerRect.x, metrics.footerRect.y + 4, heavyWindowActive ? "C:REACT" : "A:STOP B:BACK", { scale: 1 });
         return;
       }
       const grade = String(ctxBattle.signalResult?.grade || "").trim();
@@ -5953,6 +9764,428 @@
     ctx.restore();
   }
 
+  function drawBttlWarningTapeBand(frameRect, bandY, direction, elapsedMs){
+    if(!frameRect) return;
+    const bandX = Math.round(frameRect.x + 2);
+    const bandW = Math.max(24, Math.round(frameRect.w - 4));
+    const bandH = 26;
+    const y = Math.round(bandY);
+    const text = "WARNING!!";
+    const scale = 1;
+    const adv = Math.max(1, Math.floor(toNumber(BITMAP_ADVANCE_X, 6)) * scale);
+    const unitW = Math.max(12, text.length * adv);
+    const speedPxPerMs = 0.070;
+    const scrollRaw = (elapsedMs * speedPxPerMs) % unitW;
+    const scroll = direction >= 0 ? scrollRaw : (unitW - scrollRaw);
+    const startX = Math.round(bandX - unitW + scroll);
+
+    ctx.save();
+    // Inverted warning tape: solid dark band + bright text.
+    ctx.fillStyle = "rgba(14,20,15,1.00)";
+    ctx.fillRect(bandX, y, bandW, bandH);
+    ctx.strokeStyle = "rgba(200,214,194,0.86)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(bandX + 0.5, y + 0.5);
+    ctx.lineTo(bandX + bandW - 0.5, y + 0.5);
+    ctx.moveTo(bandX + 0.5, y + bandH - 0.5);
+    ctx.lineTo(bandX + bandW - 0.5, y + bandH - 0.5);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.rect(bandX + 1, y + 1, Math.max(2, bandW - 2), Math.max(2, bandH - 2));
+    ctx.clip();
+    for(let x = startX; x < (bandX + bandW + unitW); x += unitW){
+      drawText(Math.round(x), y + 9, text, {
+        scale,
+        color: "rgba(200,214,194,1.00)",
+      });
+    }
+    ctx.restore();
+  }
+
+  function drawBttlWarningHatchOverlay(frameRect, excludeRects = [], nowMs = performance.now(), opts = {}){
+    if(!frameRect) return;
+    const x = Math.round(frameRect.x + 1);
+    const y = Math.round(frameRect.y + 1);
+    const w = Math.max(2, Math.round(frameRect.w - 2));
+    const h = Math.max(2, Math.round(frameRect.h - 2));
+    const step = Math.max(
+      6,
+      Math.floor(toNumber(opts.step, toNumber(BTTL_START_INTRO_WARNING_HATCH_STEP, 12)))
+    );
+    const hatchAlpha = clamp(
+      toNumber(opts.alpha, toNumber(BTTL_START_INTRO_WARNING_HATCH_ALPHA, 0.12)),
+      0,
+      0.6
+    );
+    const phase = (toNumber(nowMs, performance.now()) * 0.05) % step;
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x, y, w, h);
+    for(let i = 0; i < excludeRects.length; i++){
+      const r = excludeRects[i];
+      if(!r) continue;
+      ctx.rect(
+        Math.round(toNumber(r.x, 0)),
+        Math.round(toNumber(r.y, 0)),
+        Math.max(2, Math.round(toNumber(r.w, 0))),
+        Math.max(2, Math.round(toNumber(r.h, 0)))
+      );
+    }
+    ctx.clip("evenodd");
+    ctx.strokeStyle = `rgba(14,20,15,${hatchAlpha.toFixed(3)})`;
+    ctx.lineWidth = 1;
+    for(let sx = x - h + phase; sx < (x + w + h); sx += step){
+      ctx.beginPath();
+      ctx.moveTo(sx, y + h);
+      ctx.lineTo(sx + h, y);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawBttlEncountCenterPlate(frameRect, centerRect, text, nowMs = performance.now(), opts = {}){
+    if(!frameRect || !centerRect) return;
+    const rawText = String(text ?? "").trim();
+    if(rawText.length <= 0) return;
+    const cx = Math.round(centerRect.x + (centerRect.w * 0.5));
+    const cy = Math.round(centerRect.y + (centerRect.h * 0.5));
+    const textYOffset = Math.round(toNumber(opts.textYOffset, -18));
+    const plateH = Math.max(28, Math.round(toNumber(opts.plateH, 40)));
+    const plateW = Math.max(140, Math.round(toNumber(opts.plateW, Math.max(180, centerRect.w - 10))));
+    const textY = cy + textYOffset;
+    const plateX = Math.round(cx - Math.floor(plateW / 2));
+    const plateY = Math.round(textY - 4);
+    const fitW = Math.max(84, plateW - 10);
+    let textScale = Math.max(3, Math.floor(toNumber(opts.textScale, toNumber(BTTL_START_INTRO_ENCOUNT_TEXT_SCALE, 5))));
+    while(textScale > 3){
+      const mw = Number(uiTextMeasure(rawText, { scale: textScale })?.width) || 0;
+      if(mw <= fitW){
+        break;
+      }
+      textScale -= 1;
+    }
+    const measuredWidth = Number(uiTextMeasure(rawText, { scale: textScale })?.width) || 0;
+    const fitted = measuredWidth <= fitW
+      ? rawText
+      : fitTrnRightPaneText(rawText, fitW, { scale: textScale });
+
+    const hatchAlpha = toNumber(opts.hatchAlpha, toNumber(BTTL_START_INTRO_ENCOUNT_HATCH_ALPHA, 0.08));
+    const hatchStep = toNumber(opts.hatchStep, toNumber(BTTL_START_INTRO_ENCOUNT_HATCH_STEP, 14));
+    const plateFillColor = String(opts.plateFillColor || "rgba(14,20,15,0.86)");
+    const plateStrokeColor = String(opts.plateStrokeColor || "rgba(200,214,194,0.82)");
+    const textShadowColor = String(opts.textShadowColor || "rgba(200,214,194,0.62)");
+    const textColor = String(opts.textColor || "rgba(200,214,194,0.98)");
+    const textShadowOffsetX = Math.round(toNumber(opts.textShadowOffsetX, 1));
+    const textShadowOffsetY = Math.round(toNumber(opts.textShadowOffsetY, 0));
+    if(opts.drawHatch !== false){
+      drawBttlWarningHatchOverlay(
+        frameRect,
+        [{ x: plateX, y: plateY, w: plateW, h: plateH }],
+        nowMs,
+        { alpha: hatchAlpha, step: hatchStep }
+      );
+    }
+
+    ctx.save();
+    ctx.fillStyle = plateFillColor;
+    ctx.fillRect(plateX, plateY, plateW, plateH);
+    ctx.strokeStyle = plateStrokeColor;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(plateX + 0.5, plateY + 0.5, plateW - 1, plateH - 1);
+    drawText(cx + textShadowOffsetX, textY + textShadowOffsetY, fitted, {
+      scale: textScale,
+      align: "center",
+      color: textShadowColor,
+    });
+    drawText(cx, textY, fitted, {
+      scale: textScale,
+      align: "center",
+      color: textColor,
+    });
+    ctx.restore();
+  }
+
+  function drawBttlStartIntroOverlay(ctxBattle, frameRect, leftPane, nowMs = performance.now()){
+    if(!isBttlStartIntroActive(ctxBattle, nowMs) || !leftPane || !frameRect) return;
+    const now = toNumber(nowMs, performance.now());
+    const introType = normalizeBttlStartIntroType(ctxBattle.startIntroType);
+    const startedAtMs = toNumber(ctxBattle.startIntroStartedAtMs, now);
+    const durationMs = Math.max(1, toNumber(ctxBattle.startIntroDurationMs, BTTL_START_INTRO_ENCOUNT_MS));
+    const elapsedMs = Math.max(0, now - startedAtMs);
+    const progress = clamp(elapsedMs / durationMs, 0, 1);
+
+    const text = introType === BTTL_START_INTRO_TYPE.WARNING ? "WARNING!!" : "ENCOUNT";
+    const flashMax = introType === BTTL_START_INTRO_TYPE.WARNING
+      ? toNumber(BTTL_START_INTRO_WARNING_FLASH_MAX_ALPHA, 0.24)
+      : toNumber(BTTL_START_INTRO_ENCOUNT_FLASH_MAX_ALPHA, 0.16);
+    const flashWindow = introType === BTTL_START_INTRO_TYPE.WARNING ? 0.30 : 0.22;
+    let flashAlpha = 0;
+    if(progress < flashWindow){
+      flashAlpha = flashMax * (1 - (progress / flashWindow));
+    }
+    if(introType === BTTL_START_INTRO_TYPE.WARNING){
+      const pulse = ((Math.sin((elapsedMs / 76) * Math.PI * 2) + 1) * 0.5) * 0.08;
+      flashAlpha = Math.max(flashAlpha, pulse);
+    }
+
+    const centerPane = introType === BTTL_START_INTRO_TYPE.WARNING ? frameRect : leftPane;
+    const cx = Math.round(centerPane.x + (centerPane.w * 0.5));
+    const cy = Math.round(centerPane.y + (centerPane.h * 0.5));
+    const textScale = introType === BTTL_START_INTRO_TYPE.WARNING
+      ? 5
+      : Math.max(4, Math.floor(toNumber(BTTL_START_INTRO_ENCOUNT_TEXT_SCALE, 5)));
+    const blinkMs = introType === BTTL_START_INTRO_TYPE.WARNING
+      ? 80
+      : Math.max(40, Math.floor(toNumber(BTTL_START_INTRO_ENCOUNT_BLINK_MS, 72)));
+    const finalHoldRatio = introType === BTTL_START_INTRO_TYPE.WARNING
+      ? clamp(toNumber(BTTL_START_INTRO_WARNING_FINAL_HOLD_RATIO, 0.30), 0.05, 0.60)
+      : clamp(toNumber(BTTL_START_INTRO_ENCOUNT_FINAL_HOLD_RATIO, 0.30), 0.10, 0.85);
+    const holdStart = Math.max(0, 1 - finalHoldRatio);
+    const showText = introType === BTTL_START_INTRO_TYPE.WARNING
+      ? (progress >= holdStart || (Math.floor(elapsedMs / blinkMs) % 2 === 0))
+      : (
+        (progress >= holdStart) ||
+        (progress >= 0.04 && (Math.floor(elapsedMs / blinkMs) % 2 === 0))
+      );
+
+    ctx.save();
+    if(introType === BTTL_START_INTRO_TYPE.WARNING){
+      const strongDim = clamp(0.44 + (flashAlpha * 0.28), 0, 0.82);
+      ctx.fillStyle = `rgba(14,20,15,${strongDim.toFixed(3)})`;
+      ctx.fillRect(frameRect.x + 1, frameRect.y + 1, Math.max(2, frameRect.w - 2), Math.max(2, frameRect.h - 2));
+    }else if(flashAlpha > 0.001){
+      // ENCOUNT flash is intentionally weak and bright, unlike WARNING's strong dark dim.
+      const weakFlashAlpha = clamp(flashAlpha * 0.62, 0, 0.16);
+      ctx.fillStyle = `rgba(200,214,194,${weakFlashAlpha.toFixed(3)})`;
+      ctx.fillRect(frameRect.x + 1, frameRect.y + 1, Math.max(2, frameRect.w - 2), Math.max(2, frameRect.h - 2));
+    }
+
+    if(introType === BTTL_START_INTRO_TYPE.WARNING){
+      const topTapeRect = {
+        x: frameRect.x + 2,
+        y: frameRect.y + 10,
+        w: Math.max(24, frameRect.w - 4),
+        h: 26,
+      };
+      const bottomTapeRect = {
+        x: frameRect.x + 2,
+        y: frameRect.y + frameRect.h - 46,
+        w: Math.max(24, frameRect.w - 4),
+        h: 26,
+      };
+      const centerPlateW = clamp(Math.floor(frameRect.w * 0.78), 200, Math.max(200, frameRect.w - 24));
+      const centerPlateH = 58;
+      const warningY = cy - 22;
+      const centerPlateRect = {
+        x: Math.round(cx - Math.floor(centerPlateW / 2)),
+        y: Math.round(warningY - 5),
+        w: centerPlateW,
+        h: centerPlateH,
+      };
+
+      // Add subtle //// overlay over whole frame, excluding warning tapes and center warning plate.
+      drawBttlWarningHatchOverlay(frameRect, [topTapeRect, bottomTapeRect, centerPlateRect], nowMs);
+
+      // Full-width warning tapes across all 3 panes.
+      drawBttlWarningTapeBand(frameRect, topTapeRect.y, 1, elapsedMs);
+      drawBttlWarningTapeBand(frameRect, bottomTapeRect.y, -1, elapsedMs);
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(frameRect.x + 2, frameRect.y + 2, Math.max(2, frameRect.w - 4), Math.max(2, frameRect.h - 4));
+      ctx.clip();
+      ctx.fillStyle = `rgba(14,20,15,${clamp(toNumber(BTTL_START_INTRO_WARNING_NOISE_ALPHA, 0.14), 0, 0.8).toFixed(3)})`;
+      for(let i = 0; i < 18; i++){
+        const seed = elapsedMs * 0.013 + i * 1.91;
+        const nx = (Math.sin(seed * 1.47) + 1) * 0.5;
+        const ny = (Math.cos(seed * 2.03) + 1) * 0.5;
+        const x = Math.round(frameRect.x + 4 + nx * Math.max(2, frameRect.w - 12));
+        const y = Math.round(frameRect.y + 4 + ny * Math.max(2, frameRect.h - 12));
+        const w = 2 + (i % 4);
+        ctx.fillRect(x, y, w, 1);
+      }
+      ctx.restore();
+      if(showText){
+        const fitW = Math.max(64, frameRect.w - 24);
+        const fitted = fitTrnRightPaneText(text, fitW, { scale: textScale });
+        ctx.fillStyle = "rgba(200,214,194,0.92)";
+        ctx.fillRect(centerPlateRect.x, centerPlateRect.y, centerPlateRect.w, centerPlateRect.h);
+        ctx.strokeStyle = "rgba(14,20,15,1.00)";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(centerPlateRect.x + 0.5, centerPlateRect.y + 0.5, centerPlateRect.w - 1, centerPlateRect.h - 1);
+        drawText(cx - 1, warningY, fitted, { scale: textScale, align: "center", color: "rgba(14,20,15,1.00)" });
+        drawText(cx + 1, warningY, fitted, { scale: textScale, align: "center", color: "rgba(14,20,15,1.00)" });
+        drawText(cx, warningY, fitted, { scale: textScale, align: "center", color: "rgba(14,20,15,1.00)" });
+        drawText(cx, centerPlateRect.y + 46, "HOSTILE REACTION", {
+          scale: 1,
+          align: "center",
+          color: "rgba(14,20,15,0.94)",
+        });
+      }
+    }else if(showText){
+      drawBttlEncountCenterPlate(frameRect, leftPane, text, nowMs, {
+        textYOffset: -18,
+        plateH: 40,
+        plateW: Math.max(180, Math.round(leftPane.w - 10)),
+        textScale: toNumber(BTTL_START_INTRO_ENCOUNT_TEXT_SCALE, 5),
+        hatchAlpha: toNumber(BTTL_START_INTRO_ENCOUNT_HATCH_ALPHA, 0.08),
+        hatchStep: toNumber(BTTL_START_INTRO_ENCOUNT_HATCH_STEP, 14),
+      });
+    }
+
+    if(introType === BTTL_START_INTRO_TYPE.WARNING){
+      const borderAlpha = 0.22 * (1 - progress);
+      ctx.strokeStyle = `rgba(14,20,15,${clamp(borderAlpha, 0, 0.4).toFixed(3)})`;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(frameRect.x + 1.5, frameRect.y + 1.5, Math.max(2, frameRect.w - 3), Math.max(2, frameRect.h - 3));
+    }
+    ctx.restore();
+  }
+
+  function drawBttlEndOutroOverlay(ctxBattle, frameRect, nowMs = performance.now()){
+    if(!isBttlEndOutroActive(ctxBattle, nowMs) || !frameRect) return;
+    const now = toNumber(nowMs, performance.now());
+    const startedAt = toNumber(ctxBattle.endOutroStartedAtMs, now);
+    const elapsed = Math.max(0, now - startedAt);
+    const type = normalizeBttlEndOutroType(ctxBattle.endOutroType);
+    const timing = getBttlEndOutroTiming(type);
+
+    ctx.save();
+    if(type === BTTL_END_OUTRO_TYPE.WIN){
+      let flashAlpha = 0;
+      if(elapsed <= timing.flash1End){
+        const p = clamp(elapsed / Math.max(1, timing.flashMs), 0, 1);
+        flashAlpha = 0.34 * (1 - p * 0.35);
+      }else if(elapsed >= timing.flash2Start && elapsed <= timing.flash2End){
+        const p = clamp((elapsed - timing.flash2Start) / Math.max(1, timing.flashMs), 0, 1);
+        flashAlpha = 0.30 * (1 - p * 0.45);
+      }
+      if(flashAlpha > 0.001){
+        ctx.fillStyle = `rgba(200,214,194,${clamp(flashAlpha, 0, 0.46).toFixed(3)})`;
+        ctx.fillRect(frameRect.x + 1, frameRect.y + 1, Math.max(2, frameRect.w - 2), Math.max(2, frameRect.h - 2));
+      }
+
+      if(elapsed >= timing.holdStart && elapsed <= timing.holdEnd){
+        const cx = Math.round(frameRect.x + (frameRect.w * 0.5));
+        const cy = Math.round(frameRect.y + (frameRect.h * 0.5));
+        const text = "WIN";
+        const scale = 5;
+        const plateW = clamp(Math.floor(frameRect.w * 0.44), 140, Math.max(140, frameRect.w - 30));
+        const plateH = 52;
+        const plateX = Math.round(cx - Math.floor(plateW / 2));
+        const plateY = Math.round(cy - 28);
+        ctx.fillStyle = "rgba(200,214,194,0.94)";
+        ctx.fillRect(plateX, plateY, plateW, plateH);
+        ctx.strokeStyle = "rgba(14,20,15,1.00)";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(plateX + 0.5, plateY + 0.5, plateW - 1, plateH - 1);
+        drawText(cx - 1, plateY + 8, text, {
+          scale,
+          align: "center",
+          color: "rgba(14,20,15,0.86)",
+        });
+        drawText(cx + 1, plateY + 8, text, {
+          scale,
+          align: "center",
+          color: "rgba(14,20,15,0.86)",
+        });
+        drawText(cx, plateY + 8, text, {
+          scale,
+          align: "center",
+          color: "rgba(14,20,15,1.00)",
+        });
+      }
+
+      if(elapsed > timing.fadeInStart && elapsed <= timing.fadeInEnd){
+        const p = clamp((elapsed - timing.fadeInStart) / Math.max(1, timing.fadeInMs), 0, 1);
+        ctx.fillStyle = `rgba(200,214,194,${p.toFixed(3)})`;
+        ctx.fillRect(frameRect.x + 1, frameRect.y + 1, Math.max(2, frameRect.w - 2), Math.max(2, frameRect.h - 2));
+      }
+      ctx.restore();
+      return;
+    }
+
+    let darkAlpha = 0;
+    if(elapsed <= timing.preFadeMs){
+      const p = clamp(elapsed / Math.max(1, timing.preFadeMs), 0, 1);
+      darkAlpha = 0.72 * p;
+    }else if(elapsed <= timing.holdEnd){
+      darkAlpha = 0.72;
+    }else if(elapsed <= timing.fadeInEnd){
+      const p = clamp((elapsed - timing.fadeInStart) / Math.max(1, timing.fadeInMs), 0, 1);
+      darkAlpha = 0.72 + ((0.96 - 0.72) * p);
+    }
+    ctx.fillStyle = `rgba(14,20,15,${clamp(darkAlpha, 0, 0.98).toFixed(3)})`;
+    ctx.fillRect(frameRect.x + 1, frameRect.y + 1, Math.max(2, frameRect.w - 2), Math.max(2, frameRect.h - 2));
+
+    // Subtle scanlines + noise for LOSS/ABORT.
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(frameRect.x + 1, frameRect.y + 1, Math.max(2, frameRect.w - 2), Math.max(2, frameRect.h - 2));
+    ctx.clip();
+    ctx.fillStyle = "rgba(200,214,194,0.06)";
+    for(let y = Math.round(frameRect.y + 2); y < (frameRect.y + frameRect.h - 2); y += 3){
+      ctx.fillRect(Math.round(frameRect.x + 2), y, Math.max(2, frameRect.w - 4), 1);
+    }
+    ctx.fillStyle = `rgba(200,214,194,${clamp(toNumber(BTTL_END_OUTRO_LOST_NOISE_ALPHA, 0.10), 0, 0.24).toFixed(3)})`;
+    for(let i = 0; i < 16; i++){
+      const seed = elapsed * 0.014 + i * 1.73;
+      const nx = (Math.sin(seed * 1.31) + 1) * 0.5;
+      const ny = (Math.cos(seed * 1.97) + 1) * 0.5;
+      const x = Math.round(frameRect.x + 4 + nx * Math.max(2, frameRect.w - 12));
+      const y = Math.round(frameRect.y + 4 + ny * Math.max(2, frameRect.h - 12));
+      ctx.fillRect(x, y, 2 + (i % 2), 1);
+    }
+    ctx.restore();
+
+    if(elapsed >= timing.holdStart && elapsed <= timing.holdEnd){
+      const cx = Math.round(frameRect.x + (frameRect.w * 0.5));
+      const cy = Math.round(frameRect.y + (frameRect.h * 0.5));
+      const text = "SIGNAL LOST";
+      const scale = 3;
+      const fitW = Math.max(100, frameRect.w - 30);
+      const fitted = fitTrnRightPaneText(text, fitW, { scale });
+      const plateW = clamp(Math.floor(frameRect.w * 0.62), 180, Math.max(180, frameRect.w - 24));
+      const plateH = 44;
+      const plateX = Math.round(cx - Math.floor(plateW / 2));
+      const plateY = Math.round(cy - 22);
+      ctx.fillStyle = "rgba(14,20,15,0.88)";
+      ctx.fillRect(plateX, plateY, plateW, plateH);
+      ctx.strokeStyle = "rgba(200,214,194,0.84)";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(plateX + 0.5, plateY + 0.5, plateW - 1, plateH - 1);
+      drawText(cx, plateY + 10, fitted, {
+        scale,
+        align: "center",
+        color: "rgba(200,214,194,0.98)",
+      });
+    }
+    ctx.restore();
+  }
+
+  function drawBttlResultRevealOverlay(nowMs = performance.now()){
+    const reveal = isRecord(uiState.bttlResultReveal) ? uiState.bttlResultReveal : null;
+    if(!reveal){
+      setBttlRevealOverlayVisual(0, "black");
+      return;
+    }
+    const started = toNumber(reveal.startedAtMs, 0);
+    const duration = Math.max(1, toNumber(reveal.durationMs, 1));
+    const now = toNumber(nowMs, performance.now());
+    const elapsed = Math.max(0, now - started);
+    const progress = clamp(elapsed / duration, 0, 1);
+    const initialAlpha = clamp(toNumber(reveal.initialAlpha, 1), 0, 1);
+    const alpha = initialAlpha * (1 - progress);
+    const mode = String(reveal.mode || "white").toLowerCase();
+    setBttlRevealOverlayVisual(alpha, mode);
+    if(progress >= 1){
+      uiState.bttlResultReveal = null;
+      setBttlRevealOverlayVisual(0, mode);
+    }
+  }
+
   function drawBttlScreen(view, nowMs = performance.now()){
     if(uiState.overlayMode != null){
       hideOverlayLog();
@@ -5966,10 +10199,33 @@
     const field = getBttlFieldGeometry();
     const { frame, left, right, bottom } = field;
     const spritePx = field.spritePx;
+    const heavyWindowActive = isBttlHeavyReactionWindowActive(ctxBattle, nowMs);
+    const startIntroActive = isBttlStartIntroActive(ctxBattle, nowMs);
+    const endOutroActive = isBttlEndOutroActive(ctxBattle, nowMs);
+    const heavySession = isRecord(ctxBattle.heavyReactSession) ? ctxBattle.heavyReactSession : null;
+    const heavyFocusPoint = getBttlHeavyReactPoint(field);
+    const focusX = Math.round(clamp(
+      toNumber(heavySession?.focusX, heavyFocusPoint.x),
+      field.innerRect.x + 12,
+      field.innerRect.x + field.innerRect.w - 12
+    ));
+    const focusY = Math.round(clamp(
+      toNumber(heavySession?.focusY, heavyFocusPoint.y),
+      field.innerRect.y + 12,
+      field.innerRect.y + field.innerRect.h - 12
+    ));
 
     hudTitle.textContent = "BTTL";
-    if(ctxBattle.phase === BTTL_STATE.RESULT){
+    if(endOutroActive){
+      const outroType = normalizeBttlEndOutroType(ctxBattle.endOutroType);
+      hudHint.textContent = outroType === BTTL_END_OUTRO_TYPE.WIN ? "WIN" : "SIGNAL LOST";
+    }else if(ctxBattle.phase === BTTL_STATE.RESULT){
       hudHint.textContent = "RESULT";
+    }else if(startIntroActive){
+      const introType = normalizeBttlStartIntroType(ctxBattle.startIntroType);
+      hudHint.textContent = introType === BTTL_START_INTRO_TYPE.WARNING ? "WARNING!!" : "ENCOUNT";
+    }else if(heavyWindowActive){
+      hudHint.textContent = "HEAVY IN  C:REACT  B:BACK";
     }else{
       const paneMode = String(ctxBattle.rightPaneMode || BTTL_RIGHTPANE_MODE.SIGNAL_MENU);
       if(paneMode === BTTL_RIGHTPANE_MODE.SIGNAL_GAME){
@@ -5987,6 +10243,16 @@
     }
 
     ctx.save();
+    if(heavyWindowActive && heavySession){
+      const zoom = clamp(toNumber(BTTL_HEAVY_REACT_FOCUS_ZOOM_SCALE, 1.10), 1, 1.20);
+      if(zoom > 1.001){
+        ctx.translate(focusX, focusY);
+        ctx.scale(zoom, zoom);
+        ctx.translate(-focusX, -focusY);
+      }
+    }
+
+    ctx.save();
     ctx.fillStyle = "rgba(12,18,14,0.14)";
     ctx.fillRect(frame.x + 1, frame.y + 1, frame.w - 2, frame.h - 2);
     ctx.restore();
@@ -5996,27 +10262,25 @@
     drawBox(bottom.x, bottom.y, bottom.w, bottom.h);
 
     drawBox(field.innerRect.x, field.innerRect.y, field.innerRect.w, field.innerRect.h);
-    ctx.save();
-    ctx.strokeStyle = "rgba(14,20,15,0.34)";
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(field.innerRect.x + 1, field.dividerY + 0.5);
-    ctx.lineTo(field.innerRect.x + field.innerRect.w - 2, field.dividerY + 0.5);
-    ctx.stroke();
-    ctx.restore();
+    drawBttlRangeBar(ctxBattle, field, nowMs);
+    drawBttlHitGates(field);
 
     const allyAnim = getIdleMonsterAnim(state.t, view);
     const enemyAnim = getIdleMonsterAnim(state.t + 120, { baseSprite: CROW, faceSprite: CROW });
     const allyKnock = nowMs < toNumber(ctxBattle.ally?.knockUntilMs, 0) ? toNumber(ctxBattle.ally?.knockDir, -1) * 2 : 0;
     const enemyKnock = nowMs < toNumber(ctxBattle.enemy?.knockUntilMs, 0) ? toNumber(ctxBattle.enemy?.knockDir, 1) * 2 : 0;
+    const allyLunge = getBttlActorLungeOffset(ctxBattle.ally, nowMs);
+    const enemyLunge = getBttlActorLungeOffset(ctxBattle.enemy, nowMs);
 
-    const enemyX = Math.round(field.enemyBaseX + enemyKnock + enemyAnim.ox);
+    const enemyX = Math.round(field.enemyBaseX + enemyKnock + enemyLunge + enemyAnim.ox);
     const enemyY = Math.round(field.enemyBaseY + enemyAnim.oy);
-    const allyX = Math.round(field.allyBaseX + allyKnock + allyAnim.ox);
+    const allyX = Math.round(field.allyBaseX + allyKnock + allyLunge + allyAnim.ox);
     const allyY = Math.round(field.allyBaseY + allyAnim.oy);
 
     drawSprite16x16Facing(enemyX, enemyY, enemyAnim.sprite, DOT_SCALE, "left");
     drawSprite16x16Facing(allyX, allyY, allyAnim.sprite, DOT_SCALE, "right");
+    drawBttlShortLungeDust(enemyX, enemyY, spritePx, ctxBattle.enemy, nowMs);
+    drawBttlShortLungeDust(allyX, allyY, spritePx, ctxBattle.ally, nowMs);
 
     if(nowMs < toNumber(ctxBattle.ally?.hitFlashUntilMs, 0)){
       ctx.save();
@@ -6030,26 +10294,77 @@
       ctx.fillRect(enemyX - 1, enemyY - 1, spritePx + 2, spritePx + 2);
       ctx.restore();
     }
+    drawBttlShortRangeImpactFx(
+      enemyX,
+      enemyY,
+      spritePx,
+      nowMs,
+      toNumber(ctxBattle.enemy?.meleeHitFlashUntilMs, 0)
+    );
+    drawBttlShortRangeImpactFx(
+      allyX,
+      allyY,
+      spritePx,
+      nowMs,
+      toNumber(ctxBattle.ally?.meleeHitFlashUntilMs, 0)
+    );
 
     drawBttlSignalStatusBadge(ctxBattle, field, allyX, allyY, nowMs);
 
-    const hpPanelW = clamp(Math.floor(field.topLaneRect.w * 0.30), 88, 148);
+    const topPanelW = clamp(Math.floor(field.topLaneRect.w * 0.30), 92, 150);
     const topPanelX = clamp(
-      field.topLaneRect.x + Math.floor(field.topLaneRect.w * 0.58),
+      field.topLaneRect.x + Math.floor(field.topLaneRect.w * 0.56),
       field.topLaneRect.x + 20,
-      (field.topLaneRect.x + field.topLaneRect.w) - hpPanelW - 4
+      (field.topLaneRect.x + field.topLaneRect.w) - topPanelW - 4
     );
     const topPanelY = field.topLaneRect.y + 2;
-    drawBttlHpPanel(
+    const topHpGeom = drawBttlHpPanel(
       topPanelX,
       topPanelY,
-      hpPanelW,
+      topPanelW,
       ctxBattle.enemy?.hp,
       ctxBattle.enemy?.maxHp,
-      { textPos: "below", textScale: 1 }
+      { textPos: "above", textScale: 1, showValue: false }
+    );
+    const topStaY = Math.round(topHpGeom.barY + topHpGeom.barH + 1);
+    drawBttlStaGauge(
+      topHpGeom.barX,
+      topStaY,
+      topHpGeom.barW,
+      ctxBattle.enemy?.sta,
+      ctxBattle.enemy?.maxSta,
+      { nowMs }
+    );
+    const enemyBreakW = clamp(Math.floor(field.topLaneRect.w * 0.18), 44, 84);
+    const enemyBreakX = clamp(
+      Math.round(enemyX + Math.floor((spritePx - enemyBreakW) / 2)),
+      field.topLaneRect.x + 2,
+      field.topLaneRect.x + field.topLaneRect.w - enemyBreakW - 2
+    );
+    const enemyBreakMinY = field.topLaneRect.y + 2;
+    const enemyBreakMaxY = Math.max(
+      enemyBreakMinY,
+      Math.min(
+        field.topLaneRect.y + field.topLaneRect.h - 3,
+        Math.floor(toNumber(field.dividerY, field.topLaneRect.y + field.topLaneRect.h) - 11)
+      )
+    );
+    const enemyBreakPreferredY = Math.round(enemyY + spritePx + 2);
+    const enemyBreakY = clamp(
+      enemyBreakPreferredY,
+      enemyBreakMinY,
+      enemyBreakMaxY
+    );
+    drawBttlBreakGauge(
+      enemyBreakX,
+      enemyBreakY,
+      enemyBreakW,
+      ctxBattle.enemy?.breakValue,
+      ctxBattle.enemy?.breakMax,
+      { nowMs, isBreak: ctxBattle.enemy?.isBreak }
     );
 
-    const bottomPanelW = clamp(Math.floor(field.bottomLaneRect.w * 0.30), 88, 148);
+    const bottomPanelW = clamp(Math.floor(field.bottomLaneRect.w * 0.30), 92, 150);
     const bottomPanelX = clamp(
       field.bottomLaneRect.x + 8,
       field.bottomLaneRect.x + 2,
@@ -6057,15 +10372,51 @@
     );
     const bottomPanelY = Math.max(
       field.bottomLaneRect.y + 1,
-      field.bottomLaneRect.y + field.bottomLaneRect.h - 16
+      field.bottomLaneRect.y + field.bottomLaneRect.h - 12
     );
-    drawBttlHpPanel(
+    const bottomHpGeom = drawBttlHpPanel(
       bottomPanelX,
       bottomPanelY,
       bottomPanelW,
       ctxBattle.ally?.hp,
       ctxBattle.ally?.maxHp,
-      { textPos: "above", textScale: 1 }
+      { textPos: "above", textScale: 1, showValue: false }
+    );
+    const bottomStaY = Math.round(bottomHpGeom.barY + bottomHpGeom.barH + 1);
+    drawBttlStaGauge(
+      bottomHpGeom.barX,
+      bottomStaY,
+      bottomHpGeom.barW,
+      ctxBattle.ally?.sta,
+      ctxBattle.ally?.maxSta,
+      { nowMs }
+    );
+    const allyBreakW = clamp(Math.floor(field.bottomLaneRect.w * 0.18), 44, 84);
+    const allyBreakX = clamp(
+      Math.round(allyX + Math.floor((spritePx - allyBreakW) / 2)),
+      field.bottomLaneRect.x + 2,
+      field.bottomLaneRect.x + field.bottomLaneRect.w - allyBreakW - 2
+    );
+    const allyBreakMinY = Math.max(
+      field.bottomLaneRect.y + 2,
+      Math.ceil(toNumber(field.dividerY, field.bottomLaneRect.y) + 5)
+    );
+    const allyBreakMaxY = Math.max(
+      allyBreakMinY,
+      field.bottomLaneRect.y + field.bottomLaneRect.h - 3
+    );
+    const allyBreakY = clamp(
+      Math.round(allyY + spritePx + 2),
+      allyBreakMinY,
+      allyBreakMaxY
+    );
+    drawBttlBreakGauge(
+      allyBreakX,
+      allyBreakY,
+      allyBreakW,
+      ctxBattle.ally?.breakValue,
+      ctxBattle.ally?.breakMax,
+      { nowMs, isBreak: ctxBattle.ally?.isBreak }
     );
 
     if(BTTL_DEBUG_SHOW_RING_POINTS){
@@ -6082,9 +10433,18 @@
     const activeProjectiles = Array.isArray(ctxBattle.projectiles) ? ctxBattle.projectiles : [];
     for(const projectile of activeProjectiles){
       if(!projectile?.alive) continue;
+      if(Boolean(projectile.shortDirect)) continue;
       const p = bttlRingToPoint(projectile.t, field);
-      drawBttlProjectileShape(p.x, p.y, projectile.owner, BTTL_PROJECTILE_SIZE);
+      drawBttlProjectileShape(
+        p.x,
+        p.y,
+        projectile.owner,
+        BTTL_PROJECTILE_SIZE,
+        Boolean(projectile.isHeavy),
+        projectile.rangeStateAtLaunch
+      );
     }
+    drawBttlShortGateSlashFx(ctxBattle, nowMs);
 
     const rightInner = {
       x: right.x + 4,
@@ -6099,6 +10459,44 @@
       drawBttlRightPaneSignalMenu(ctxBattle, right, rightInner);
     }
     drawBttlBottomPane(ctxBattle, bottom, rightPaneMode, nowMs);
+
+    if(heavyWindowActive){
+      ctx.save();
+      const sideDimAlpha = clamp(toNumber(BTTL_HEAVY_REACT_DIM_ALPHA, 0.12), 0, 0.9);
+      const focusDimAlpha = clamp(toNumber(BTTL_HEAVY_REACT_FOCUS_DIM_ALPHA, 0.24), 0, 0.9);
+      const spotR = Math.max(20, toNumber(heavySession?.maxR, 24) + 14);
+      ctx.fillStyle = `rgba(14,20,15,${focusDimAlpha.toFixed(3)})`;
+      ctx.beginPath();
+      ctx.rect(left.x + 1, left.y + 1, Math.max(2, left.w - 2), Math.max(2, left.h - 2));
+      ctx.moveTo(focusX + spotR, focusY);
+      ctx.arc(focusX, focusY, spotR, 0, Math.PI * 2, true);
+      ctx.fill("evenodd");
+      ctx.fillStyle = `rgba(14,20,15,${sideDimAlpha.toFixed(3)})`;
+      ctx.fillRect(right.x + 1, right.y + 1, Math.max(2, right.w - 2), Math.max(2, right.h - 2));
+      ctx.fillRect(bottom.x + 1, bottom.y + 1, Math.max(2, bottom.w - 2), Math.max(2, bottom.h - 2));
+      ctx.restore();
+    }
+    if(startIntroActive){
+      drawBttlStartIntroOverlay(ctxBattle, frame, left, nowMs);
+    }
+    if(endOutroActive){
+      drawBttlEndOutroOverlay(ctxBattle, frame, nowMs);
+    }
+    // Draw heavy reaction cue after dimming so the parry window itself remains crisp/focused.
+    if(!endOutroActive){
+      drawBttlHeavyReactionCue(ctxBattle, field, enemyX, enemyY, nowMs);
+    }
+    ctx.restore();
+  }
+
+  function startBttlBattle(options = {}){
+    hideOverlayLog();
+    setOverlayMode(null);
+    uiState.bttlResultReveal = null;
+    setBttlRevealOverlayVisual(0, "black");
+    state.bttl = createBttlContext(performance.now(), options);
+    state.bttlResultLogText = "";
+    state.screen = "bttl";
   }
 
   // ===== actions =====
@@ -6127,11 +10525,7 @@
       return;
     }
     if(id === "bttl"){
-      hideOverlayLog();
-      setOverlayMode(null);
-      state.bttl = createBttlContext(performance.now());
-      state.bttlResultLogText = "";
-      state.screen = "bttl";
+      startBttlBattle();
       return;
     }
     if(id === "adv"){ state.screen = "adv"; return; }
@@ -6159,6 +10553,7 @@
     if(id === "stat"){
       hideOverlayLog();
       state.screen = "status";
+      resetStatCursors();
       setStatPage(0);
       setOverlayMode("stat");
       return;
@@ -6183,6 +10578,7 @@
     if(state.screen === "status"){
       setStatPage(uiState.statPage - 1);
       showOverlayStat();
+      markCursorMoved();
       return;
     }
     if(state.screen === "menu"){
@@ -6215,6 +10611,7 @@
     if(state.screen === "status"){
       setStatPage(uiState.statPage + 1);
       showOverlayStat();
+      markCursorMoved();
       return;
     }
     if(state.screen === "menu"){
@@ -6238,6 +10635,15 @@
   function onUp(){
     if(state.screen === "bttl"){
       const ctxBattle = state.bttl;
+      if(isRecord(ctxBattle) && isBttlStartIntroActive(ctxBattle, performance.now())){
+        return;
+      }
+      if(isRecord(ctxBattle) && isBttlEndOutroActive(ctxBattle, performance.now())){
+        return;
+      }
+      if(isRecord(ctxBattle) && isBttlHeavyReactionWindowActive(ctxBattle, performance.now())){
+        return;
+      }
       if(
         isRecord(ctxBattle) &&
         String(ctxBattle.rightPaneMode || "") === BTTL_RIGHTPANE_MODE.SIGNAL_MENU
@@ -6256,6 +10662,9 @@
       return;
     }
     if(state.screen === "status"){
+      moveStatCursor(-1);
+      showOverlayStat();
+      markCursorMoved();
       return;
     }
     if(state.screen === "menu"){
@@ -6287,6 +10696,15 @@
   function onDown(){
     if(state.screen === "bttl"){
       const ctxBattle = state.bttl;
+      if(isRecord(ctxBattle) && isBttlStartIntroActive(ctxBattle, performance.now())){
+        return;
+      }
+      if(isRecord(ctxBattle) && isBttlEndOutroActive(ctxBattle, performance.now())){
+        return;
+      }
+      if(isRecord(ctxBattle) && isBttlHeavyReactionWindowActive(ctxBattle, performance.now())){
+        return;
+      }
       if(
         isRecord(ctxBattle) &&
         String(ctxBattle.rightPaneMode || "") === BTTL_RIGHTPANE_MODE.SIGNAL_MENU
@@ -6305,6 +10723,9 @@
       return;
     }
     if(state.screen === "status"){
+      moveStatCursor(1);
+      showOverlayStat();
+      markCursorMoved();
       return;
     }
     if(state.screen === "menu"){
@@ -6341,7 +10762,11 @@
     }
     if(state.screen === TRN_SCREEN){
       if(uiState.trnSession){
-        finishTrnSession(null, performance.now());
+        const nowMs = performance.now();
+        if(isTrnStartIntroActive(uiState.trnSession, nowMs)){
+          return;
+        }
+        finishTrnSession(null, nowMs);
       }else{
         const started = startTrnSession(performance.now());
         if(!started){
@@ -6361,9 +10786,18 @@
     if(state.screen === "bttl"){
       const ctxBattle = state.bttl;
       if(isRecord(ctxBattle)){
+        const nowMs = performance.now();
+        if(isBttlStartIntroActive(ctxBattle, nowMs)){
+          return;
+        }
+        if(isBttlEndOutroActive(ctxBattle, nowMs)){
+          return;
+        }
+        if(isBttlHeavyReactionWindowActive(ctxBattle, nowMs)){
+          return;
+        }
         const paneMode = String(ctxBattle.rightPaneMode || "");
         if(paneMode === BTTL_RIGHTPANE_MODE.SIGNAL_MENU){
-          const nowMs = performance.now();
           const selected = getBttlSignalSelectedCommand(ctxBattle);
           if(getBttlSignalCooldownRemainMs(ctxBattle, selected, nowMs) > 0){
             return;
@@ -6447,7 +10881,14 @@
     if(state.screen === "bttl"){
       const ctxBattle = state.bttl;
       if(isRecord(ctxBattle)){
-        abortBttlBattle(ctxBattle, performance.now());
+        const nowMs = performance.now();
+        if(isBttlStartIntroActive(ctxBattle, nowMs)){
+          return;
+        }
+        if(isBttlEndOutroActive(ctxBattle, nowMs)){
+          return;
+        }
+        abortBttlBattle(ctxBattle, nowMs);
       }
       return;
     }
@@ -6481,6 +10922,19 @@
 
   function onCPress(){
     if(state.screen === "bttl"){
+      const ctxBattle = state.bttl;
+      if(isRecord(ctxBattle)){
+        const nowMs = performance.now();
+        if(isBttlStartIntroActive(ctxBattle, nowMs)){
+          return;
+        }
+        if(isBttlEndOutroActive(ctxBattle, nowMs)){
+          return;
+        }
+        if(isBttlHeavyReactionWindowActive(ctxBattle, nowMs)){
+          judgeBttlHeavyReactionByInput(ctxBattle, nowMs);
+        }
+      }
       return;
     }
     if(state.screen === TRN_MODE_SCREEN || state.screen === TRN_SCREEN || state.screen === BTTL_LOG_SCREEN){
@@ -6784,6 +11238,9 @@
     const view = runtimeGetView(state.monster);
     const nowMs = performance.now();
     const showCursor = uiCursorShouldShow(nowMs, state.cursorFlashUntilMs);
+    const finalizeFrame = () => {
+      drawBttlResultRevealOverlay(nowMs);
+    };
     if(hudClock) hudClock.textContent = gameHHMM();
     if(state.screen !== "bttl"){
       hideBttlBottomPaneOverlay();
@@ -6791,11 +11248,13 @@
 
     if(state.screen === TRN_MODE_SCREEN){
       drawTrnModeSelect(view, showCursor, nowMs);
+      finalizeFrame();
       return;
     }
 
     if(state.screen === TRN_SCREEN){
       drawTrnScreen(view, nowMs);
+      finalizeFrame();
       return;
     }
 
@@ -6814,6 +11273,7 @@
       ctx.restore();
       drawBox(panelX, panelY, panelW, panelH);
       showOverlayLog(String(state.trnResultLogText || "TRN RESULT x0"));
+      finalizeFrame();
       return;
     }
 
@@ -6832,11 +11292,13 @@
       ctx.restore();
       drawBox(panelX, panelY, panelW, panelH);
       showOverlayLog(String(state.bttlResultLogText || "BTTL RESULT"), OVERLAY_BTTL_RESULT_RECT);
+      finalizeFrame();
       return;
     }
 
     if(state.screen === "bttl"){
       drawBttlScreen(view, nowMs);
+      finalizeFrame();
       return;
     }
 
@@ -6878,18 +11340,20 @@
       hudTitle.textContent = "MENU";
       hudHint.textContent = t("ui.help.menu");
       drawMainMenu(showCursor);
+      finalizeFrame();
       return;
     }
 
     if(state.screen === "edit"){
       hideOverlayLog();
       drawEditor(showCursor);
+      finalizeFrame();
       return;
     }
 
     // other screens
     if(state.screen === "status"){
-      const page = setStatPage(state.ui?.statPage);
+      const page = setStatPage(uiState.statPage);
       hudTitle.textContent = `STAT ${page + 1}/${STAT_PAGE_COUNT}`;
     }else{
       hudTitle.textContent = state.screen.toUpperCase();
@@ -6910,6 +11374,7 @@
 
     if(state.screen === "status"){
       showOverlayStat();
+      finalizeFrame();
       return;
     }
 
@@ -6919,6 +11384,7 @@
     }else{
       hideOverlayLog();
     }
+    finalizeFrame();
   }
 
   // ===== loop =====
