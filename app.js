@@ -192,16 +192,16 @@
   const BTTL_BREAK_HIGH_RATIO = 0.74;
   const BTTL_BREAK_RECOVERY_PER_SEC = 2.4;
   const BTTL_BREAK_RECOVER_DELAY_MS = 1300;
-  const BTTL_BREAK_STATE_MS = 1250;
+  const BTTL_BREAK_STATE_MS = 1600;
   const BTTL_BREAK_INTERVAL_MULT = 1.34;
   const BTTL_BREAK_LOG_PLUS_MIN_INTERVAL_MS = 520;
-  const BTTL_BREAK_GAIN_HIT_BASE = 4;
-  const BTTL_BREAK_GAIN_HIT_SHORT_BONUS = 6;
-  const BTTL_BREAK_GAIN_HIT_HEAVY_BONUS = 28;
-  const BTTL_BREAK_GAIN_HIT_DAMAGE_SCALE = 1.4;
-  const BTTL_BREAK_GAIN_SHORT_PRESSURE_MISS = 3;
-  const BTTL_BREAK_GAIN_PARRY = 18;
-  const BTTL_BREAK_GAIN_REFLECT = 26;
+  const BTTL_BREAK_GAIN_HIT_BASE = 5;
+  const BTTL_BREAK_GAIN_HIT_SHORT_BONUS = 8;
+  const BTTL_BREAK_GAIN_HIT_HEAVY_BONUS = 36;
+  const BTTL_BREAK_GAIN_HIT_DAMAGE_SCALE = 1.55;
+  const BTTL_BREAK_GAIN_SHORT_PRESSURE_MISS = 4;
+  const BTTL_BREAK_GAIN_PARRY = 22;
+  const BTTL_BREAK_GAIN_REFLECT = 32;
   const BTTL_BREAK_RECOVERY_MULT_BY_RANGE = Object.freeze({
     short: 0.70,
     mid: 1.00,
@@ -412,6 +412,26 @@
       "同調が回復しつつある。",
       "立て直しの余地が戻った。",
     ]),
+    drive_surge: Object.freeze([
+      "敵出力が跳ねた。攻勢に寄る。",
+      "敵の駆動が上がる。押し込み警戒。",
+      "敵の圧が増す。受けを崩されるな。",
+    ]),
+    drive_guard: Object.freeze([
+      "敵が守りを固めた。",
+      "防衛反応が強い。崩しに手数が要る。",
+      "敵の耐性が上がっている。",
+    ]),
+    drive_focus: Object.freeze([
+      "敵が捕捉を深めている。",
+      "照準が冴えている。被弾に注意。",
+      "敵の反応精度が上がった。",
+    ]),
+    drive_rampage: Object.freeze([
+      "敵が暴走状態へ移行。",
+      "危険。攻勢は強いが隙もある。",
+      "制御崩壊。火力重視に切り替わった。",
+    ]),
   });
   const BTTL_MAX_TURNS = 24;
   const BTTL_DEBUG_SHOW_RING_POINTS = false;
@@ -499,13 +519,69 @@
     boost: Object.freeze([1.00, 1.00, 1.00, 1.00]),
     stabilize: Object.freeze([1.00, 1.00, 1.00, 1.00]),
     calibrate: Object.freeze([1.00, 1.00, 1.00, 1.00]),
-    overclock: Object.freeze([1.10, 1.12, 1.15, 1.20]),
+    overclock: Object.freeze([1.14, 1.18, 1.23, 1.30]),
   });
   const BTTL_SIGNAL_BREAK_TAKEN_MULT_BY_TIER = Object.freeze({
     boost: Object.freeze([1.00, 1.00, 1.00, 1.00]),
     stabilize: Object.freeze([1.00, 1.00, 1.00, 1.00]),
     calibrate: Object.freeze([1.00, 1.00, 1.00, 1.00]),
-    overclock: Object.freeze([1.15, 1.20, 1.28, 1.38]),
+    overclock: Object.freeze([1.22, 1.30, 1.42, 1.56]),
+  });
+  const BTTL_ENEMY_DRIVE_ITEMS = Object.freeze([
+    Object.freeze({ id: "surge", label: "SURGE" }),
+    Object.freeze({ id: "guard", label: "GUARD" }),
+    Object.freeze({ id: "focus", label: "FOCUS" }),
+    Object.freeze({ id: "rampage", label: "RAMPAGE" }),
+  ]);
+  const BTTL_ENEMY_DRIVE_PROC_FLASH_MS = 1400;
+  const BTTL_ENEMY_DRIVE_DECIDE_INTERVAL_MS = 450;
+  const BTTL_ENEMY_DRIVE_COOLDOWN_MS_BY_CMD = Object.freeze({
+    surge: 4800,
+    guard: 4200,
+    focus: 3800,
+    rampage: 5600,
+  });
+  const BTTL_ENEMY_DRIVE_DURATION_MS_BY_CMD = Object.freeze({
+    surge: 3000,
+    guard: 3400,
+    focus: 3000,
+    rampage: 2600,
+  });
+  const BTTL_ENEMY_DRIVE_HIT_ADJ_BY_CMD = Object.freeze({
+    surge: 0.04,
+    guard: 0.00,
+    focus: 0.14,
+    rampage: 0.06,
+  });
+  const BTTL_ENEMY_DRIVE_INTERVAL_MULT_BY_CMD = Object.freeze({
+    surge: 0.88,
+    guard: 1.08,
+    focus: 0.98,
+    rampage: 0.84,
+  });
+  const BTTL_ENEMY_DRIVE_DAMAGE_OUT_MULT_BY_CMD = Object.freeze({
+    surge: 1.18,
+    guard: 0.94,
+    focus: 1.00,
+    rampage: 1.30,
+  });
+  const BTTL_ENEMY_DRIVE_BREAK_OUT_MULT_BY_CMD = Object.freeze({
+    surge: 1.20,
+    guard: 0.92,
+    focus: 1.05,
+    rampage: 1.42,
+  });
+  const BTTL_ENEMY_DRIVE_DAMAGE_TAKEN_MULT_BY_CMD = Object.freeze({
+    surge: 1.04,
+    guard: 0.78,
+    focus: 1.00,
+    rampage: 1.24,
+  });
+  const BTTL_ENEMY_DRIVE_BREAK_TAKEN_MULT_BY_CMD = Object.freeze({
+    surge: 1.08,
+    guard: 0.74,
+    focus: 1.00,
+    rampage: 1.34,
   });
   const BTTL_ATTACK_INTERVAL_ALLY_BASE_MS = 2400;
   const BTTL_ATTACK_INTERVAL_ENEMY_BASE_MS = 2300;
@@ -557,7 +633,7 @@
   const BTTL_HEAVY_TEST_CHANCE_BASE = 0.42;
   const BTTL_HEAVY_TEST_COOLDOWN_MS = 2400;
   const BTTL_HEAVY_TEST_INITIAL_READY_RATIO = 0.20;
-  const BTTL_HEAVY_DAMAGE_BONUS = 2;
+  const BTTL_HEAVY_DAMAGE_BONUS = 14;
   const BTTL_HEAVY_SPEED_MULT = 0.88;
   const BTTL_HEAVY_DODGE_PENALTY = 0.12;
   const BTTL_HEAVY_PARRY_BONUS = 0.06;
@@ -6736,6 +6812,25 @@
     return BTTL_ENEMY_ACTION.STABLE;
   }
 
+  function getBttlEnemyDriveProcLabelByAction(actionId){
+    const id = getBttlEnemyActionId(actionId);
+    if(id === BTTL_ENEMY_ACTION.PRESS) return "SURGE";
+    if(id === BTTL_ENEMY_ACTION.DEFEND) return "GUARD";
+    return "FOCUS";
+  }
+
+  function markBttlEnemyDriveProc(ctxBattle, actionId, nowMs = performance.now()){
+    if(!ctxBattle) return;
+    const label = String(getBttlEnemyDriveProcLabelByAction(actionId) || "").trim().toUpperCase();
+    if(label.length <= 0) return;
+    const now = toNumber(nowMs, performance.now());
+    ctxBattle.lastEnemyDriveProc = {
+      label,
+      startedAtMs: now,
+      untilMs: now + BTTL_ENEMY_DRIVE_PROC_FLASH_MS,
+    };
+  }
+
   function getBttlEnemyActionIntervalMult(actionId){
     const id = getBttlEnemyActionId(actionId);
     return clamp(toNumber(BTTL_ENEMY_ACTION_INTERVAL_MULT[id], 1), 0.5, 1.6);
@@ -7296,6 +7391,7 @@
       return { accepted: false, appliedAction: current, changed: false, rejectReason: "switch_cd" };
     }
     ai.currentAction = next;
+    markBttlEnemyDriveProc(ctxBattle, next, now);
     ai.actionLockedUntilMs = now + BTTL_ENEMY_AI_MIN_HOLD_MS;
     ai.switchCooldownUntilMs = now + BTTL_ENEMY_AI_SWITCH_COOLDOWN_MS;
     if(BTTL_ENEMY_AI_AUDIT_LOG){
@@ -7758,10 +7854,9 @@
     if(proc && !procActive){
       ctxBattle.lastSignalProc = null;
     }
-    const activeBuff = !procActive ? getBttlActiveSignalBuff(ctxBattle, nowMs) : null;
-    const rawText = procActive
-      ? getBttlSignalProcBadgeText(proc)
-      : getBttlSignalActiveBadgeText(activeBuff);
+    // Show only the immediate judge/result badge (e.g. "STB NEAR").
+    // Do not show persistent active buff label (e.g. "STABILIZE") here.
+    const rawText = procActive ? getBttlSignalProcBadgeText(proc) : "";
     if(rawText.length <= 0) return;
 
     const baseOpt = { scale: 1 };
@@ -7776,26 +7871,59 @@
     const drawX = Math.round(clamp(allyX - textW - 6, xMin, Math.max(xMin, xMax)));
     const drawY = Math.round(clamp(allyY - 10, yMin, Math.max(yMin, yMax)));
 
-    const blinkOn = Math.floor(nowMs / BTTL_SIGNAL_PENDING_BLINK_MS) % 2 === 0;
-    const mainAlpha = procActive
-      ? 0.98
-      : (blinkOn ? 0.95 : 0.62);
+    const mainAlpha = 0.98;
     ctx.save();
-    ctx.fillStyle = procActive
-      ? "rgba(198,212,192,0.34)"
-      : (blinkOn ? "rgba(198,212,192,0.28)" : "rgba(198,212,192,0.14)");
+    ctx.fillStyle = "rgba(198,212,192,0.34)";
     ctx.fillRect(drawX - 1, drawY - 1, Math.max(2, textW + 2), textH + 2);
     ctx.restore();
     drawText(drawX, drawY, text, {
       scale: 1,
       color: `rgba(14,20,15,${mainAlpha.toFixed(2)})`,
     });
-    if(procActive){
-      drawText(drawX + 1, drawY, text, {
-        scale: 1,
-        color: "rgba(14,20,15,0.62)",
-      });
+    drawText(drawX + 1, drawY, text, {
+      scale: 1,
+      color: "rgba(14,20,15,0.62)",
+    });
+  }
+
+  function drawBttlEnemyDriveStatusBadge(ctxBattle, field, enemyX, enemyY, spritePx = 16, nowMs = performance.now()){
+    if(!ctxBattle || !field) return;
+    const proc = isRecord(ctxBattle.lastEnemyDriveProc) ? ctxBattle.lastEnemyDriveProc : null;
+    if(!proc) return;
+    const procUntilMs = toNumber(proc.untilMs, 0);
+    if(nowMs >= procUntilMs){
+      ctxBattle.lastEnemyDriveProc = null;
+      return;
     }
+
+    const rawText = String(proc.label || "").trim().toUpperCase();
+    if(rawText.length <= 0) return;
+    const text = fitTrnRightPaneText(rawText, Math.max(18, field.topLaneRect.w - 8), { scale: 1 });
+    if(text.length <= 0) return;
+
+    const textH = Math.max(6, Math.floor(toNumber(BITMAP_GLYPH_H, 7)));
+    const textW = Number(uiTextMeasure(text, { scale: 1 })?.width) || 0;
+    const lane = field.topLaneRect;
+    const xMin = lane.x + 2;
+    const xMax = (lane.x + lane.w - 2) - textW;
+    const yMin = lane.y + 1;
+    const yMax = (lane.y + lane.h - 2) - textH;
+    const spriteSize = Math.max(8, Math.floor(toNumber(spritePx, 16)));
+    const drawX = Math.round(clamp(enemyX + spriteSize + 6, xMin, Math.max(xMin, xMax)));
+    const drawY = Math.round(clamp(enemyY + Math.floor((spriteSize - textH) / 2), yMin, Math.max(yMin, yMax)));
+
+    ctx.save();
+    ctx.fillStyle = "rgba(198,212,192,0.34)";
+    ctx.fillRect(drawX - 1, drawY - 1, Math.max(2, textW + 2), textH + 2);
+    ctx.restore();
+    drawText(drawX, drawY, text, {
+      scale: 1,
+      color: "rgba(14,20,15,0.98)",
+    });
+    drawText(drawX + 1, drawY, text, {
+      scale: 1,
+      color: "rgba(14,20,15,0.62)",
+    });
   }
 
   function drawBttlReactiveAssistBadge(ctxBattle, field, nowMs = performance.now()){
@@ -8293,8 +8421,9 @@
     );
     const hitChanceAdj = toNumber(activeSignal?.hitChanceAdj, 0);
     const hitChance = clamp(hitChanceBase + hitChanceAdj, BTTL_HIT_MIN, BTTL_HIT_MAX);
-    const hit = Math.random() < hitChance;
     const launchHeavy = isEnemy && shouldLaunchEnemyHeavy(ctxBattle, nowMs);
+    // Heavy attacks must force contact unless the player resolves the heavy reaction window.
+    const hit = launchHeavy ? true : (Math.random() < hitChance);
     let damage = rollBttlDamage(actorKey, ctxBattle);
     if(launchHeavy){
       damage = Math.max(1, damage + BTTL_HEAVY_DAMAGE_BONUS);
@@ -8669,6 +8798,7 @@
         breakTakenMult: 1,
       },
       lastSignalProc: null,
+      lastEnemyDriveProc: null,
       signalFxOkCenterUntilMs: 0,
       signalFxSuccessCenterUntilMs: 0,
       signalFxSuccessOuterRippleUntilMs: 0,
@@ -8790,6 +8920,7 @@
     ctxBattle.signalSession = null;
     ctxBattle.signalResult = null;
     ctxBattle.lastSignalProc = null;
+    ctxBattle.lastEnemyDriveProc = null;
     clearBttlSignalBuffState(ctxBattle);
     ctxBattle.rightPaneMode = BTTL_RIGHTPANE_MODE.SIGNAL_MENU;
     ctxBattle.result = "ABORT";
@@ -10310,6 +10441,7 @@
     );
 
     drawBttlSignalStatusBadge(ctxBattle, field, allyX, allyY, nowMs);
+    drawBttlEnemyDriveStatusBadge(ctxBattle, field, enemyX, enemyY, spritePx, nowMs);
 
     const topPanelW = clamp(Math.floor(field.topLaneRect.w * 0.30), 92, 150);
     const topPanelX = clamp(
