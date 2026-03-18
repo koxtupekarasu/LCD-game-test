@@ -1,6 +1,6 @@
 # LCDゲーム仮 実装仕様メモ（現行）
 
-最終更新: 2026-03-13  
+最終更新: 2026-03-11  
 対象: `f:/携帯ゲーム機試作/app.js` / `index.html` / `style.css`
 
 ---
@@ -62,12 +62,6 @@
 - STA: SIGNALコスト用リソース。
 - BREAK: 崩れ蓄積（第2HPではない）。
 - STAは自然回復あり。
-
-### 3.7 戦闘AI（現行）
-- 敵/味方AIは `rangeState`（SHORT/MID/LONG）を参照して行動重みを補正。
-- 行動切替は「現在行動ボーナス + スイッチマージン」でヒステリシスを持たせ、不要な揺れを抑制。
-- `STABLE` 時のレンジ意図は固定HOLDではなく、`LONG→APPROACH` / `SHORT→RETREAT` / `MID→HOLD` の距離依存。
-- 敵基礎値を微調整（`SIG 62` / `SYNC 56` / `HP比 0.62`）。
 
 ---
 
@@ -157,3 +151,4 @@
 - `startBttlSignalGame(...)`, `finishBttlSignalGame(...)`
 - `activateBttlSignalBuff(...)`
 - `updateBttlRangeRealtime(...)`
+

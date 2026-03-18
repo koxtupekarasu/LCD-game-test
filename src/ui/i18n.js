@@ -2,14 +2,14 @@
   "use strict";
 
   const dictJa = Object.freeze({
-    "log.normal.feed": "給餌実行。\n反応確認。\n{statLine}\nA/Bで切断",
-    "log.normal.feed_nochange": "給餌実行。\n反応なし。\nA/Bで切断",
+    "log.normal.food": "給餌実行。\n反応確認。\n{statLine}\nA/Bで切断",
+    "log.normal.food_nochange": "給餌実行。\n反応なし。\nA/Bで切断",
     "log.normal.sleep": "休止処理実行。\n活性低下を確認。\n{statLine}\nA/Bで切断",
     "log.normal.sleep_nochange": "休止処理実行。\n変化なし。\nA/Bで切断",
     "log.normal.heal": "修復処理実行。\n損傷値安定。\n{statLine}\nA/Bで切断",
     "log.normal.heal_nochange": "修復処理実行。\n効果なし。\nA/Bで切断",
-    "log.corrupted.feed": "",
-    "log.corrupted.feed_nochange": "",
+    "log.corrupted.food": "",
+    "log.corrupted.food_nochange": "",
     "log.corrupted.sleep": "",
     "log.corrupted.sleep_nochange": "",
     "log.corrupted.heal": "",

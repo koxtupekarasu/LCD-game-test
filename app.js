@@ -17,6 +17,8 @@
   const SaveMigratorAPI = window.DotmonSaveMigrator;
   const BitmapFontSpecModule = window.DotmonBitmapFontSpec;
   const UiTextAPI = window.DotmonUiText;
+  const DeltaFormatAPI = window.DotmonDeltaFormat;
+  const ItemIconAPI = window.DotmonItemIconRenderer;
   const UiCursorAPI = window.DotmonUiCursor;
   const I18nAPI = window.DotmonI18n;
   const SPRITE_W = Number(SpriteSpecModule?.SPRITE_W);
@@ -55,10 +57,6 @@
   const SLEEP_HUNGER_DELTA = 2;
   const SLEEP_STABILITY_GAIN_RATE = 0.10;
   const SLEEP_STABILITY_GAIN_CAP = 2;
-  const HEAL_COST_STAMINA = 2;
-  const HEAL_HP_BASE = 2;
-  const HEAL_HP_GAIN_RATE = 0.25;
-  const HEAL_DAMAGE_HEAL = 1;
   const DEV_ALLOW_ACTIONS_DURING_SLEEP = true;
   const TRN_MODE_SCREEN = "trnmode";
   const TRN_SCREEN = "trn";
@@ -136,6 +134,7 @@
     LOG: "log",
     SIGNAL_MENU: "signal_menu",
     SIGNAL_GAME: "signal_game",
+    FINISH_GAME: "finish_game",
   });
   const BTTL_INIT_MS = 420;
   const BTTL_START_INTRO_TYPE = Object.freeze({
@@ -443,13 +442,14 @@
   const BTTL_HIT_SYNC_WEIGHT = 0.12;
   const BTTL_HIT_MIN = 0.08;
   const BTTL_HIT_MAX = 0.95;
-  const BTTL_ENEMY_SIG = 60;
-  const BTTL_ENEMY_SYNC = 54;
-  const BTTL_ENEMY_HP_RATIO = 0.58;
+  const BTTL_ENEMY_SIG = 62;
+  const BTTL_ENEMY_SYNC = 56;
+  const BTTL_ENEMY_HP_RATIO = 0.62;
   const BTTL_ENEMY_HP_MIN = 8;
   const BTTL_ENEMY_HP_MAX = 65;
   const BTTL_SIGNAL_GAME_RESULT_HOLD_MS = 2200;
   const BTTL_SIGNAL_GAME_MAX_MS = 4200;
+  const BTTL_FINISH_GAME_MAX_MS = 4200;
   const BTTL_SIGNAL_MENU_ITEMS = Object.freeze([
     Object.freeze({ id: "boost", label: "BOOST" }),
     Object.freeze({ id: "stabilize", label: "STABILIZE" }),
@@ -527,6 +527,7 @@
     calibrate: Object.freeze([1.00, 1.00, 1.00, 1.00]),
     overclock: Object.freeze([1.22, 1.30, 1.42, 1.56]),
   });
+  const BTTL_SIGNAL_BADGE_Y_OFFSET = 0;
   const BTTL_ENEMY_DRIVE_ITEMS = Object.freeze([
     Object.freeze({ id: "surge", label: "SURGE" }),
     Object.freeze({ id: "guard", label: "GUARD" }),
@@ -534,6 +535,7 @@
     Object.freeze({ id: "rampage", label: "RAMPAGE" }),
   ]);
   const BTTL_ENEMY_DRIVE_PROC_FLASH_MS = 1400;
+  const BTTL_ENEMY_DRIVE_BADGE_Y_OFFSET = -20;
   const BTTL_ENEMY_DRIVE_DECIDE_INTERVAL_MS = 450;
   const BTTL_ENEMY_DRIVE_COOLDOWN_MS_BY_CMD = Object.freeze({
     surge: 4800,
@@ -657,9 +659,13 @@
   const BTTL_ENEMY_AI_DECIDE_INTERVAL_MS = 320;
   const BTTL_ENEMY_AI_MIN_HOLD_MS = 2500;
   const BTTL_ENEMY_AI_SWITCH_COOLDOWN_MS = 1400;
+  const BTTL_ENEMY_AI_SWITCH_MARGIN = 0.18;
+  const BTTL_ENEMY_AI_CURRENT_ACTION_BONUS = 0.14;
   const BTTL_ALLY_AI_DECIDE_INTERVAL_MS = 320;
   const BTTL_ALLY_AI_MIN_HOLD_MS = 2100;
   const BTTL_ALLY_AI_SWITCH_COOLDOWN_MS = 900;
+  const BTTL_ALLY_AI_SWITCH_MARGIN = 0.16;
+  const BTTL_ALLY_AI_CURRENT_ACTION_BONUS = 0.12;
   const BTTL_ENEMY_DEFEND_DMG_MULT = 0.88;
   const BTTL_ENEMY_AI_RECENT_WINDOW = 8;
   const BTTL_ENEMY_AI_AUDIT_LOG = false;
@@ -734,6 +740,177 @@
       "連結が崩れた。休息後に再試行。",
     ]),
   });
+  const BTTL_SKILL_SLOT_COUNT = 3;
+  const BTTL_SKILL_TYPE = Object.freeze({
+    ATTACK: "attack",
+    SUPPORT: "support",
+    FINISH: "finish",
+  });
+  const BTTL_FINISH_GAUGE_MAX_MS = 32000;
+  const BTTL_FINISH_GAUGE_GAIN_PER_SEC = 1000;
+  const BTTL_FINISH_READY_TEXT = "FINISH OK";
+  const BTTL_FINISH_READY_FLASH_MS = 720;
+  const BTTL_FINISH_RESULT_HOLD_MS = 2200;
+  const BTTL_FINISH_COOLDOWN_USED_VALUE = -1;
+  const BTTL_FINISH_ACTIVATE_LOG = "FINISH";
+  const BTTL_FINISH_FAIL_LOG = "FINISH NG";
+  const BTTL_FINISH_RANGE_NG_LOG = "FINISH RANGE";
+  const BTTL_SHARED_SKILL_CATALOG = Object.freeze([
+    Object.freeze({
+      id: "slash_edge",
+      label: "SLASH EDGE",
+      type: BTTL_SKILL_TYPE.ATTACK,
+      ranges: Object.freeze(["short"]),
+      cooldownMs: 700,
+      damageMult: 1.14,
+      flatDamageBonus: 1,
+      hitChanceAdj: 0.02,
+      breakMult: 1.10,
+    }),
+    Object.freeze({
+      id: "pulse_shot",
+      label: "PULSE SHOT",
+      type: BTTL_SKILL_TYPE.ATTACK,
+      ranges: Object.freeze(["mid"]),
+      cooldownMs: 820,
+      damageMult: 1.06,
+      flatDamageBonus: 0,
+      hitChanceAdj: 0.03,
+      breakMult: 1.00,
+    }),
+    Object.freeze({
+      id: "rail_lance",
+      label: "RAIL LANCE",
+      type: BTTL_SKILL_TYPE.ATTACK,
+      ranges: Object.freeze(["long"]),
+      cooldownMs: 1080,
+      damageMult: 1.20,
+      flatDamageBonus: 1,
+      hitChanceAdj: 0.05,
+      breakMult: 0.92,
+    }),
+    Object.freeze({
+      id: "arc_blade",
+      label: "ARC BLADE",
+      type: BTTL_SKILL_TYPE.ATTACK,
+      ranges: Object.freeze(["mid", "long"]),
+      cooldownMs: 960,
+      damageMult: 1.10,
+      flatDamageBonus: 1,
+      hitChanceAdj: 0.04,
+      breakMult: 1.04,
+    }),
+    Object.freeze({
+      id: "guard_shift",
+      label: "GUARD SHIFT",
+      type: BTTL_SKILL_TYPE.SUPPORT,
+      ranges: Object.freeze(["short", "mid"]),
+      cooldownMs: 3600,
+      durationMs: 2800,
+      damageTakenMult: 0.84,
+      breakTakenMult: 0.78,
+      intervalMult: 0.98,
+      hitChanceAdj: 0.00,
+    }),
+    Object.freeze({
+      id: "focus_weave",
+      label: "FOCUS WEAVE",
+      type: BTTL_SKILL_TYPE.SUPPORT,
+      ranges: Object.freeze(["short", "mid", "long"]),
+      cooldownMs: 3200,
+      durationMs: 2400,
+      damageTakenMult: 1.00,
+      breakTakenMult: 1.00,
+      intervalMult: 0.92,
+      hitChanceAdj: 0.09,
+    }),
+    Object.freeze({
+      id: "accel_link",
+      label: "ACCEL LINK",
+      type: BTTL_SKILL_TYPE.SUPPORT,
+      ranges: Object.freeze(["mid", "long"]),
+      cooldownMs: 4200,
+      durationMs: 2600,
+      damageTakenMult: 1.02,
+      breakTakenMult: 1.04,
+      intervalMult: 0.84,
+      hitChanceAdj: 0.03,
+    }),
+    Object.freeze({
+      id: "stability_wave",
+      label: "STABILITY WAVE",
+      type: BTTL_SKILL_TYPE.SUPPORT,
+      ranges: Object.freeze(["long"]),
+      cooldownMs: 3900,
+      durationMs: 3000,
+      damageTakenMult: 0.88,
+      breakTakenMult: 0.86,
+      intervalMult: 0.96,
+      hitChanceAdj: 0.06,
+    }),
+  ]);
+  const BTTL_UNIQUE_FINISHER_CATALOG = Object.freeze([
+    Object.freeze({
+      id: "zero_edge",
+      label: "ZERO EDGE",
+      type: BTTL_SKILL_TYPE.FINISH,
+      ranges: Object.freeze(["short"]),
+      baseDamageByTier: Object.freeze([8, 12, 16, 22]),
+      breakBonusByTier: Object.freeze([12, 16, 20, 26]),
+      hitChanceAdjByTier: Object.freeze([0.02, 0.05, 0.09, 0.14]),
+    }),
+    Object.freeze({
+      id: "phase_lancer",
+      label: "PHASE LANCER",
+      type: BTTL_SKILL_TYPE.FINISH,
+      ranges: Object.freeze(["mid", "long"]),
+      baseDamageByTier: Object.freeze([7, 11, 15, 20]),
+      breakBonusByTier: Object.freeze([10, 14, 18, 22]),
+      hitChanceAdjByTier: Object.freeze([0.04, 0.07, 0.10, 0.14]),
+    }),
+    Object.freeze({
+      id: "blade_nova",
+      label: "BLADE NOVA",
+      type: BTTL_SKILL_TYPE.FINISH,
+      ranges: Object.freeze(["short", "mid"]),
+      baseDamageByTier: Object.freeze([9, 13, 18, 24]),
+      breakBonusByTier: Object.freeze([13, 18, 23, 28]),
+      hitChanceAdjByTier: Object.freeze([0.03, 0.06, 0.10, 0.15]),
+    }),
+  ]);
+  const BTTL_SKILL_STAGE_PLAN = Object.freeze({
+    1: Object.freeze({
+      uniqueSkillId: "zero_edge",
+      sharedSkillIds: Object.freeze(["slash_edge", "pulse_shot", "guard_shift", "focus_weave"]),
+      defaultSetIds: Object.freeze(["slash_edge", "pulse_shot", "guard_shift"]),
+    }),
+    2: Object.freeze({
+      uniqueSkillId: "phase_lancer",
+      sharedSkillIds: Object.freeze(["slash_edge", "pulse_shot", "rail_lance", "focus_weave", "accel_link"]),
+      defaultSetIds: Object.freeze(["pulse_shot", "rail_lance", "accel_link"]),
+    }),
+    3: Object.freeze({
+      uniqueSkillId: "blade_nova",
+      sharedSkillIds: Object.freeze(["slash_edge", "pulse_shot", "rail_lance", "arc_blade", "stability_wave", "focus_weave"]),
+      defaultSetIds: Object.freeze(["arc_blade", "rail_lance", "stability_wave"]),
+    }),
+  });
+  const BTTL_SHARED_SKILL_BY_ID = Object.freeze(
+    BTTL_SHARED_SKILL_CATALOG.reduce((acc, skill) => {
+      if(skill && typeof skill === "object" && typeof skill.id === "string" && skill.id.length > 0){
+        acc[skill.id] = skill;
+      }
+      return acc;
+    }, {})
+  );
+  const BTTL_UNIQUE_SKILL_BY_ID = Object.freeze(
+    BTTL_UNIQUE_FINISHER_CATALOG.reduce((acc, skill) => {
+      if(skill && typeof skill === "object" && typeof skill.id === "string" && skill.id.length > 0){
+        acc[skill.id] = skill;
+      }
+      return acc;
+    }, {})
+  );
   const TRN_MODE_CURSOR_INSET_PX = 10;
   const TRN_RECENT_WINDOW_MS = 6 * 60 * 1000;
   const TRN_BAND_PENALTY_PER_RUN = 0.015;
@@ -899,13 +1076,319 @@
     }),
   });
   const DETAIL_STORAGE_KEY = "dotmon_detail_v1";
-  const DETAIL_STATE_VERSION = 1;
-  const STAT_PAGE_COUNT = 3;
+  const DETAIL_STATE_VERSION = 2;
+  const STAT_PAGE_COUNT = 4;
   const LAST_DELTA_NONE_TEXT = "なし";
+  const FOOD_SCREEN_MODE = Object.freeze({
+    SELECT: "select",
+    RESULT: "result",
+  });
+  const HEAL_SCREEN_MODE = Object.freeze({
+    SELECT: "select",
+    RESULT: "result",
+  });
+  const HEAL_TYPE = Object.freeze({
+    PATCH: "patch",
+    STABILIZE: "stabilize",
+    PURGE: "purge",
+  });
+  const HEAL_ABNORMAL_MIN = 0;
+  const HEAL_ABNORMAL_MAX = 3;
+  const HEAL_ABNORMAL_KEYS = Object.freeze(["noise", "desync", "contamination", "decay"]);
+  const HEAL_CYCLE_FLOOR_KEYS = Object.freeze(["damage", "noise", "desync", "contamination", "decay"]);
+  const HEAL_STAMINA_COST_BY_TYPE = Object.freeze({
+    patch: 2,
+    stabilize: 1,
+    purge: 2,
+  });
+  const HEAL_EXECUTION_INSERT_MS = 220;
+  const HEAL_EXECUTION_FLASH_MS = 100;
+  const HEAL_EXECUTION_EFFECT_MS = 240;
+  const HEAL_EXECUTION_HOLD_MS = 120;
+  const HEAL_EXECUTION_RETURN_MS = 140;
+  const HEAL_EXECUTION_FULL_INSERT_Y = 36;
+  const HEAL_ACTION_CATALOG = Object.freeze([
+    Object.freeze({
+      id: HEAL_TYPE.PATCH,
+      label: "PATCH",
+      description: "深い損傷を補修。損傷を大きく抑え、HPを少量補う。",
+      previewTokens: Object.freeze([
+        Object.freeze({ label: "DMG", value: -2 }),
+        Object.freeze({ label: "HP", value: 1 }),
+        Object.freeze({ label: "STA", value: -HEAL_STAMINA_COST_BY_TYPE.patch }),
+      ]),
+      resultLead: "深部損傷を補修。",
+    }),
+    Object.freeze({
+      id: HEAL_TYPE.STABILIZE,
+      label: "STABILIZE",
+      description: "同期乱れを抑制。DESYNCを沈静化し、安定度を立て直す。",
+      previewTokens: Object.freeze([
+        Object.freeze({ label: "STB", value: 2 }),
+        Object.freeze({ label: "DESYNC", value: -2 }),
+        Object.freeze({ label: "STA", value: -HEAL_STAMINA_COST_BY_TYPE.stabilize }),
+      ]),
+      resultLead: "同期乱れを抑制。",
+    }),
+    Object.freeze({
+      id: HEAL_TYPE.PURGE,
+      label: "PURGE",
+      description: "汚染を浄化。NOISE / CONTAMINATION を強く減衰し、DECAYも抑える。",
+      previewTokens: Object.freeze([
+        Object.freeze({ label: "ABN", value: -2 }),
+        Object.freeze({ label: "STA", value: -HEAL_STAMINA_COST_BY_TYPE.purge }),
+      ]),
+      resultLead: "汚染を浄化。",
+    }),
+  ]);
+  const HEAL_ACTION_BY_ID = Object.freeze(
+    HEAL_ACTION_CATALOG.reduce((acc, item) => {
+      const id = String(item?.id || "").trim().toLowerCase();
+      if(id.length > 0){
+        acc[id] = item;
+      }
+      return acc;
+    }, {})
+  );
+  const FOOD_WEIGHT_MIN = 0;
+  const FOOD_WEIGHT_MAX = 99.9;
+  const FOOD_DEFAULT_WEIGHT = 5.0;
+  const FOOD_STOCK_INFINITE = -1;
+  const FOOD_STOCK_MAX = 99;
+  const FOOD_LIST_VISIBLE_ROWS = 4;
+  const FOOD_FAMILY_LABELS = Object.freeze({
+    meat: "肉系",
+    drink: "栄養ドリンク系",
+    jelly: "安定化ゼリー系",
+    signal: "信号補助系",
+    repair: "修復系",
+  });
+  const FOOD_ICON_DOT_SCALE = 4;
+  const FOOD_ICON_ROWS_BY_ID = Object.freeze({
+    meat_small: Object.freeze([
+      "0000000000000000",
+      "0000000000001100",
+      "0000001111010010",
+      "0000011111100010",
+      "0000111111100100",
+      "0001111111111100",
+      "0011111111111110",
+      "0110111111110110",
+      "0101111111100110",
+      "0111111111001100",
+      "0111111110011000",
+      "0111111100110000",
+      "0111111001100000",
+      "0011110011000000",
+      "0001111110000000",
+      "0000000000000000",
+    ]),
+    drink_simple: Object.freeze([
+      "0000000000000000",
+      "0000001111000000",
+      "0000010000100000",
+      "0000011111100000",
+      "0000110000110000",
+      "0000100110010000",
+      "0000101111010000",
+      "0000111111110000",
+      "0000100110010000",
+      "0000100110010000",
+      "0000100110010000",
+      "0000110110110000",
+      "0000110000110000",
+      "0000011111100000",
+      "0000000000000000",
+      "0000000000000000",
+    ]),
+  });
+  const FOOD_ICON_SPRITES_BY_ID = Object.freeze(
+    Object.keys(FOOD_ICON_ROWS_BY_ID).reduce((acc, id) => {
+      const key = String(id || "").trim().toLowerCase();
+      const rows = FOOD_ICON_ROWS_BY_ID[key];
+      const sprite = Array.isArray(rows) ? spriteFromStrings(rows) : null;
+      if(key.length > 0 && isSprite16(sprite)){
+        acc[key] = sprite;
+      }
+      return acc;
+    }, {})
+  );
+  const FOOD_CATALOG = Object.freeze([
+    Object.freeze({
+      id: "meat_small",
+      label: "小さい肉",
+      family: "meat",
+      grade: 1,
+      rank: 1,
+      iconId: "meat_small",
+      effects: Object.freeze({ hunger: 2 }),
+      weightGain: 1.0,
+      description: "小ぶりな肉片。満足感を得やすい。",
+    }),
+    Object.freeze({
+      id: "meat_medium",
+      label: "普通の肉",
+      family: "meat",
+      grade: 2,
+      rank: 2,
+      iconId: "meat_small",
+      effects: Object.freeze({ hunger: 3 }),
+      weightGain: 1.0,
+      description: "標準的な栄養源。安定した充足回復。",
+    }),
+    Object.freeze({
+      id: "meat_large",
+      label: "大きい肉",
+      family: "meat",
+      grade: 3,
+      rank: 3,
+      iconId: "meat_small",
+      effects: Object.freeze({ hunger: 4 }),
+      weightGain: 1.0,
+      description: "高密度の肉塊。強い満足感を与える。",
+    }),
+    Object.freeze({
+      id: "drink_simple",
+      label: "簡易栄養ドリンク",
+      family: "drink",
+      grade: 1,
+      rank: 1,
+      iconId: "drink_simple",
+      effects: Object.freeze({ hunger: 1, stability: 1 }),
+      weightGain: 0.5,
+      description: "簡易調整液。充足と安定を軽く補助。",
+    }),
+    Object.freeze({
+      id: "drink_standard",
+      label: "栄養ドリンク",
+      family: "drink",
+      grade: 2,
+      rank: 2,
+      iconId: "drink_simple",
+      effects: Object.freeze({ hunger: 2, stability: 1 }),
+      weightGain: 0.5,
+      description: "バランス型の補給液。日常整備向け。",
+    }),
+    Object.freeze({
+      id: "drink_dx",
+      label: "栄養ドリンクDX",
+      family: "drink",
+      grade: 3,
+      rank: 3,
+      iconId: "drink_simple",
+      effects: Object.freeze({ hunger: 2, stability: 2 }),
+      weightGain: 0.5,
+      description: "高濃度配合。安定維持に強い。",
+    }),
+    Object.freeze({
+      id: "jelly_mini",
+      label: "ミニ安定化ゼリー",
+      family: "jelly",
+      grade: 1,
+      rank: 1,
+      effects: Object.freeze({ stability: 1, hunger: 1 }),
+      weightGain: 1.0,
+      description: "小型ゼリー。乱れを抑える補助材。",
+    }),
+    Object.freeze({
+      id: "jelly_standard",
+      label: "安定化ゼリー",
+      family: "jelly",
+      grade: 2,
+      rank: 2,
+      effects: Object.freeze({ stability: 2, hunger: 1 }),
+      weightGain: 1.0,
+      description: "相対位相を均し、安定度を押し上げる。",
+    }),
+    Object.freeze({
+      id: "jelly_super",
+      label: "超安定化ゼリー",
+      family: "jelly",
+      grade: 3,
+      rank: 3,
+      effects: Object.freeze({ stability: 3, hunger: 1 }),
+      weightGain: 1.0,
+      description: "高性能ゼリー。急激な乱れを緩和する。",
+    }),
+    Object.freeze({
+      id: "signal_aid",
+      label: "信号補助剤",
+      family: "signal",
+      grade: 1,
+      rank: 1,
+      effects: Object.freeze({ signalQuality: 2 }),
+      weightGain: 0.0,
+      description: "信号増幅を補助する基礎薬剤。",
+    }),
+    Object.freeze({
+      id: "signal_capsule",
+      label: "信号補助カプセル",
+      family: "signal",
+      grade: 2,
+      rank: 2,
+      effects: Object.freeze({ signalQuality: 3, stability: 1 }),
+      weightGain: 0.0,
+      description: "中域ノイズを抑え、信号品質を補う。",
+    }),
+    Object.freeze({
+      id: "signal_pack",
+      label: "信号補助パック",
+      family: "signal",
+      grade: 3,
+      rank: 3,
+      effects: Object.freeze({ signalQuality: 4, stability: 1 }),
+      weightGain: 0.0,
+      description: "高出力補助。戦闘前補整に向く。",
+    }),
+    Object.freeze({
+      id: "repair_floppy",
+      label: "修復フロッピー",
+      family: "repair",
+      grade: 1,
+      rank: 1,
+      effects: Object.freeze({ hp: 1, damageRecover: 1 }),
+      weightGain: 2.0,
+      description: "軽度損傷向けの古典修復媒体。",
+    }),
+    Object.freeze({
+      id: "repair_disk",
+      label: "修復ディスク",
+      family: "repair",
+      grade: 2,
+      rank: 2,
+      effects: Object.freeze({ hp: 2, damageRecover: 2 }),
+      weightGain: 2.0,
+      description: "日常メンテ向けの修復媒体。",
+    }),
+    Object.freeze({
+      id: "repair_ssd",
+      label: "修復SSD",
+      family: "repair",
+      grade: 3,
+      rank: 3,
+      effects: Object.freeze({ hp: 3, damageRecover: 3 }),
+      weightGain: 2.0,
+      description: "高効率修復媒体。軽度損傷へ強い。",
+    }),
+  ]);
+  const FOOD_INITIAL_STOCK_BY_ID = Object.freeze({
+    meat_small: FOOD_STOCK_INFINITE,
+    drink_simple: FOOD_STOCK_INFINITE,
+  });
+  const FOOD_BY_ID = Object.freeze(
+    FOOD_CATALOG.reduce((acc, item) => {
+      const id = String(item?.id || "").trim().toLowerCase();
+      if(id.length > 0){
+        acc[id] = item;
+      }
+      return acc;
+    }, {})
+  );
   const STAT_DESCRIPTION_TEXT = Object.freeze({
     hp: "現在の耐久値。0になると戦闘不能になる。",
     stamina: "戦術行動の余力。SIGNAL操作などで消費される。",
     hunger: "充足値。高いほど空腹が抑えられている。",
+    weight: "体重。食事で増加する育成指標。",
     damage: "損傷の蓄積。高いほど各挙動が不安定になりやすい。",
     stability: "安定度。高いほど状態の乱れが出にくい。",
     aggression: "攻勢傾向。高いほど前に出る選択を取りやすい。",
@@ -921,6 +1404,11 @@
     battleHistory: "戦闘履歴。蓄積した勝敗の概要。",
     lastDelta: "直近の変化。最後に記録された差分。",
     note: "観測メモ。現在の読みを短く示す。",
+    skillUnique: "FINISH SKILL。FINISH OK到達で発動できる。",
+    skillSlot1: "共有スキル枠1。最優先で参照される。",
+    skillSlot2: "共有スキル枠2。枠1の次に参照される。",
+    skillSlot3: "共有スキル枠3。枠2の次に参照される。",
+    skillLearned: "習得済み共有スキル一覧。",
   });
   const SIGNAL_TREND_DIFF_THRESHOLD = 0.5;
   const AD_DECAY_PER_HOUR = 0.02;
@@ -957,16 +1445,50 @@
   const OVERLAY_FONT_MAX_PX = 28;
   const LOG_DEFAULT_NO_CHANGE_TEXT = "変化なし。";
   const LOG_NO_CHANGE_TEXT_BY_ACTION = Object.freeze({
-    feed: "反応なし。",
+    food: "反応なし。",
     sleep: "変化なし。",
     heal: "効果なし。",
   });
   const LOG_STAT_SPECS = Object.freeze([
     Object.freeze({ key: "hunger", label: "充足値" }),
+    Object.freeze({ key: "weight", label: "体重" }),
     Object.freeze({ key: "stamina", label: "スタミナ" }),
     Object.freeze({ key: "hp", label: "HP" }),
     Object.freeze({ key: "damage", label: "損傷", sign: -1 }),
     Object.freeze({ key: "stability", label: "安定度" }),
+    Object.freeze({ key: "signalQuality", label: "信号品質" }),
+    Object.freeze({ key: "noise", label: "NOISE", sign: -1 }),
+    Object.freeze({ key: "desync", label: "DESYNC", sign: -1 }),
+    Object.freeze({ key: "contamination", label: "CONTAM", sign: -1 }),
+    Object.freeze({ key: "decay", label: "DECAY", sign: -1 }),
+  ]);
+  const DEBUG_MENU_CATEGORIES = Object.freeze([
+    Object.freeze({ id: "stats", label: "STATUS", description: "HP/STB/STA/DMG を調整" }),
+    Object.freeze({ id: "abnormal", label: "ABNORMAL", description: "NOISE / DESYNC / CONTAM / DECAY を変更。" }),
+    Object.freeze({ id: "flags", label: "FLAGS", description: "sleep などの状態フラグを切り替える。" }),
+    Object.freeze({ id: "time", label: "TIME", description: "ゲーム内時刻を変更。" }),
+    Object.freeze({ id: "screen", label: "SCREEN", description: "各画面へ直接遷移。" }),
+  ]);
+  const DEBUG_STAT_PRESETS = Object.freeze([
+    Object.freeze({ id: "normal", label: "NORMAL", hpRatio: 0.72, stbRatio: 0.70, staRatio: 0.72, damageRatio: 0.18 }),
+    Object.freeze({ id: "low", label: "LOW", hpRatio: 0.38, stbRatio: 0.40, staRatio: 0.36, damageRatio: 0.44 }),
+    Object.freeze({ id: "high", label: "HIGH", hpRatio: 0.88, stbRatio: 0.86, staRatio: 0.88, damageRatio: 0.08 }),
+    Object.freeze({ id: "critical", label: "CRITICAL", hpRatio: 0.14, stbRatio: 0.18, staRatio: 0.12, damageRatio: 0.82 }),
+    Object.freeze({ id: "max", label: "MAX", hpRatio: 1, stbRatio: 1, staRatio: 1, damageRatio: 0 }),
+  ]);
+  const DEBUG_TIME_PRESETS = Object.freeze([
+    Object.freeze({ id: "morning", label: "朝", minute: 6 * 60 }),
+    Object.freeze({ id: "day", label: "昼", minute: 12 * 60 }),
+    Object.freeze({ id: "evening", label: "夕", minute: 18 * 60 }),
+    Object.freeze({ id: "night", label: "夜", minute: 21 * 60 }),
+    Object.freeze({ id: "midnight", label: "深夜", minute: 0 }),
+  ]);
+  const DEBUG_SCREEN_TARGETS = Object.freeze([
+    Object.freeze({ id: "status", label: "STAT" }),
+    Object.freeze({ id: "food", label: "FOOD" }),
+    Object.freeze({ id: "heal", label: "HEAL" }),
+    Object.freeze({ id: "trn", label: "TRN" }),
+    Object.freeze({ id: "bttl", label: "BTTL" }),
   ]);
   const DIFF_ROLE_TEMPLATES = {
     FACE: ["B", "E1", "E2", "E3", "M1", "M2", "M3", "R8", "R9", "R10", "R11", "R12"],
@@ -1003,6 +1525,24 @@
     trnRecentCount: 0,
     trnRecentWindowStartMs: 0,
     bttlResultReveal: null,
+    statSkillEditingSlot: -1,
+    statSkillWarningMessage: "",
+    foodCursor: 0,
+    foodMode: FOOD_SCREEN_MODE.SELECT,
+    foodWarningMessage: "",
+    foodResultPayload: null,
+    healCursor: 0,
+    healMode: HEAL_SCREEN_MODE.SELECT,
+    healWarningMessage: "",
+    healResultPayload: null,
+    healExecutionSession: null,
+    debugMenuOpen: false,
+    debugMenuPane: "items",
+    debugCategoryCursor: 0,
+    debugItemCursorByCategory: Array.from({ length: DEBUG_MENU_CATEGORIES.length }, () => 0),
+    debugStatPresetCursor: 0,
+    debugTimePresetCursor: 0,
+    debugSleepOverride: null,
   };
 
   function ensureBttlRevealOverlayElement(){
@@ -1130,12 +1670,17 @@
     overlayLog.style.height = `${Math.floor(rect.h * sy)}px`;
     overlayLog.style.fontSize = `${nextFontPx}px`;
     overlayLog.style.lineHeight = "1.5";
+    const scanThicknessPx = Math.max(1, Math.round(sy));
+    const scanStepPx = Math.max(scanThicknessPx + 1, Math.round(sy * 3));
+    overlayLog.style.setProperty("--overlay-scanline-thickness", `${scanThicknessPx}px`);
+    overlayLog.style.setProperty("--overlay-scanline-step", `${scanStepPx}px`);
+    overlayLog.style.setProperty("--overlay-scanline-alpha", "0.03");
   }
 
   function setOverlayMode(mode){
-    const nextMode = (mode === "log" || mode === "stat") ? mode : null;
+    const nextMode = (mode === "log" || mode === "stat" || mode === "food") ? mode : null;
     uiState.overlayMode = nextMode;
-    uiState.isLogOpen = nextMode === "log";
+    uiState.isLogOpen = (nextMode === "log" || nextMode === "food");
   }
 
   function setOverlayBottomPaneRect(rect){
@@ -1185,11 +1730,730 @@
     overlayBottomPane.textContent = "";
   }
 
+  function ensureDebugMenuOverlayElement(){
+    if(!overlayRoot) return null;
+    let el = document.getElementById("debugMenuOverlay");
+    if(!el){
+      el = document.createElement("div");
+      el.id = "debugMenuOverlay";
+      el.className = "debug-menu hidden";
+      overlayRoot.appendChild(el);
+    }
+    return el;
+  }
+
+  function setDebugMenuRect(rect = OVERLAY_STAT_RECT){
+    const el = ensureDebugMenuOverlayElement();
+    if(!el || !canvas) return;
+    const bounds = canvas.getBoundingClientRect();
+    const sx = bounds.width / W;
+    const sy = bounds.height / H;
+    const canvasScale = Math.max(0.01, Math.min(sx, sy));
+    const fontScale = canvasScale / OVERLAY_FONT_BASE_CANVAS_SCALE;
+    const nextFontPx = clamp(
+      Math.round(OVERLAY_FONT_BASE_PX * fontScale),
+      OVERLAY_FONT_MIN_PX,
+      OVERLAY_FONT_MAX_PX
+    );
+    el.style.left = `${Math.floor(rect.x * sx)}px`;
+    el.style.top = `${Math.floor(rect.y * sy)}px`;
+    el.style.width = `${Math.floor(rect.w * sx)}px`;
+    el.style.height = `${Math.floor(rect.h * sy)}px`;
+    el.style.fontSize = `${nextFontPx}px`;
+    el.style.lineHeight = "1.35";
+  }
+
+  function hideDebugMenuOverlay(){
+    const el = ensureDebugMenuOverlayElement();
+    if(!el) return;
+    el.classList.add("hidden");
+    el.textContent = "";
+  }
+
+  function isDebugMenuOpen(){
+    return Boolean(uiState.debugMenuOpen);
+  }
+
+  function normalizeDebugCategoryIndex(index){
+    const total = DEBUG_MENU_CATEGORIES.length;
+    if(total <= 0) return 0;
+    const raw = Math.floor(toNumber(index, 0));
+    return ((raw % total) + total) % total;
+  }
+
+  function getDebugCategoryCursor(){
+    return normalizeDebugCategoryIndex(uiState.debugCategoryCursor);
+  }
+
+  function getDebugCategoryIdByIndex(index){
+    return String(DEBUG_MENU_CATEGORIES[normalizeDebugCategoryIndex(index)]?.id || "");
+  }
+
+  function normalizeDebugItemCursor(categoryIndex, nextCursorRaw){
+    const items = getDebugItemsForCategory(getDebugCategoryIdByIndex(categoryIndex));
+    if(items.length <= 0) return 0;
+    const raw = Math.floor(toNumber(nextCursorRaw, 0));
+    return ((raw % items.length) + items.length) % items.length;
+  }
+
+  function getDebugItemCursor(categoryIndex = getDebugCategoryCursor()){
+    const list = Array.isArray(uiState.debugItemCursorByCategory)
+      ? uiState.debugItemCursorByCategory
+      : [];
+    const idx = normalizeDebugCategoryIndex(categoryIndex);
+    const current = Math.floor(toNumber(list[idx], 0));
+    return normalizeDebugItemCursor(idx, current);
+  }
+
+  function setDebugItemCursor(categoryIndex, nextCursorRaw){
+    const idx = normalizeDebugCategoryIndex(categoryIndex);
+    if(!Array.isArray(uiState.debugItemCursorByCategory)){
+      uiState.debugItemCursorByCategory = Array.from({ length: DEBUG_MENU_CATEGORIES.length }, () => 0);
+    }
+    const next = normalizeDebugItemCursor(idx, nextCursorRaw);
+    uiState.debugItemCursorByCategory[idx] = next;
+    return next;
+  }
+
+  function setDebugCategoryCursor(index){
+    const next = normalizeDebugCategoryIndex(index);
+    uiState.debugCategoryCursor = next;
+    setDebugItemCursor(next, getDebugItemCursor(next));
+    return next;
+  }
+
+  function getDebugSelectedCategory(){
+    return DEBUG_MENU_CATEGORIES[getDebugCategoryCursor()] || DEBUG_MENU_CATEGORIES[0] || null;
+  }
+
+  function getDebugPane(){
+    return uiState.debugMenuPane === "categories" ? "categories" : "items";
+  }
+
+  function setDebugPane(pane){
+    uiState.debugMenuPane = pane === "categories" ? "categories" : "items";
+    return uiState.debugMenuPane;
+  }
+
+  function moveDebugCategoryCursor(delta){
+    const step = Math.floor(toNumber(delta, 0));
+    if(step === 0) return false;
+    const before = getDebugCategoryCursor();
+    const after = setDebugCategoryCursor(before + step);
+    return before !== after;
+  }
+
+  function moveDebugItemCursor(delta){
+    const step = Math.floor(toNumber(delta, 0));
+    if(step === 0) return false;
+    const categoryIndex = getDebugCategoryCursor();
+    const before = getDebugItemCursor(categoryIndex);
+    const after = setDebugItemCursor(categoryIndex, before + step);
+    return before !== after;
+  }
+
+  function cycleDebugStatPreset(delta){
+    const total = DEBUG_STAT_PRESETS.length;
+    if(total <= 0) return 0;
+    const raw = Math.floor(toNumber(uiState.debugStatPresetCursor, 0)) + Math.floor(toNumber(delta, 0));
+    const next = ((raw % total) + total) % total;
+    uiState.debugStatPresetCursor = next;
+    return next;
+  }
+
+  function cycleDebugTimePreset(delta){
+    const total = DEBUG_TIME_PRESETS.length;
+    if(total <= 0) return 0;
+    const raw = Math.floor(toNumber(uiState.debugTimePresetCursor, 0)) + Math.floor(toNumber(delta, 0));
+    const next = ((raw % total) + total) % total;
+    uiState.debugTimePresetCursor = next;
+    return next;
+  }
+
+  function clampRuntimeStat(field, value, maxFallback = 100){
+    const max = Math.max(1, getRuntimeMax(field, maxFallback));
+    const next = clamp(Math.floor(toNumber(value, 0)), 0, max);
+    setRuntimeStat(field, next);
+    return next;
+  }
+
+  function adjustRuntimeStat(field, delta, maxFallback = 100){
+    const max = Math.max(1, getRuntimeMax(field, maxFallback));
+    const current = clamp(getRuntimeStat(field, max), 0, max);
+    return clampRuntimeStat(field, current + Math.floor(toNumber(delta, 0)), maxFallback);
+  }
+
+  function clampLocalStat(field, value, max){
+    const next = clamp(Math.floor(toNumber(value, 0)), 0, Math.max(1, Math.floor(toNumber(max, 1))));
+    state.stats[field] = next;
+    return next;
+  }
+
+  function adjustLocalStat(field, delta, max){
+    const current = clamp(toNumber(state.stats?.[field], 0), 0, Math.max(1, Math.floor(toNumber(max, 1))));
+    return clampLocalStat(field, current + Math.floor(toNumber(delta, 0)), max);
+  }
+
+  function applyDebugStatPreset(index = uiState.debugStatPresetCursor){
+    const preset = DEBUG_STAT_PRESETS[Math.max(0, Math.min(DEBUG_STAT_PRESETS.length - 1, Math.floor(toNumber(index, 0))))];
+    if(!preset) return;
+    const hpMax = Math.max(1, getRuntimeMax("hp", 100));
+    const staMax = Math.max(1, getRuntimeMax("stamina", 100));
+    const stbMax = Math.max(1, toPositiveInt(state.stats?.stabilityMax, 10));
+    const dmgMax = Math.max(1, toPositiveInt(state.stats?.damageMax, 10));
+    clampRuntimeStat("hp", Math.round(hpMax * preset.hpRatio), hpMax);
+    clampRuntimeStat("stamina", Math.round(staMax * preset.staRatio), staMax);
+    clampLocalStat("stability", Math.round(stbMax * preset.stbRatio), stbMax);
+    clampLocalStat("damage", Math.round(dmgMax * preset.damageRatio), dmgMax);
+  }
+
+  function setDebugAbnormalLevel(key, value){
+    if(!isRecord(state.detailed)){
+      state.detailed = createDefaultDetailedState(state.monster?.id || "mon001");
+    }
+    const detail = ensureHealDetailState(state.detailed);
+    return setHealAbnormalLevel(detail, key, value);
+  }
+
+  function adjustDebugAbnormalLevel(key, delta){
+    if(!isRecord(state.detailed)){
+      state.detailed = createDefaultDetailedState(state.monster?.id || "mon001");
+    }
+    const detail = ensureHealDetailState(state.detailed);
+    const current = getHealAbnormalLevel(detail, key);
+    return setHealAbnormalLevel(detail, key, current + Math.floor(toNumber(delta, 0)));
+  }
+
+  function setDebugSleepFlag(next){
+    if(!isRecord(state.detailed)){
+      state.detailed = createDefaultDetailedState(state.monster?.id || "mon001");
+    }
+    const enabled = Boolean(next);
+    uiState.debugSleepOverride = enabled;
+    state.detailed.isTuckedIn = enabled;
+    state.isSleeping = enabled;
+    if(!enabled && state.screen === "sleep"){
+      state.screen = "menu";
+      hideOverlayLog();
+      setOverlayMode(null);
+    }
+  }
+
+  function setDebugTimeMinute(nextMinute){
+    state.timeMin = ((Math.floor(toNumber(nextMinute, 0)) % (24 * 60)) + (24 * 60)) % (24 * 60);
+    if(uiClock) uiClock.textContent = gameHHMM();
+    if(hudClock) hudClock.textContent = gameHHMM();
+    updateDetailedMetricsRealtime(Date.now());
+  }
+
+  function adjustDebugTimeHours(deltaHours){
+    setDebugTimeMinute(state.timeMin + (Math.floor(toNumber(deltaHours, 0)) * 60));
+  }
+
+  function jumpToDebugScreen(screenId){
+    const id = String(screenId || "").trim().toLowerCase();
+    setDebugMenuOpen(false);
+    if(id === "status"){
+      hideOverlayLog();
+      state.screen = "status";
+      resetStatCursors();
+      setStatPage(0);
+      setOverlayMode("stat");
+      return;
+    }
+    if(id === "food"){
+      openFoodScreen();
+      return;
+    }
+    if(id === "heal"){
+      openHealScreen();
+      return;
+    }
+    if(id === "trn"){
+      hideOverlayLog();
+      setOverlayMode(null);
+      uiState.trnSession = null;
+      clearTrnResultBuffer();
+      setTrnMode(uiState.trnMode);
+      state.screen = TRN_MODE_SCREEN;
+      return;
+    }
+    if(id === "bttl"){
+      startBttlBattle();
+    }
+  }
+
+  function formatDebugAbnormalChoices(current){
+    return [0, 1, 2, 3].map((value) => ({
+      label: `Lv${value}`,
+      active: value === current,
+    }));
+  }
+
+  function getDebugItemsForCategory(categoryId){
+    const id = String(categoryId || "").trim().toLowerCase();
+    const hpMax = Math.max(1, getRuntimeMax("hp", 100));
+    const hpNow = clamp(getRuntimeStat("hp", hpMax), 0, hpMax);
+    const staMax = Math.max(1, getRuntimeMax("stamina", 100));
+    const staNow = clamp(getRuntimeStat("stamina", staMax), 0, staMax);
+    const stbMax = Math.max(1, toPositiveInt(state.stats?.stabilityMax, 10));
+    const stbNow = clamp(toNumber(state.stats?.stability, stbMax), 0, stbMax);
+    const dmgMax = Math.max(1, toPositiveInt(state.stats?.damageMax, 10));
+    const dmgNow = clamp(toNumber(state.stats?.damage, 0), 0, dmgMax);
+    const detail = ensureHealDetailState(state.detailed || createDefaultDetailedState(state.monster?.id || "mon001"));
+
+    if(id === "stats"){
+      return [
+        {
+          label: "PRESET",
+          valueType: "chips",
+          choices: DEBUG_STAT_PRESETS.map((preset, index) => ({ label: preset.label, active: index === uiState.debugStatPresetCursor })),
+          description: "プリセットを適用",
+          controls: "←→ SELECT  A APPLY",
+          onLeft: () => { cycleDebugStatPreset(-1); return true; },
+          onRight: () => { cycleDebugStatPreset(1); return true; },
+          onA: () => { applyDebugStatPreset(); return true; },
+        },
+        {
+          label: "HP",
+          value: `${hpNow}/${hpMax}`,
+          description: "HP を直接調整。",
+          controls: "←→ ±1  A:+5  C:-5",
+          onLeft: () => { adjustRuntimeStat("hp", -1, hpMax); return true; },
+          onRight: () => { adjustRuntimeStat("hp", 1, hpMax); return true; },
+          onA: () => { adjustRuntimeStat("hp", 5, hpMax); return true; },
+          onC: () => { adjustRuntimeStat("hp", -5, hpMax); return true; },
+        },
+        {
+          label: "STB",
+          value: `${stbNow}/${stbMax}`,
+          description: "安定度を直接調整。",
+          controls: "←→ ±1  A:+5  C:-5",
+          onLeft: () => { adjustLocalStat("stability", -1, stbMax); return true; },
+          onRight: () => { adjustLocalStat("stability", 1, stbMax); return true; },
+          onA: () => { adjustLocalStat("stability", 5, stbMax); return true; },
+          onC: () => { adjustLocalStat("stability", -5, stbMax); return true; },
+        },
+        {
+          label: "STA",
+          value: `${staNow}/${staMax}`,
+          description: "スタミナを直接調整。",
+          controls: "←→ ±1  A:+5  C:-5",
+          onLeft: () => { adjustRuntimeStat("stamina", -1, staMax); return true; },
+          onRight: () => { adjustRuntimeStat("stamina", 1, staMax); return true; },
+          onA: () => { adjustRuntimeStat("stamina", 5, staMax); return true; },
+          onC: () => { adjustRuntimeStat("stamina", -5, staMax); return true; },
+        },
+        {
+          label: "DMG",
+          value: `${dmgNow}/${dmgMax}`,
+          description: "損傷値を直接調整。",
+          controls: "←→ ±1  A:+5  C:-5",
+          onLeft: () => { adjustLocalStat("damage", -1, dmgMax); return true; },
+          onRight: () => { adjustLocalStat("damage", 1, dmgMax); return true; },
+          onA: () => { adjustLocalStat("damage", 5, dmgMax); return true; },
+          onC: () => { adjustLocalStat("damage", -5, dmgMax); return true; },
+        },
+      ];
+    }
+
+    if(id === "abnormal"){
+      return HEAL_ABNORMAL_KEYS.map((key) => {
+        const current = getHealAbnormalLevel(detail, key);
+        return {
+          label: getLogStatLabel(key),
+          valueType: "chips",
+          choices: formatDebugAbnormalChoices(current),
+          description: `${getLogStatLabel(key)} の段階値を変更。`,
+          controls: "←→ Lv  A:+1  C:-1",
+          onLeft: () => { adjustDebugAbnormalLevel(key, -1); return true; },
+          onRight: () => { adjustDebugAbnormalLevel(key, 1); return true; },
+          onA: () => { adjustDebugAbnormalLevel(key, 1); return true; },
+          onC: () => { adjustDebugAbnormalLevel(key, -1); return true; },
+        };
+      });
+    }
+
+    if(id === "flags"){
+      const sleepOn = typeof uiState.debugSleepOverride === "boolean"
+        ? uiState.debugSleepOverride
+        : state.isSleeping;
+      return [
+        {
+          label: "SLEEP",
+          valueType: "chips",
+          choices: [
+            { label: "OFF", active: !sleepOn },
+            { label: "ON", active: sleepOn },
+          ],
+          description: "sleep 状態を強制 ON/OFF。",
+          controls: "←→/A/C TOGGLE",
+          onLeft: () => { setDebugSleepFlag(false); return true; },
+          onRight: () => { setDebugSleepFlag(true); return true; },
+          onA: () => { setDebugSleepFlag(!sleepOn); return true; },
+          onC: () => { setDebugSleepFlag(!sleepOn); return true; },
+        },
+      ];
+    }
+
+    if(id === "time"){
+      return [
+        {
+          label: "PRESET",
+          valueType: "chips",
+          choices: DEBUG_TIME_PRESETS.map((preset, index) => ({ label: preset.label, active: index === uiState.debugTimePresetCursor })),
+          description: "時刻プリセットを適用。",
+          controls: "←→ SELECT  A APPLY",
+          onLeft: () => { cycleDebugTimePreset(-1); return true; },
+          onRight: () => { cycleDebugTimePreset(1); return true; },
+          onA: () => {
+            const preset = DEBUG_TIME_PRESETS[uiState.debugTimePresetCursor];
+            if(preset) setDebugTimeMinute(preset.minute);
+            return true;
+          },
+        },
+        {
+          label: "TIME",
+          value: gameHHMM(),
+          description: "ゲーム内時刻を 1 時間ずつ変更。",
+          controls: "← -1h  → +1h",
+          onLeft: () => { adjustDebugTimeHours(-1); return true; },
+          onRight: () => { adjustDebugTimeHours(1); return true; },
+          onA: () => { adjustDebugTimeHours(1); return true; },
+          onC: () => { adjustDebugTimeHours(-1); return true; },
+        },
+      ];
+    }
+
+    if(id === "screen"){
+      return DEBUG_SCREEN_TARGETS.map((target) => ({
+        label: target.label,
+        value: "OPEN",
+        description: `${target.label} 画面へ直接遷移。`,
+        controls: "A OPEN",
+        onA: () => { jumpToDebugScreen(target.id); return true; },
+        onRight: () => { jumpToDebugScreen(target.id); return true; },
+      }));
+    }
+
+    return [];
+  }
+
+  function getDebugSelectedItem(){
+    const categoryIndex = getDebugCategoryCursor();
+    const items = getDebugItemsForCategory(getDebugCategoryIdByIndex(categoryIndex));
+    return items[getDebugItemCursor(categoryIndex)] || null;
+  }
+
+  function createDebugMenuValueElement(item){
+    const valueEl = document.createElement("div");
+    valueEl.className = "debug-menu-item-value";
+    if(String(item?.valueType || "") === "chips" && Array.isArray(item?.choices)){
+      valueEl.classList.add("is-chips");
+      for(let i = 0; i < item.choices.length; i++){
+        const choice = item.choices[i];
+        const chip = document.createElement("span");
+        chip.className = `debug-menu-chip${choice?.active ? " is-active" : ""}`;
+        chip.textContent = String(choice?.label || "");
+        valueEl.appendChild(chip);
+      }
+      return valueEl;
+    }
+    valueEl.textContent = String(item?.value ?? "--");
+    return valueEl;
+  }
+
+  function renderDebugMenuOverlay(){
+    const el = ensureDebugMenuOverlayElement();
+    if(!el) return;
+    if(!isDebugMenuOpen()){
+      hideDebugMenuOverlay();
+      return;
+    }
+
+    setDebugMenuRect(OVERLAY_STAT_RECT);
+    el.classList.remove("hidden");
+    el.textContent = "";
+
+    const title = document.createElement("div");
+    title.className = "debug-menu-title";
+    title.textContent = "DEBUG MENU";
+
+    const main = document.createElement("div");
+    main.className = "debug-menu-main";
+
+    const categoryPane = document.createElement("div");
+    categoryPane.className = "debug-menu-panel debug-menu-categories";
+    for(let i = 0; i < DEBUG_MENU_CATEGORIES.length; i++){
+      const def = DEBUG_MENU_CATEGORIES[i];
+      const row = document.createElement("div");
+      const isSelected = i === getDebugCategoryCursor();
+      const isFocus = getDebugPane() === "categories";
+      row.className = `debug-menu-category${isSelected ? " is-selected" : ""}${isSelected && isFocus ? " is-focus" : ""}`;
+      const cursor = document.createElement("span");
+      cursor.className = "debug-menu-cursor";
+      cursor.textContent = isSelected ? ">" : " ";
+      const label = document.createElement("span");
+      label.className = "debug-menu-category-label";
+      label.textContent = String(def?.label || "--");
+      row.appendChild(cursor);
+      row.appendChild(label);
+      categoryPane.appendChild(row);
+    }
+
+    const detailPane = document.createElement("div");
+    detailPane.className = "debug-menu-panel debug-menu-detail";
+    const category = getDebugSelectedCategory();
+    const items = getDebugItemsForCategory(category?.id);
+    const itemCursor = setDebugItemCursor(getDebugCategoryCursor(), getDebugItemCursor(getDebugCategoryCursor()));
+
+    const detailTitle = document.createElement("div");
+    detailTitle.className = "debug-menu-detail-title";
+    detailTitle.textContent = `${String(category?.label || "--")}  [${String(state.screen || "").toUpperCase()}]`;
+    detailPane.appendChild(detailTitle);
+
+    const itemList = document.createElement("div");
+    itemList.className = "debug-menu-item-list";
+    for(let i = 0; i < items.length; i++){
+      const item = items[i];
+      const row = document.createElement("div");
+      const isSelected = i === itemCursor;
+      const isFocus = getDebugPane() === "items";
+      row.className = `debug-menu-item${isSelected ? " is-selected" : ""}${isSelected && isFocus ? " is-focus" : ""}`;
+
+      const label = document.createElement("div");
+      label.className = "debug-menu-item-label";
+      label.textContent = String(item?.label || "--");
+
+      const value = createDebugMenuValueElement(item);
+
+      const meta = document.createElement("div");
+      meta.className = "debug-menu-item-meta";
+      meta.textContent = String(item?.controls || "");
+
+      row.appendChild(label);
+      row.appendChild(value);
+      row.appendChild(meta);
+      itemList.appendChild(row);
+    }
+    detailPane.appendChild(itemList);
+
+    main.appendChild(categoryPane);
+    main.appendChild(detailPane);
+
+    const bottom = document.createElement("div");
+    bottom.className = "debug-menu-bottom";
+    const selectedItem = getDebugPane() === "items" ? getDebugSelectedItem() : null;
+
+    const bottomTitle = document.createElement("div");
+    bottomTitle.className = "debug-menu-bottom-title";
+    bottomTitle.textContent = selectedItem
+      ? `${String(selectedItem.label || "--")}  ${String(selectedItem.value || "").trim()}`
+      : String(category?.label || "DEBUG");
+
+    const bottomText = document.createElement("div");
+    bottomText.className = "debug-menu-bottom-text";
+    bottomText.textContent = selectedItem
+      ? String(selectedItem.description || category?.description || "")
+      : String(category?.description || "");
+
+    const bottomHint = document.createElement("div");
+    bottomHint.className = "debug-menu-bottom-hint";
+    bottomHint.textContent = getDebugPane() === "categories"
+      ? "↑↓ CATEGORY  A/→ DETAIL  B/ESC CLOSE"
+      : String(selectedItem?.controls || "←→ CHANGE  A APPLY  C ALT") + "  B CATEGORY  ESC CLOSE";
+
+    bottom.appendChild(bottomTitle);
+    bottom.appendChild(bottomText);
+    bottom.appendChild(bottomHint);
+
+    el.appendChild(title);
+    el.appendChild(main);
+    el.appendChild(bottom);
+
+    if(hudTitle) hudTitle.textContent = "DEBUG";
+    if(hudHint) hudHint.textContent = getDebugPane() === "categories"
+      ? "↑↓ CATEGORY  A/→ DETAIL  ESC CLOSE"
+      : "↑↓ ITEM  ←/→ CHANGE  A APPLY  B CAT  C ALT  ESC CLOSE";
+  }
+
+  function setDebugMenuOpen(open){
+    uiState.debugMenuOpen = Boolean(open);
+    if(uiState.debugMenuOpen){
+      releaseAllDirHolds();
+      onCRelease();
+      setDebugPane("categories");
+      renderDebugMenuOverlay();
+    }else{
+      releaseAllDirHolds();
+      onCRelease();
+      hideDebugMenuOverlay();
+    }
+    return uiState.debugMenuOpen;
+  }
+
+  function toggleDebugMenu(){
+    return setDebugMenuOpen(!isDebugMenuOpen());
+  }
+
+  function handleDebugMenuUp(){
+    if(!isDebugMenuOpen()) return false;
+    const moved = getDebugPane() === "categories"
+      ? moveDebugCategoryCursor(-1)
+      : moveDebugItemCursor(-1);
+    renderDebugMenuOverlay();
+    if(moved) markCursorMoved();
+    return true;
+  }
+
+  function handleDebugMenuDown(){
+    if(!isDebugMenuOpen()) return false;
+    const moved = getDebugPane() === "categories"
+      ? moveDebugCategoryCursor(1)
+      : moveDebugItemCursor(1);
+    renderDebugMenuOverlay();
+    if(moved) markCursorMoved();
+    return true;
+  }
+
+  function handleDebugMenuLeft(){
+    if(!isDebugMenuOpen()) return false;
+    if(getDebugPane() === "items"){
+      const item = getDebugSelectedItem();
+      if(item && typeof item.onLeft === "function"){
+        item.onLeft();
+      }
+    }
+    renderDebugMenuOverlay();
+    markCursorMoved();
+    return true;
+  }
+
+  function handleDebugMenuRight(){
+    if(!isDebugMenuOpen()) return false;
+    if(getDebugPane() === "categories"){
+      setDebugPane("items");
+    }else{
+      const item = getDebugSelectedItem();
+      if(item && typeof item.onRight === "function"){
+        item.onRight();
+      }
+    }
+    renderDebugMenuOverlay();
+    markCursorMoved();
+    return true;
+  }
+
+  function handleDebugMenuConfirm(){
+    if(!isDebugMenuOpen()) return false;
+    if(getDebugPane() === "categories"){
+      setDebugPane("items");
+      renderDebugMenuOverlay();
+      markCursorMoved();
+      return true;
+    }
+    const item = getDebugSelectedItem();
+    if(item && typeof item.onA === "function"){
+      item.onA();
+    }
+    renderDebugMenuOverlay();
+    markCursorMoved();
+    return true;
+  }
+
+  function handleDebugMenuAlt(){
+    if(!isDebugMenuOpen()) return false;
+    const item = getDebugSelectedItem();
+    if(getDebugPane() === "items" && item && typeof item.onC === "function"){
+      item.onC();
+    }
+    renderDebugMenuOverlay();
+    markCursorMoved();
+    return true;
+  }
+
+  function handleDebugMenuBack(){
+    if(!isDebugMenuOpen()) return false;
+    if(getDebugPane() === "items"){
+      setDebugPane("categories");
+      renderDebugMenuOverlay();
+      markCursorMoved();
+      return true;
+    }
+    setDebugMenuOpen(false);
+    markCursorMoved();
+    return true;
+  }
+
   function normalizeStatPage(value){
     const num = Math.floor(Number(value));
     if(!Number.isFinite(num)) return 0;
     const mod = num % STAT_PAGE_COUNT;
     return mod < 0 ? mod + STAT_PAGE_COUNT : mod;
+  }
+
+  function getStatSkillPageIndex(){
+    return Math.max(0, STAT_PAGE_COUNT - 1);
+  }
+
+  function isStatSkillPage(page){
+    return normalizeStatPage(page) === getStatSkillPageIndex();
+  }
+
+  function getStatSkillEditingSlot(){
+    const raw = Math.floor(toNumber(uiState.statSkillEditingSlot, -1));
+    if(raw < 0 || raw >= BTTL_SKILL_SLOT_COUNT){
+      return -1;
+    }
+    return raw;
+  }
+
+  function setStatSkillEditingSlot(slotIndex){
+    const idx = Math.floor(toNumber(slotIndex, -1));
+    uiState.statSkillEditingSlot = (idx >= 0 && idx < BTTL_SKILL_SLOT_COUNT) ? idx : -1;
+    return uiState.statSkillEditingSlot;
+  }
+
+  function clearStatSkillEditingSlot(){
+    uiState.statSkillEditingSlot = -1;
+  }
+
+  function getStatSkillWarningMessage(){
+    return String(uiState.statSkillWarningMessage || "").trim();
+  }
+
+  function setStatSkillWarningMessage(message){
+    uiState.statSkillWarningMessage = String(message || "").trim();
+    return uiState.statSkillWarningMessage;
+  }
+
+  function clearStatSkillWarningMessage(){
+    uiState.statSkillWarningMessage = "";
+  }
+
+  function getStatSkillNoSetWarningMessage(){
+    return "警告: 共有スキルが1つもセットされていません。";
+  }
+
+  function hasAnyStatSkillSet(){
+    if(!isRecord(state.detailed)){
+      state.detailed = createDefaultDetailedState(state.monster?.id || "mon001");
+    }
+    const detail = ensureBttlSkillDetailState(state.detailed, state.monster);
+    const stagePlan = getBttlSkillPlanByStage(state.monster?.stage);
+    const learned = normalizeBttlSkillIdList(detail?.skillSharedLearnedIds, getBttlSharedSkillById);
+    const setIds = normalizeBttlSharedSetIds(
+      detail?.skillSharedSetIds,
+      learned,
+      stagePlan,
+      { fallbackWhenEmpty: false }
+    );
+    for(let i = 0; i < setIds.length; i++){
+      if(String(setIds[i] || "").trim().length > 0){
+        return true;
+      }
+    }
+    return false;
   }
 
   function ensureStatCursorByPage(){
@@ -1232,17 +2496,24 @@
 
   function moveStatCursor(delta){
     const page = setStatPage(uiState.statPage);
+    clearStatSkillWarningMessage();
     const current = getStatCursor(page);
     return setStatCursor(page, current + Math.floor(toNumber(delta, 0)));
   }
 
   function resetStatCursors(){
     uiState.statCursorByPage = Array.from({ length: STAT_PAGE_COUNT }, () => 0);
+    clearStatSkillEditingSlot();
+    clearStatSkillWarningMessage();
   }
 
   function setStatPage(page){
     const next = normalizeStatPage(page);
     uiState.statPage = next;
+    if(!isStatSkillPage(next)){
+      clearStatSkillEditingSlot();
+      clearStatSkillWarningMessage();
+    }
     setStatCursor(next, getStatCursor(next));
     return next;
   }
@@ -1282,6 +2553,8 @@
   }
 
   function getTrnLayout(){
+    const headerBandH = 42;
+    const bottomInset = 10;
     const frame = {
       x: 16,
       y: 28,
@@ -1290,9 +2563,9 @@
     };
     const left = {
       x: frame.x + 8,
-      y: frame.y + 14,
+      y: frame.y + headerBandH,
       w: 236,
-      h: frame.h - 24,
+      h: frame.h - headerBandH - bottomInset,
     };
     const right = {
       x: left.x + left.w + 8,
@@ -1309,6 +2582,37 @@
       cy: left.y + Math.floor(left.h * 0.52),
     };
     return { frame, left, right, ring };
+  }
+
+  function resolveScreenHeaderLabel(screen = state.screen){
+    const id = String(screen || "").trim().toLowerCase();
+    if(id === TRN_MODE_SCREEN || id === TRN_SCREEN || id === TRN_LOG_SCREEN){
+      return "TRAINING";
+    }
+    if(id === "bttl" || id === BTTL_LOG_SCREEN){
+      return "BATTLE";
+    }
+    if(id === "status"){
+      return "STATUS";
+    }
+    if(id === "food"){
+      return "FOOD";
+    }
+    if(id === "heal"){
+      return "HEAL";
+    }
+    if(id === "edit"){
+      return "EDITOR";
+    }
+    if(id === "menu"){
+      return "DOTMON";
+    }
+    return String(screen || "DOTMON").trim().toUpperCase() || "DOTMON";
+  }
+
+  function drawScreenHeader(screen = state.screen){
+    drawText(24, 38, resolveScreenHeaderLabel(screen));
+    drawText(W - 90, 38, gameHHMM());
   }
 
   function getTrnPlayRingMetrics(){
@@ -2139,18 +3443,12 @@
     return "drain";
   }
 
-  function formatSignedDeltaValue(value){
-    const n = Math.round(toNumber(value, 0));
-    const sign = n >= 0 ? "+" : "-";
-    return `${sign}${Math.abs(n)}`;
-  }
-
   function formatTrnMetricToken(label, value){
-    return `${label}${formatSignedDeltaValue(value)}`;
+    return `${label}${formatUiDeltaValue(Math.round(toNumber(value, 0)))}`;
   }
 
   function formatTrnFormalMetric(label, value){
-    return `${label} ${formatSignedDeltaValue(value)}`;
+    return `${label} ${formatUiDeltaValue(Math.round(toNumber(value, 0)))}`;
   }
 
   function buildTrnCompactFeedback(grade, applied){
@@ -2400,8 +3698,14 @@
     if(!overlayLog || !overlayLogTitle || !overlayLogBody || !overlayLogHint) return false;
     const rect = rectOverride || (mode === "stat" ? OVERLAY_STAT_RECT : OVERLAY_LOG_RECT);
     setOverlayLogRect(rect);
-    overlayLog.classList.remove("mode-log", "mode-stat");
-    overlayLog.classList.add(mode === "stat" ? "mode-stat" : "mode-log");
+    overlayLog.classList.remove("mode-log", "mode-stat", "mode-food");
+    if(mode === "stat"){
+      overlayLog.classList.add("mode-stat");
+    }else if(mode === "food"){
+      overlayLog.classList.add("mode-food");
+    }else{
+      overlayLog.classList.add("mode-log");
+    }
     overlayLog.classList.remove("hidden");
     setOverlayMode(mode);
     return true;
@@ -2423,7 +3727,7 @@
     return STAT_DESCRIPTION_TEXT[key] || "この項目の説明は準備中。";
   }
 
-  function appendStatDescriptionPane(root, item){
+  function appendStatDescriptionPane(root, item, options = {}){
     const description = document.createElement("div");
     description.className = "overlay-stat-description";
 
@@ -2433,7 +3737,11 @@
 
     const text = document.createElement("div");
     text.className = "overlay-stat-description-text";
-    text.textContent = resolveStatDescription(item);
+    const baseText = resolveStatDescription(item);
+    const warningMessage = String(options.warningMessage || "").trim();
+    text.textContent = warningMessage.length > 0
+      ? `${baseText}\n\n${warningMessage}`
+      : baseText;
 
     description.appendChild(label);
     description.appendChild(text);
@@ -2596,16 +3904,137 @@
     }
   }
 
+  function appendStatSkillPage(root, items, selectedIndex){
+    const src = Array.isArray(items) ? items : [];
+    const topItems = src
+      .map((row, index) => ({ row, index }))
+      .filter((entry) => {
+        const kind = String(entry?.row?.kind || "");
+        return kind === "unique" || kind === "slot";
+      });
+    const gridItems = getStatSkillGridCellItems(src)
+      .sort((a, b) => Math.floor(toNumber(a?.gridIndex, 0)) - Math.floor(toNumber(b?.gridIndex, 0)));
+
+    if(topItems.length > 0){
+      const list = document.createElement("div");
+      list.className = "overlay-stat-list overlay-stat-list-skill";
+      for(let i = 0; i < topItems.length; i++){
+        const row = topItems[i].row;
+        const idx = topItems[i].index;
+        const selected = idx === selectedIndex;
+        const rowEl = document.createElement("div");
+        rowEl.className = `overlay-stat-list-row${selected ? " is-selected" : ""}`;
+
+        const cursorEl = document.createElement("div");
+        cursorEl.className = `overlay-stat-cursor${selected ? " is-selected" : ""}`;
+        cursorEl.textContent = selected ? ">" : " ";
+
+        const labelEl = document.createElement("div");
+        labelEl.className = "overlay-stat-list-label";
+        labelEl.textContent = String(row.label ?? "");
+
+        const valueEl = document.createElement("div");
+        valueEl.className = "overlay-stat-list-value overlay-stat-skill-value";
+        const valueNameEl = document.createElement("span");
+        valueNameEl.className = "overlay-stat-skill-value-name";
+        valueNameEl.textContent = String(row.value ?? "--");
+        valueEl.appendChild(valueNameEl);
+
+        const valueRange = String(row.valueRange ?? "").trim();
+        if(valueRange.length > 0){
+          const valueRangeEl = document.createElement("span");
+          valueRangeEl.className = "overlay-stat-skill-value-range";
+          valueRangeEl.textContent = `[${valueRange}]`;
+          valueEl.appendChild(valueRangeEl);
+        }
+
+        rowEl.appendChild(cursorEl);
+        rowEl.appendChild(labelEl);
+        rowEl.appendChild(valueEl);
+        list.appendChild(rowEl);
+      }
+      root.appendChild(list);
+    }
+
+    if(gridItems.length > 0){
+      const gridWrap = document.createElement("div");
+      gridWrap.className = "overlay-stat-skill-grid-wrap";
+      const gridArea = document.createElement("div");
+      gridArea.className = "overlay-stat-skill-grid-area";
+      const grid = document.createElement("div");
+      grid.className = "overlay-stat-skill-grid";
+      const gridCols = Math.max(1, Math.floor(toNumber(gridItems[0]?.gridCols, 10)));
+      const gridRows = Math.max(1, Math.floor(toNumber(gridItems[0]?.gridRows, 4)));
+      grid.style.setProperty("--skill-grid-cols", String(gridCols));
+      grid.style.setProperty("--skill-grid-rows", String(gridRows));
+
+      const labels = document.createElement("div");
+      labels.className = "overlay-stat-skill-grid-labels";
+      labels.style.setProperty("--skill-grid-rows", String(gridRows));
+      const rowLabels = getStatusSkillGridRowLabels();
+      for(let row = 0; row < gridRows; row++){
+        const label = document.createElement("div");
+        label.className = "overlay-stat-skill-grid-label";
+        label.textContent = String(rowLabels[row] || "");
+        labels.appendChild(label);
+      }
+
+      for(let i = 0; i < gridItems.length; i++){
+        const item = gridItems[i];
+        const kind = String(item.kind || "");
+        const itemIndex = src.findIndex((candidate) => candidate === item);
+        const selected = itemIndex === selectedIndex;
+        const skillState = String(item.skillState || "");
+        const setSlotIndex = Math.floor(toNumber(item.setSlotIndex, -1));
+        const cell = document.createElement("div");
+        cell.className = "overlay-stat-skill-cell";
+        if(selected){
+          cell.classList.add("is-selected");
+        }
+        if(kind === "grid_empty" || !item.selectable){
+          cell.classList.add("is-empty");
+        }else if(skillState === "learned"){
+          cell.classList.add("is-learned");
+        }else if(skillState === "learnable"){
+          cell.classList.add("is-learnable");
+        }else{
+          cell.classList.add("is-locked");
+        }
+        if(setSlotIndex >= 0){
+          cell.classList.add("is-set");
+        }
+        grid.appendChild(cell);
+      }
+      gridArea.appendChild(labels);
+      gridArea.appendChild(grid);
+      gridWrap.appendChild(gridArea);
+      root.appendChild(gridWrap);
+    }
+  }
+
   function showOverlayStat(){
     if(!showOverlayShell("stat")) return;
     overlayLogTitle.textContent = "";
-    overlayLogHint.textContent = "";
     overlayLogBody.textContent = "";
 
     const page = setStatPage(uiState.statPage);
     const items = getStatItemsForPage(page);
-    const selectedIndex = setStatCursor(page, getStatCursor(page));
+    let selectedIndex = setStatCursor(page, getStatCursor(page));
+    if(isStatSkillPage(page) && getStatSkillEditingSlot() < 0){
+      const selected = items[selectedIndex] || null;
+      const kind = String(selected?.kind || "");
+      if(kind === "grid_skill" || kind === "grid_empty"){
+        const topIndices = getStatSkillTopItemIndices(items);
+        if(topIndices.length > 0){
+          selectedIndex = setStatCursor(page, topIndices[0]);
+        }
+      }
+    }
     const selectedItem = items[selectedIndex] || null;
+    overlayLogHint.textContent = "";
+    const warningMessage = isStatSkillPage(page) && !hasAnyStatSkillSet()
+      ? getStatSkillNoSetWarningMessage()
+      : "";
 
     const pageRoot = document.createElement("div");
     pageRoot.className = "overlay-stat-page";
@@ -2616,18 +4045,20 @@
       appendStatPage1(pageMain, items, selectedIndex);
     }else if(page === 1){
       appendStatPage2(pageMain, items, selectedIndex);
-    }else{
+    }else if(page === 2){
       appendStatListPage(pageMain, items, selectedIndex);
+    }else{
+      appendStatSkillPage(pageMain, items, selectedIndex);
     }
     pageRoot.appendChild(pageMain);
-    appendStatDescriptionPane(pageRoot, selectedItem);
+    appendStatDescriptionPane(pageRoot, selectedItem, { warningMessage });
     overlayLogBody.appendChild(pageRoot);
   }
 
   function hideOverlayLog(){
     if(!overlayLog) return;
     overlayLog.classList.add("hidden");
-    overlayLog.classList.remove("mode-log", "mode-stat");
+    overlayLog.classList.remove("mode-log", "mode-stat", "mode-food");
     if(overlayLogTitle) overlayLogTitle.textContent = "";
     if(overlayLogBody) overlayLogBody.textContent = "";
     if(overlayLogHint) overlayLogHint.textContent = "";
@@ -2669,7 +4100,6 @@
 
   function buildOverlayLogByScreen(screen){
     let action = null;
-    if(screen === "feed") action = "feed";
     if(screen === "sleep") action = "sleep";
     if(screen === "heal") action = "heal";
     if(!action) return null;
@@ -2735,8 +4165,447 @@
     return normalized;
   }
 
+  function roundTo1(value){
+    return Math.round(toNumber(value, 0) * 10) / 10;
+  }
+
+  function getFoodById(foodId){
+    const id = String(foodId || "").trim().toLowerCase();
+    return id.length > 0 ? (FOOD_BY_ID[id] || null) : null;
+  }
+
+  function getFoodIconSpriteById(iconId){
+    const id = String(iconId || "").trim().toLowerCase();
+    if(id.length <= 0) return null;
+    const sprite = FOOD_ICON_SPRITES_BY_ID[id];
+    return isSprite16(sprite) ? sprite : null;
+  }
+
+  function getFoodIconSprite(food){
+    if(!isRecord(food)) return null;
+    const iconId = String(food.iconId || food.id || "").trim().toLowerCase();
+    return getFoodIconSpriteById(iconId);
+  }
+
+  function createItemIconCanvasElement(sprite, opt = {}){
+    if(!Array.isArray(sprite) || sprite.length <= 0) return null;
+    const scale = Math.max(2, Math.floor(toNumber(opt.dotScale, FOOD_ICON_DOT_SCALE)));
+    const size = Math.max(SPRITE_SIZE, SPRITE_SIZE * scale);
+    const iconCanvas = document.createElement("canvas");
+    iconCanvas.className = String(opt.className || "overlay-food-icon-canvas");
+    iconCanvas.width = size;
+    iconCanvas.height = size;
+    const iconCtx = iconCanvas.getContext("2d", { alpha: true });
+    if(!iconCtx){
+      return null;
+    }
+    iconCtx.imageSmoothingEnabled = false;
+    iconCtx.clearRect(0, 0, size, size);
+    const drawn = itemIconDrawItemIconWithRank(iconCtx, sprite, 0, 0, size, opt.rank, {
+      pixelColor: "rgba(14,20,15,0.78)",
+      accentColor: "rgba(14,20,15,0.92)",
+      rankOffsetX: Math.max(4, Math.floor(size / 14)),
+      rankOffsetY: Math.max(2, Math.floor(size / 18)),
+      rankUnderOffsetX: 1,
+      rankUnderOffsetY: 1,
+    });
+    if(!drawn){
+      return null;
+    }
+    return iconCanvas;
+  }
+
+  function createFoodIconCanvasElement(food){
+    const sprite = getFoodIconSprite(food);
+    return createItemIconCanvasElement(sprite, {
+      className: "overlay-food-icon-canvas",
+      dotScale: FOOD_ICON_DOT_SCALE,
+      rank: food?.rank,
+    });
+  }
+
+  function normalizeFoodStockCount(value, fallback = 0){
+    const raw = Math.floor(toNumber(value, fallback));
+    if(raw === FOOD_STOCK_INFINITE){
+      return FOOD_STOCK_INFINITE;
+    }
+    if(raw < 0){
+      return Math.max(0, Math.floor(toNumber(fallback, 0)));
+    }
+    return clamp(raw, 0, FOOD_STOCK_MAX);
+  }
+
+  function isFoodStockInfinite(count){
+    return Math.floor(toNumber(count, 0)) === FOOD_STOCK_INFINITE;
+  }
+
+  function hasFoodStock(count){
+    return isFoodStockInfinite(count) || Math.floor(toNumber(count, 0)) > 0;
+  }
+
+  function formatFoodStockText(count){
+    if(isFoodStockInfinite(count)){
+      return "∞";
+    }
+    const normalized = clamp(Math.floor(toNumber(count, 0)), 0, FOOD_STOCK_MAX);
+    return String(normalized);
+  }
+
+  function isFoodAlwaysInfinite(foodId){
+    const id = String(foodId || "").trim().toLowerCase();
+    if(id.length <= 0) return false;
+    return normalizeFoodStockCount(FOOD_INITIAL_STOCK_BY_ID[id], 0) === FOOD_STOCK_INFINITE;
+  }
+
+  function createDefaultFoodInventory(){
+    const inventory = {};
+    for(let i = 0; i < FOOD_CATALOG.length; i++){
+      const item = FOOD_CATALOG[i];
+      const id = String(item?.id || "").trim().toLowerCase();
+      if(id.length <= 0) continue;
+      const initial = normalizeFoodStockCount(FOOD_INITIAL_STOCK_BY_ID[id], 0);
+      inventory[id] = initial;
+    }
+    return inventory;
+  }
+
+  function normalizeFoodInventory(input, fallback = null){
+    const base = isRecord(fallback) ? fallback : createDefaultFoodInventory();
+    const src = isRecord(input) ? input : {};
+    const normalized = {};
+    for(let i = 0; i < FOOD_CATALOG.length; i++){
+      const item = FOOD_CATALOG[i];
+      const id = String(item?.id || "").trim().toLowerCase();
+      if(id.length <= 0) continue;
+      if(isFoodAlwaysInfinite(id)){
+        normalized[id] = FOOD_STOCK_INFINITE;
+        continue;
+      }
+      const fallbackCount = normalizeFoodStockCount(base[id], 0);
+      const count = normalizeFoodStockCount(src[id], fallbackCount);
+      normalized[id] = count;
+    }
+    return normalized;
+  }
+
+  function ensureFoodDetailState(detail){
+    if(!isRecord(detail)) return null;
+    detail.foodInventory = normalizeFoodInventory(detail.foodInventory);
+    detail.weight = clamp(
+      roundTo1(toNumber(detail.weight, FOOD_DEFAULT_WEIGHT)),
+      FOOD_WEIGHT_MIN,
+      FOOD_WEIGHT_MAX
+    );
+    return detail;
+  }
+
+  function getFoodInventoryCount(detail, foodId){
+    if(!isRecord(detail)) return 0;
+    ensureFoodDetailState(detail);
+    const id = String(foodId || "").trim().toLowerCase();
+    if(id.length <= 0) return 0;
+    if(isFoodAlwaysInfinite(id)){
+      return FOOD_STOCK_INFINITE;
+    }
+    return normalizeFoodStockCount(detail.foodInventory?.[id], 0);
+  }
+
+  function getFoodFamilyLabel(familyId){
+    const id = String(familyId || "").trim().toLowerCase();
+    return FOOD_FAMILY_LABELS[id] || "未分類";
+  }
+
+  function buildFoodEffectSummary(food){
+    if(!isRecord(food)){
+      return "効果なし";
+    }
+    const effects = isRecord(food.effects) ? food.effects : {};
+    const out = [];
+    const hunger = roundTo1(toNumber(effects.hunger, 0));
+    const stability = roundTo1(toNumber(effects.stability, 0));
+    const signalQuality = roundTo1(toNumber(effects.signalQuality, 0));
+    const hp = roundTo1(toNumber(effects.hp, 0));
+    const damageRecover = roundTo1(toNumber(effects.damageRecover, 0));
+    const weightGain = roundTo1(toNumber(food.weightGain, 0));
+    if(hunger !== 0) out.push(`充足値 ${getUiDeltaSymbol(hunger)}`);
+    if(stability !== 0) out.push(`安定度 ${getUiDeltaSymbol(stability)}`);
+    if(signalQuality !== 0) out.push(`信号品質 ${getUiDeltaSymbol(signalQuality)}`);
+    if(hp !== 0) out.push(`HP ${getUiDeltaSymbol(hp)}`);
+    if(damageRecover !== 0) out.push(`損傷 ${getUiDeltaSymbol(-Math.abs(damageRecover))}`);
+    if(weightGain !== 0) out.push(`体重 ${getUiDeltaSymbol(weightGain)}`);
+    return out.length > 0 ? out.join(" / ") : "効果なし";
+  }
+
+  function normalizeBttlStageNumber(stageRaw, fallback = 1){
+    const num = Math.floor(toNumber(stageRaw, fallback));
+    if(num >= 3) return 3;
+    if(num >= 2) return 2;
+    return 1;
+  }
+
+  function getBttlSkillPlanByStage(stageRaw){
+    const stage = normalizeBttlStageNumber(stageRaw, 1);
+    return BTTL_SKILL_STAGE_PLAN[stage] || BTTL_SKILL_STAGE_PLAN[1];
+  }
+
+  function getBttlSharedSkillById(skillId){
+    const id = String(skillId || "").trim().toLowerCase();
+    return id.length > 0 ? (BTTL_SHARED_SKILL_BY_ID[id] || null) : null;
+  }
+
+  function getBttlUniqueSkillById(skillId){
+    const id = String(skillId || "").trim().toLowerCase();
+    return id.length > 0 ? (BTTL_UNIQUE_SKILL_BY_ID[id] || null) : null;
+  }
+
+  function normalizeBttlSkillIdList(input, resolver){
+    const src = Array.isArray(input) ? input : [];
+    const out = [];
+    for(let i = 0; i < src.length; i++){
+      const raw = String(src[i] || "").trim().toLowerCase();
+      if(raw.length <= 0) continue;
+      const skill = resolver(raw);
+      if(!skill) continue;
+      if(out.includes(skill.id)) continue;
+      out.push(skill.id);
+    }
+    return out;
+  }
+
+  function buildDefaultBttlSharedSetIds(learnedSkillIds, stagePlan){
+    const learned = Array.isArray(learnedSkillIds) ? learnedSkillIds : [];
+    const out = [];
+    const preferred = Array.isArray(stagePlan?.defaultSetIds)
+      ? stagePlan.defaultSetIds
+      : [];
+    for(let i = 0; i < preferred.length; i++){
+      const id = String(preferred[i] || "").trim().toLowerCase();
+      if(id.length <= 0) continue;
+      if(!learned.includes(id)) continue;
+      if(out.includes(id)) continue;
+      out.push(id);
+      if(out.length >= BTTL_SKILL_SLOT_COUNT){
+        return out;
+      }
+    }
+    for(let i = 0; i < learned.length; i++){
+      const id = String(learned[i] || "").trim().toLowerCase();
+      if(id.length <= 0) continue;
+      if(out.includes(id)) continue;
+      out.push(id);
+      if(out.length >= BTTL_SKILL_SLOT_COUNT){
+        break;
+      }
+    }
+    return out;
+  }
+
+  function normalizeBttlSharedSetIds(input, learnedSkillIds, stagePlan, options = {}){
+    const learned = Array.isArray(learnedSkillIds) ? learnedSkillIds : [];
+    const src = Array.isArray(input) ? input.slice(0, BTTL_SKILL_SLOT_COUNT) : [];
+    const out = [];
+    const fallbackWhenEmpty = options?.fallbackWhenEmpty !== false;
+    for(let i = 0; i < src.length; i++){
+      const id = String(src[i] || "").trim().toLowerCase();
+      if(id.length <= 0) continue;
+      if(!learned.includes(id)) continue;
+      if(out.includes(id)) continue;
+      out.push(id);
+    }
+    if(fallbackWhenEmpty && out.length <= 0){
+      const fallback = buildDefaultBttlSharedSetIds(learned, stagePlan);
+      for(let i = 0; i < fallback.length; i++){
+        if(out.length >= BTTL_SKILL_SLOT_COUNT) break;
+        out.push(fallback[i]);
+      }
+    }
+    while(out.length < BTTL_SKILL_SLOT_COUNT){
+      out.push("");
+    }
+    return out.slice(0, BTTL_SKILL_SLOT_COUNT);
+  }
+
+  function ensureBttlSkillDetailState(detail, monster = null){
+    if(!isRecord(detail)) return null;
+    const stagePlan = getBttlSkillPlanByStage(monster?.stage);
+    let learned = normalizeBttlSkillIdList(detail.skillSharedLearnedIds, getBttlSharedSkillById);
+    if(learned.length <= 0){
+      learned = normalizeBttlSkillIdList(stagePlan.sharedSkillIds, getBttlSharedSkillById);
+    }else{
+      const staged = normalizeBttlSkillIdList(stagePlan.sharedSkillIds, getBttlSharedSkillById);
+      for(let i = 0; i < staged.length; i++){
+        if(!learned.includes(staged[i])){
+          learned.push(staged[i]);
+        }
+      }
+    }
+    const stagedUnique = getBttlUniqueSkillById(stagePlan.uniqueSkillId);
+    const rawUnique = String(detail.skillUniqueId || "").trim().toLowerCase();
+    const resolvedUnique = getBttlUniqueSkillById(rawUnique) || stagedUnique || BTTL_UNIQUE_FINISHER_CATALOG[0] || null;
+    detail.skillUniqueId = resolvedUnique ? resolvedUnique.id : "";
+    detail.skillSharedLearnedIds = learned;
+    detail.skillSharedSetIds = normalizeBttlSharedSetIds(
+      detail.skillSharedSetIds,
+      learned,
+      stagePlan,
+      { fallbackWhenEmpty: false }
+    );
+    return detail;
+  }
+
+  function getBttlSkillRangeJa(rangeId){
+    const id = normalizeBttlRangeStateId(rangeId);
+    if(id === "short") return "SHORT";
+    if(id === "long") return "LONG";
+    return "MID";
+  }
+
+  function formatBttlSkillRangesJa(ranges){
+    const list = Array.isArray(ranges) ? ranges : [];
+    if(list.length <= 0) return "MID";
+    const out = [];
+    for(let i = 0; i < list.length; i++){
+      const label = getBttlSkillRangeJa(list[i]);
+      if(!out.includes(label)){
+        out.push(label);
+      }
+    }
+    return out.length > 0 ? out.join("/") : "MID";
+  }
+
+  function getBttlSkillTypeJa(typeId){
+    const id = String(typeId || "").trim().toLowerCase();
+    if(id === BTTL_SKILL_TYPE.ATTACK) return "攻撃系";
+    if(id === BTTL_SKILL_TYPE.SUPPORT) return "補助系";
+    if(id === BTTL_SKILL_TYPE.FINISH) return "必殺";
+    return "不明";
+  }
+
+  function normalizeHealActionId(value, fallback = HEAL_TYPE.PATCH){
+    const id = String(value || "").trim().toLowerCase();
+    return Object.prototype.hasOwnProperty.call(HEAL_ACTION_BY_ID, id) ? id : fallback;
+  }
+
+  function getHealActionById(actionId){
+    const id = normalizeHealActionId(actionId, "");
+    return id.length > 0 ? (HEAL_ACTION_BY_ID[id] || null) : null;
+  }
+
+  function normalizeHealAbnormalLevel(value, fallback = 0){
+    return clamp(Math.floor(toNumber(value, fallback)), HEAL_ABNORMAL_MIN, HEAL_ABNORMAL_MAX);
+  }
+
+  function createDefaultHealAbnormalState(){
+    return {
+      noise: 0,
+      desync: 0,
+      contamination: 0,
+      decay: 0,
+    };
+  }
+
+  function normalizeHealAbnormalState(input, fallback = null){
+    const base = isRecord(fallback) ? fallback : createDefaultHealAbnormalState();
+    const src = isRecord(input) ? input : {};
+    const normalized = createDefaultHealAbnormalState();
+    for(let i = 0; i < HEAL_ABNORMAL_KEYS.length; i++){
+      const key = HEAL_ABNORMAL_KEYS[i];
+      normalized[key] = normalizeHealAbnormalLevel(src[key], base[key]);
+    }
+    return normalized;
+  }
+
+  function createDefaultHealCycleFloor(){
+    return {
+      damage: 0,
+      noise: 0,
+      desync: 0,
+      contamination: 0,
+      decay: 0,
+    };
+  }
+
+  function normalizeHealCycleFloor(input, fallback = null){
+    const base = isRecord(fallback) ? fallback : createDefaultHealCycleFloor();
+    const src = isRecord(input) ? input : {};
+    const normalized = createDefaultHealCycleFloor();
+    for(let i = 0; i < HEAL_CYCLE_FLOOR_KEYS.length; i++){
+      const key = HEAL_CYCLE_FLOOR_KEYS[i];
+      normalized[key] = normalizeHealAbnormalLevel(src[key], base[key]);
+    }
+    return normalized;
+  }
+
+  function createDefaultHealCycleState(){
+    return {
+      lastType: "",
+      sameTypeCount: 0,
+      floorByKey: createDefaultHealCycleFloor(),
+    };
+  }
+
+  function normalizeHealCycleState(input, fallback = null){
+    const base = isRecord(fallback) ? fallback : createDefaultHealCycleState();
+    const src = isRecord(input) ? input : {};
+    const rawLastType = String(src.lastType || "").trim().toLowerCase();
+    const baseLastType = String(base.lastType || "").trim().toLowerCase();
+    return {
+      lastType: Object.prototype.hasOwnProperty.call(HEAL_ACTION_BY_ID, rawLastType)
+        ? rawLastType
+        : (Object.prototype.hasOwnProperty.call(HEAL_ACTION_BY_ID, baseLastType) ? baseLastType : ""),
+      sameTypeCount: Math.max(0, Math.floor(toNumber(src.sameTypeCount, base.sameTypeCount))),
+      floorByKey: normalizeHealCycleFloor(src.floorByKey, base.floorByKey),
+    };
+  }
+
+  function ensureHealDetailState(detail){
+    if(!isRecord(detail)) return null;
+    detail.abnormalState = normalizeHealAbnormalState(detail.abnormalState);
+    detail.healCycle = normalizeHealCycleState(detail.healCycle);
+    return detail;
+  }
+
+  function resetHealCycle(detail){
+    if(!isRecord(detail)) return createDefaultHealCycleState();
+    detail.healCycle = createDefaultHealCycleState();
+    return detail.healCycle;
+  }
+
+  function getHealAbnormalLevel(detail, key){
+    if(!isRecord(detail)) return 0;
+    ensureHealDetailState(detail);
+    const id = String(key || "").trim().toLowerCase();
+    return normalizeHealAbnormalLevel(detail.abnormalState?.[id], 0);
+  }
+
+  function setHealAbnormalLevel(detail, key, value){
+    if(!isRecord(detail)) return 0;
+    ensureHealDetailState(detail);
+    const id = String(key || "").trim().toLowerCase();
+    if(!HEAL_ABNORMAL_KEYS.includes(id)) return 0;
+    detail.abnormalState[id] = normalizeHealAbnormalLevel(value, detail.abnormalState[id]);
+    return detail.abnormalState[id];
+  }
+
+  function getHealCycleFloor(detail, key){
+    if(!isRecord(detail)) return 0;
+    ensureHealDetailState(detail);
+    const id = String(key || "").trim().toLowerCase();
+    return normalizeHealAbnormalLevel(detail.healCycle?.floorByKey?.[id], 0);
+  }
+
+  function setHealCycleFloor(detail, key, value){
+    if(!isRecord(detail)) return 0;
+    ensureHealDetailState(detail);
+    const id = String(key || "").trim().toLowerCase();
+    if(!HEAL_CYCLE_FLOOR_KEYS.includes(id)) return 0;
+    detail.healCycle.floorByKey[id] = normalizeHealAbnormalLevel(value, detail.healCycle.floorByKey[id]);
+    return detail.healCycle.floorByKey[id];
+  }
+
   function createDefaultDetailedState(monsterId){
     const now = Date.now();
+    const stagePlan = getBttlSkillPlanByStage(1);
     return {
       version: DETAIL_STATE_VERSION,
       adIntegrity: 100,
@@ -2761,6 +4630,17 @@
       rangeStayLong: 0,
       trainingCount: 0,
       trainingTypeCounts: createDefaultTrainingTypeCounts(),
+      foodInventory: createDefaultFoodInventory(),
+      weight: FOOD_DEFAULT_WEIGHT,
+      abnormalState: createDefaultHealAbnormalState(),
+      healCycle: createDefaultHealCycleState(),
+      skillUniqueId: String(stagePlan.uniqueSkillId || ""),
+      skillSharedLearnedIds: normalizeBttlSkillIdList(stagePlan.sharedSkillIds, getBttlSharedSkillById),
+      skillSharedSetIds: normalizeBttlSharedSetIds(
+        stagePlan.defaultSetIds,
+        normalizeBttlSkillIdList(stagePlan.sharedSkillIds, getBttlSharedSkillById),
+        stagePlan
+      ),
     };
   }
 
@@ -2787,6 +4667,37 @@
     const trainingCount = Math.max(0, Math.floor(toNumber(src.trainingCount, base.trainingCount)));
     const trainingTypeCounts = normalizeTrainingTypeCounts(src.trainingTypeCounts, base.trainingTypeCounts);
     const chronotype = normalizeChronotype(src.chronotype, base.chronotype);
+    const basePlan = getBttlSkillPlanByStage(1);
+    const skillUniqueId = (() => {
+      const raw = String(src.skillUniqueId || "").trim().toLowerCase();
+      const fromSrc = getBttlUniqueSkillById(raw);
+      if(fromSrc) return fromSrc.id;
+      const fromBase = getBttlUniqueSkillById(base.skillUniqueId);
+      if(fromBase) return fromBase.id;
+      const staged = getBttlUniqueSkillById(basePlan.uniqueSkillId);
+      return staged ? staged.id : "";
+    })();
+    const skillSharedLearnedIds = (() => {
+      const fromSrc = normalizeBttlSkillIdList(src.skillSharedLearnedIds, getBttlSharedSkillById);
+      if(fromSrc.length > 0) return fromSrc;
+      const fromBase = normalizeBttlSkillIdList(base.skillSharedLearnedIds, getBttlSharedSkillById);
+      if(fromBase.length > 0) return fromBase;
+      return normalizeBttlSkillIdList(basePlan.sharedSkillIds, getBttlSharedSkillById);
+    })();
+    const skillSharedSetIds = normalizeBttlSharedSetIds(
+      src.skillSharedSetIds,
+      skillSharedLearnedIds,
+      basePlan,
+      { fallbackWhenEmpty: false }
+    );
+    const foodInventory = normalizeFoodInventory(src.foodInventory, base.foodInventory);
+    const weight = clamp(
+      roundTo1(toNumber(src.weight, base.weight)),
+      FOOD_WEIGHT_MIN,
+      FOOD_WEIGHT_MAX
+    );
+    const abnormalState = normalizeHealAbnormalState(src.abnormalState, base.abnormalState);
+    const healCycle = normalizeHealCycleState(src.healCycle, base.healCycle);
 
     return {
       version: DETAIL_STATE_VERSION,
@@ -2816,6 +4727,13 @@
       rangeStayLong,
       trainingCount,
       trainingTypeCounts,
+      foodInventory,
+      weight,
+      abnormalState,
+      healCycle,
+      skillUniqueId,
+      skillSharedLearnedIds,
+      skillSharedSetIds,
     };
   }
 
@@ -2824,6 +4742,9 @@
     const parsed = safeParse(localStorage.getItem(DETAIL_STORAGE_KEY));
     const normalized = normalizeDetailedState(parsed, fallback);
     normalized.signalQuality = Math.min(normalized.signalQuality, normalized.adIntegrity);
+    ensureFoodDetailState(normalized);
+    ensureHealDetailState(normalized);
+    ensureBttlSkillDetailState(normalized, state.monster);
     state.detailed = normalized;
     if(isRecord(parsed) && typeof parsed.lastDeltaLine === "string"){
       state.lastDeltaLine = parsed.lastDeltaLine.trim().length > 0
@@ -2873,6 +4794,11 @@
     const detail = state.detailed;
     if(!isRecord(detail)){
       state.isSleeping = false;
+      return;
+    }
+    if(typeof uiState.debugSleepOverride === "boolean"){
+      state.isSleeping = uiState.debugSleepOverride;
+      detail.isTuckedIn = uiState.debugSleepOverride;
       return;
     }
     const shouldSleep = isInAutoSleepWindow(detail.chronotype, getLocalMinuteNow());
@@ -2986,12 +4912,6 @@
     return sanitized;
   }
 
-  function formatSignedDelta(value){
-    const num = toNumber(value, 0);
-    if(num > 0) return `+${num}`;
-    return String(num);
-  }
-
   function buildLogStatLine(delta){
     const parts = [];
     for(const spec of LOG_STAT_SPECS){
@@ -3002,9 +4922,23 @@
       const sign = toNumber(spec?.sign, 1);
       const value = toNumber(delta[key], 0) * sign;
       if(value === 0) continue;
-      parts.push(`${spec.label} ${formatSignedDelta(value)}`);
+      parts.push(`${spec.label} ${formatUiDeltaValue(value)}`);
     }
     return parts.join(" / ");
+  }
+
+  function getLogStatLabel(key){
+    const id = String(key || "").trim();
+    if(id.length <= 0){
+      return "--";
+    }
+    for(let i = 0; i < LOG_STAT_SPECS.length; i++){
+      const spec = LOG_STAT_SPECS[i];
+      if(String(spec?.key || "") === id){
+        return String(spec?.label || id.toUpperCase());
+      }
+    }
+    return id.toUpperCase();
   }
 
   function updateLogParams(action, params){
@@ -3030,26 +4964,2219 @@
     return fallback;
   }
 
-  function applyFeed(){
-    const hungerMax = toPositiveInt(state.stats.hungerMax, 10);
-    const stabilityMax = toPositiveInt(state.stats.stabilityMax, 10);
-    const hunger = applyClampedDelta(state.stats.hunger, 2, 0, hungerMax);
-    const stability = applyClampedDelta(state.stats.stability, 1, 0, stabilityMax);
-    state.stats.hunger = hunger.value;
-    state.stats.stability = stability.value;
-    const delta = sanitizeDelta({
-      hunger: hunger.appliedDelta,
-      stability: stability.appliedDelta,
-    });
-    updateLogParams("feed", delta);
-    recordLastDeltaLine(delta);
+  function getFoodScreenMode(){
+    const mode = String(uiState.foodMode || "");
+    if(mode === FOOD_SCREEN_MODE.RESULT){
+      return FOOD_SCREEN_MODE.RESULT;
+    }
+    return FOOD_SCREEN_MODE.SELECT;
+  }
+
+  function getFoodSelectableItems(detailOverride = null){
+    const detail = ensureFoodDetailState(detailOverride || state.detailed);
+    if(!isRecord(detail)){
+      return [];
+    }
+    const inventory = isRecord(detail.foodInventory) ? detail.foodInventory : {};
+    const out = [];
+    for(let i = 0; i < FOOD_CATALOG.length; i++){
+      const item = FOOD_CATALOG[i];
+      const id = String(item?.id || "").trim().toLowerCase();
+      if(id.length <= 0) continue;
+      const stock = normalizeFoodStockCount(inventory[id], 0);
+      if(hasFoodStock(stock)){
+        out.push(item);
+      }
+    }
+    return out;
+  }
+
+  function setFoodScreenMode(mode){
+    uiState.foodMode = (mode === FOOD_SCREEN_MODE.RESULT)
+      ? FOOD_SCREEN_MODE.RESULT
+      : FOOD_SCREEN_MODE.SELECT;
+    return uiState.foodMode;
+  }
+
+  function getFoodCursor(){
+    const total = getFoodSelectableItems().length;
+    if(total <= 0){
+      uiState.foodCursor = 0;
+      return 0;
+    }
+    const raw = Math.floor(toNumber(uiState.foodCursor, 0));
+    const normalized = ((raw % total) + total) % total;
+    uiState.foodCursor = normalized;
+    return normalized;
+  }
+
+  function setFoodCursor(index){
+    const total = getFoodSelectableItems().length;
+    if(total <= 0){
+      uiState.foodCursor = 0;
+      return 0;
+    }
+    const raw = Math.floor(toNumber(index, 0));
+    const normalized = ((raw % total) + total) % total;
+    uiState.foodCursor = normalized;
+    return normalized;
+  }
+
+  function moveFoodCursor(delta){
+    const step = Math.floor(toNumber(delta, 0));
+    if(step === 0) return false;
+    const before = getFoodCursor();
+    const after = setFoodCursor(before + step);
+    if(before === after) return false;
+    uiState.foodWarningMessage = "";
+    return true;
+  }
+
+  function getSelectedFoodItem(){
+    const items = getFoodSelectableItems();
+    if(items.length <= 0) return null;
+    const idx = getFoodCursor();
+    return items[idx] || null;
+  }
+
+  function setFoodResultPayload(payload){
+    if(!isRecord(payload)){
+      uiState.foodResultPayload = null;
+      return null;
+    }
+    uiState.foodResultPayload = {
+      title: String(payload.title || "FOOD RESULT"),
+      lines: Array.isArray(payload.lines)
+        ? payload.lines.map((line) => String(line ?? ""))
+        : [],
+    };
+    return uiState.foodResultPayload;
+  }
+
+  function getFoodResultPayload(){
+    return isRecord(uiState.foodResultPayload) ? uiState.foodResultPayload : null;
+  }
+
+  function openFoodScreen(){
+    if(!isRecord(state.detailed)){
+      state.detailed = createDefaultDetailedState(state.monster?.id || "mon001");
+    }
+    ensureFoodDetailState(state.detailed);
+    clearStatSkillEditingSlot();
+    uiState.foodWarningMessage = "";
+    setFoodResultPayload(null);
+    setFoodScreenMode(FOOD_SCREEN_MODE.SELECT);
+    setFoodCursor(getFoodCursor());
+    state.screen = "food";
+    setOverlayMode("food");
+  }
+
+  function closeFoodScreenToMenu(){
+    setFoodScreenMode(FOOD_SCREEN_MODE.SELECT);
+    uiState.foodWarningMessage = "";
+    setFoodResultPayload(null);
+    menuDeactivate();
+    state.screen = "menu";
+    hideOverlayLog();
+  }
+
+  function getFoodListWindowStart(total, cursor, visibleRows){
+    const count = Math.max(1, Math.floor(toNumber(visibleRows, FOOD_LIST_VISIBLE_ROWS)));
+    if(total <= count) return 0;
+    const half = Math.floor(count / 2);
+    const rough = cursor - half;
+    return clamp(rough, 0, total - count);
+  }
+
+  function buildFoodSelectOverlayElement(){
+    const detail = ensureFoodDetailState(state.detailed);
+    const selectableItems = getFoodSelectableItems(detail);
+    const total = selectableItems.length;
+    const cursor = total > 0 ? getFoodCursor() : 0;
+    const selectedItem = total > 0 ? selectableItems[cursor] : null;
+
+    const page = document.createElement("div");
+    page.className = "overlay-food-page";
+
+    const topPane = document.createElement("div");
+    topPane.className = "overlay-food-pane overlay-food-pane-top";
+    const topLayout = document.createElement("div");
+    topLayout.className = "overlay-food-top-layout";
+
+    const listWrap = document.createElement("div");
+    listWrap.className = "overlay-food-list-wrap";
+    const listTitle = document.createElement("div");
+    listTitle.className = "overlay-food-list-title";
+    listTitle.textContent = "所持フード一覧";
+    listWrap.appendChild(listTitle);
+
+    const listRows = document.createElement("div");
+    listRows.className = "overlay-food-list-rows";
+    if(total <= 0){
+      const empty = document.createElement("div");
+      empty.className = "overlay-food-empty";
+      empty.textContent = "所持フードがありません。";
+      listRows.appendChild(empty);
+      const hint = document.createElement("div");
+      hint.className = "overlay-food-empty";
+      hint.textContent = "探索でフードを入手";
+      listRows.appendChild(hint);
+    }else{
+      const visibleRows = Math.min(FOOD_LIST_VISIBLE_ROWS, total);
+      const start = getFoodListWindowStart(total, cursor, visibleRows);
+      const end = Math.min(total, start + visibleRows);
+      for(let i = start; i < end; i++){
+        const item = selectableItems[i];
+        const stock = getFoodInventoryCount(detail, item?.id);
+        const selected = i === cursor;
+        const row = document.createElement("div");
+        row.className = `overlay-food-row${selected ? " is-selected" : ""}`;
+
+        const cursorEl = document.createElement("span");
+        cursorEl.className = "overlay-food-row-cursor";
+        cursorEl.textContent = selected ? ">" : " ";
+
+        const nameEl = document.createElement("span");
+        nameEl.className = "overlay-food-row-name";
+        nameEl.textContent = String(item?.label || "--");
+
+        const stockEl = document.createElement("span");
+        stockEl.className = "overlay-food-row-stock";
+        stockEl.textContent = formatFoodStockText(stock);
+
+        row.appendChild(cursorEl);
+        row.appendChild(nameEl);
+        row.appendChild(stockEl);
+        listRows.appendChild(row);
+      }
+    }
+    listWrap.appendChild(listRows);
+
+    const iconPane = document.createElement("div");
+    iconPane.className = "overlay-food-icon-pane";
+    const iconSlot = document.createElement("div");
+    iconSlot.className = "overlay-food-icon-slot";
+    const iconCanvas = createFoodIconCanvasElement(selectedItem);
+    if(iconCanvas){
+      iconSlot.classList.add("has-icon");
+      iconSlot.appendChild(iconCanvas);
+    }else{
+      iconSlot.classList.add("is-empty");
+    }
+    iconPane.appendChild(iconSlot);
+
+    topLayout.appendChild(listWrap);
+    topLayout.appendChild(iconPane);
+    topPane.appendChild(topLayout);
+
+    const bottomPane = document.createElement("div");
+    bottomPane.className = "overlay-food-pane overlay-food-pane-bottom overlay-heal-pane-bottom";
+    if(selectedItem){
+      const stock = getFoodInventoryCount(detail, selectedItem.id);
+      const name = document.createElement("div");
+      name.className = "overlay-food-detail-name";
+      name.textContent = selectedItem.label;
+      const meta = document.createElement("div");
+      meta.className = "overlay-food-detail-meta";
+      meta.textContent = `${getFoodFamilyLabel(selectedItem.family)} G${Math.max(1, Math.floor(toNumber(selectedItem.grade, 1)))}`;
+      const effect = document.createElement("div");
+      effect.className = "overlay-food-detail-effect";
+      effect.textContent = `効果: ${buildFoodEffectSummary(selectedItem)}`;
+      const stockLine = document.createElement("div");
+      stockLine.className = "overlay-food-detail-stock";
+      stockLine.textContent = `所持: ${formatFoodStockText(stock)}`;
+      const desc = document.createElement("div");
+      desc.className = "overlay-food-detail-desc";
+      desc.textContent = String(selectedItem.description || "").trim();
+
+      bottomPane.appendChild(name);
+      bottomPane.appendChild(meta);
+      bottomPane.appendChild(effect);
+      bottomPane.appendChild(stockLine);
+      bottomPane.appendChild(desc);
+    }else{
+      const noItem = document.createElement("div");
+      noItem.className = "overlay-food-detail-desc";
+      noItem.textContent = "フードを所持していません。";
+      bottomPane.appendChild(noItem);
+    }
+
+    const warning = String(uiState.foodWarningMessage || "").trim();
+    if(warning.length > 0){
+      const warn = document.createElement("div");
+      warn.className = "overlay-food-warning";
+      warn.textContent = `警告: ${warning}`;
+      bottomPane.appendChild(warn);
+    }
+
+    page.appendChild(topPane);
+    page.appendChild(bottomPane);
+    return page;
+  }
+
+  function buildFoodResultOverlayElement(){
+    const result = getFoodResultPayload();
+    const wrap = document.createElement("div");
+    wrap.className = "overlay-food-result-wrap";
+    const title = document.createElement("div");
+    title.className = "overlay-food-result-title";
+    title.textContent = String(result?.title || "FOOD RESULT");
+    const body = document.createElement("div");
+    body.className = "overlay-food-result-body";
+    const lines = Array.isArray(result?.lines) ? result.lines : ["結果なし。"];
+    body.textContent = lines.join("\n");
+    wrap.appendChild(title);
+    wrap.appendChild(body);
+    return wrap;
+  }
+
+  function resolveFoodResultReaction(food, delta){
+    const hunger = toNumber(delta?.hunger, 0);
+    const stability = toNumber(delta?.stability, 0);
+    const signal = toNumber(delta?.signalQuality, 0);
+    const hp = toNumber(delta?.hp, 0);
+    const damage = toNumber(delta?.damage, 0);
+    if(hunger >= 3) return "満足した。";
+    if(stability >= 2) return "落ち着いてきた。";
+    if(signal > 0) return "信号が整ってきた。";
+    if(hp > 0 || damage > 0) return "軽い修復反応を確認。";
+    return `${String(food?.label || "フード")} を受け取った。`;
+  }
+
+  function buildFoodResultPayload(food, delta, remainingStock){
+    const summary = buildLogStatLine(sanitizeDelta(delta));
+    const lines = [
+      "給餌完了",
+      resolveFoodResultReaction(food, delta),
+      summary.length > 0 ? summary : "変化なし。",
+      `残数 ${formatFoodStockText(remainingStock)}`,
+    ];
     return {
-      logKey: `log.${state.logStyle || "normal"}.feed`,
-      delta,
+      title: "FOOD RESULT",
+      lines,
+    };
+  }
+
+  function showOverlayFood(){
+    if(!showOverlayShell("food", OVERLAY_STAT_RECT)) return;
+    const currentFontPx = toNumber(parseFloat(String(overlayLog.style.fontSize || "")), 15);
+    overlayLog.style.fontSize = `${Math.max(15, Math.round(currentFontPx))}px`;
+    overlayLog.style.lineHeight = "1.35";
+    const mode = getFoodScreenMode();
+    overlayLogTitle.textContent = "";
+    overlayLogBody.textContent = "";
+    overlayLogHint.textContent = "";
+    if(mode === FOOD_SCREEN_MODE.RESULT){
+      overlayLogBody.appendChild(buildFoodResultOverlayElement());
+      return;
+    }
+    overlayLogBody.appendChild(buildFoodSelectOverlayElement());
+  }
+
+  function getHealScreenMode(){
+    const mode = String(uiState.healMode || "");
+    if(mode === HEAL_SCREEN_MODE.RESULT){
+      return HEAL_SCREEN_MODE.RESULT;
+    }
+    return HEAL_SCREEN_MODE.SELECT;
+  }
+
+  function setHealScreenMode(mode){
+    uiState.healMode = (mode === HEAL_SCREEN_MODE.RESULT)
+      ? HEAL_SCREEN_MODE.RESULT
+      : HEAL_SCREEN_MODE.SELECT;
+    return uiState.healMode;
+  }
+
+  function getHealCursor(){
+    const total = HEAL_ACTION_CATALOG.length;
+    if(total <= 0){
+      uiState.healCursor = 0;
+      return 0;
+    }
+    const raw = Math.floor(toNumber(uiState.healCursor, 0));
+    const normalized = ((raw % total) + total) % total;
+    uiState.healCursor = normalized;
+    return normalized;
+  }
+
+  function setHealCursor(index){
+    const total = HEAL_ACTION_CATALOG.length;
+    if(total <= 0){
+      uiState.healCursor = 0;
+      return 0;
+    }
+    const raw = Math.floor(toNumber(index, 0));
+    const normalized = ((raw % total) + total) % total;
+    uiState.healCursor = normalized;
+    return normalized;
+  }
+
+  function moveHealCursor(delta){
+    const step = Math.floor(toNumber(delta, 0));
+    if(step === 0) return false;
+    const before = getHealCursor();
+    const after = setHealCursor(before + step);
+    if(before === after) return false;
+    uiState.healWarningMessage = "";
+    return true;
+  }
+
+  function getSelectedHealAction(){
+    if(HEAL_ACTION_CATALOG.length <= 0) return null;
+    return HEAL_ACTION_CATALOG[getHealCursor()] || null;
+  }
+
+  function setHealResultPayload(payload){
+    if(!isRecord(payload)){
+      uiState.healResultPayload = null;
+      return null;
+    }
+    uiState.healResultPayload = {
+      title: String(payload.title || "HEAL RESULT"),
+      lead: String(payload.lead || ""),
+      lines: Array.isArray(payload.lines)
+        ? payload.lines.map((line) => String(line ?? ""))
+        : [],
+    };
+    return uiState.healResultPayload;
+  }
+
+  function getHealResultPayload(){
+    return isRecord(uiState.healResultPayload) ? uiState.healResultPayload : null;
+  }
+
+  function getHealExecutionSession(){
+    return isRecord(uiState.healExecutionSession) ? uiState.healExecutionSession : null;
+  }
+
+  function clearHealExecutionSession(){
+    uiState.healExecutionSession = null;
+    return null;
+  }
+
+  function isHealExecutionActive(){
+    return getHealExecutionSession() != null;
+  }
+
+  function startHealExecutionSession(actionId, nowMs = performance.now()){
+    const action = getHealActionById(actionId);
+    if(!action){
+      return null;
+    }
+    uiState.healExecutionSession = {
+      actionId: normalizeHealActionId(action.id, ""),
+      startedAt: toNumber(nowMs, performance.now()),
+      applied: false,
+      result: null,
+    };
+    return uiState.healExecutionSession;
+  }
+
+  function getHealExecutionFrame(session, nowMs = performance.now()){
+    if(!isRecord(session)){
+      return null;
+    }
+    const elapsed = Math.max(0, toNumber(nowMs, performance.now()) - toNumber(session.startedAt, 0));
+    const insertEnd = HEAL_EXECUTION_INSERT_MS;
+    const flashEnd = insertEnd + HEAL_EXECUTION_FLASH_MS;
+    const effectEnd = flashEnd + HEAL_EXECUTION_EFFECT_MS;
+    const holdEnd = effectEnd + HEAL_EXECUTION_HOLD_MS;
+    const totalMs = holdEnd + HEAL_EXECUTION_RETURN_MS;
+
+    let dockProgress = 0;
+    if(elapsed < insertEnd){
+      dockProgress = clamp(elapsed / Math.max(1, insertEnd), 0, 1);
+    }else if(elapsed < holdEnd){
+      dockProgress = 1;
+    }else{
+      dockProgress = clamp(1 - ((elapsed - holdEnd) / Math.max(1, HEAL_EXECUTION_RETURN_MS)), 0, 1);
+    }
+
+    const flashStrength = (elapsed >= insertEnd && elapsed < flashEnd)
+      ? clamp(1 - ((elapsed - insertEnd) / Math.max(1, HEAL_EXECUTION_FLASH_MS)), 0, 1)
+      : 0;
+    const effectProgress = (elapsed >= flashEnd && elapsed < effectEnd)
+      ? clamp((elapsed - flashEnd) / Math.max(1, HEAL_EXECUTION_EFFECT_MS), 0, 1)
+      : (elapsed >= effectEnd ? 1 : 0);
+    const effectPulse = (elapsed >= flashEnd && elapsed < effectEnd)
+      ? (0.5 + (Math.sin((elapsed - flashEnd) * 0.055) * 0.5))
+      : 0;
+
+    return {
+      elapsed,
+      totalMs,
+      insertEnd,
+      flashEnd,
+      effectEnd,
+      holdEnd,
+      dockProgress,
+      flashStrength,
+      effectProgress,
+      effectPulse,
+      done: elapsed >= totalMs,
+      shouldApply: !session.applied && elapsed >= flashEnd,
+    };
+  }
+
+  function updateHealExecutionSession(nowMs = performance.now()){
+    const session = getHealExecutionSession();
+    if(!session){
+      return null;
+    }
+    const frame = getHealExecutionFrame(session, nowMs);
+    if(!frame){
+      clearHealExecutionSession();
+      return null;
+    }
+
+    if(frame.shouldApply){
+      const result = applyHealActionById(session.actionId);
+      session.applied = true;
+      session.result = result;
+      if(!result?.success){
+        uiState.healWarningMessage = String(result?.warning || "実行不可。");
+        clearHealExecutionSession();
+        return null;
+      }
+    }
+
+    if(frame.done){
+      const result = isRecord(session.result) ? session.result : null;
+      clearHealExecutionSession();
+      if(result?.success){
+        uiState.healWarningMessage = "";
+        setHealResultPayload(result.payload);
+        setHealScreenMode(HEAL_SCREEN_MODE.RESULT);
+      }
+      return null;
+    }
+    return session;
+  }
+
+  function openHealScreen(){
+    if(!isRecord(state.detailed)){
+      state.detailed = createDefaultDetailedState(state.monster?.id || "mon001");
+    }
+    ensureHealDetailState(state.detailed);
+    clearStatSkillEditingSlot();
+    uiState.healWarningMessage = "";
+    clearHealExecutionSession();
+    setHealResultPayload(null);
+    setHealScreenMode(HEAL_SCREEN_MODE.SELECT);
+    setHealCursor(getHealCursor());
+    state.screen = "heal";
+    setOverlayMode("food");
+  }
+
+  function closeHealScreenToMenu(){
+    setHealScreenMode(HEAL_SCREEN_MODE.SELECT);
+    uiState.healWarningMessage = "";
+    clearHealExecutionSession();
+    setHealResultPayload(null);
+    menuDeactivate();
+    state.screen = "menu";
+    hideOverlayLog();
+  }
+
+  function getHealActionStaminaCost(actionId){
+    const id = normalizeHealActionId(actionId, "");
+    return Math.max(0, Math.floor(toNumber(HEAL_STAMINA_COST_BY_TYPE[id], 0)));
+  }
+
+  function getHealSameTypePenalty(detail, actionId){
+    if(!isRecord(detail)) return 0;
+    ensureHealDetailState(detail);
+    const currentId = normalizeHealActionId(actionId, "");
+    if(currentId.length <= 0) return 0;
+    if(String(detail.healCycle?.lastType || "") !== currentId){
+      return 0;
+    }
+    return Math.max(0, Math.min(1, Math.floor(toNumber(detail.healCycle?.sameTypeCount, 0))));
+  }
+
+  function getHealAmbientPenalty(detail){
+    const noise = getHealAbnormalLevel(detail, "noise");
+    const decay = getHealAbnormalLevel(detail, "decay");
+    return {
+      noise: noise >= 3 ? 1 : 0,
+      decay: decay >= 2 ? 1 : 0,
+    };
+  }
+
+  function computeHealEffectAmount(base, minimum, penalties = {}){
+    const rawBase = Math.max(0, Math.floor(toNumber(base, 0)));
+    const rawMinimum = Math.max(0, Math.floor(toNumber(minimum, 0)));
+    const repeatPenalty = Math.max(0, Math.floor(toNumber(penalties.repeat, 0)));
+    const noisePenalty = Math.max(0, Math.floor(toNumber(penalties.noise, 0)));
+    const decayPenalty = Math.max(0, Math.floor(toNumber(penalties.decay, 0)));
+    return Math.max(rawMinimum, rawBase - repeatPenalty - noisePenalty - decayPenalty);
+  }
+
+  function getHealSameCycleFloorTarget(key, current){
+    const normalizedKey = String(key || "").trim().toLowerCase();
+    const value = Math.max(0, Math.floor(toNumber(current, 0)));
+    if(normalizedKey === "decay"){
+      return value >= 3 ? 2 : 0;
+    }
+    if(normalizedKey === "damage"){
+      return value >= 4 ? 1 : 0;
+    }
+    return value >= 3 ? 1 : 0;
+  }
+
+  function previewHealFloorLimitedReduction(detail, key, current, amount){
+    const id = String(key || "").trim().toLowerCase();
+    const normalizedCurrent = Math.max(0, Math.floor(toNumber(current, 0)));
+    const normalizedAmount = Math.max(0, Math.floor(toNumber(amount, 0)));
+    const storedFloor = getHealCycleFloor(detail, id);
+    const derivedFloor = getHealSameCycleFloorTarget(id, normalizedCurrent);
+    const floor = Math.max(storedFloor, derivedFloor);
+    const next = Math.max(floor, normalizedCurrent - normalizedAmount);
+    return {
+      key: id,
+      current: normalizedCurrent,
+      amount: normalizedAmount,
+      storedFloor,
+      derivedFloor,
+      floor,
+      next,
+      applied: Math.max(0, normalizedCurrent - next),
+    };
+  }
+
+  function previewHealGain(current, max, amount){
+    const currentValue = Math.max(0, Math.floor(toNumber(current, 0)));
+    const maxValue = Math.max(currentValue, Math.floor(toNumber(max, currentValue)));
+    const applied = clamp(Math.floor(toNumber(amount, 0)), 0, Math.max(0, maxValue - currentValue));
+    return {
+      current: currentValue,
+      next: currentValue + applied,
+      applied,
+    };
+  }
+
+  function hasHealTargetForAction(actionId, detail){
+    const id = normalizeHealActionId(actionId, "");
+    const hpMax = getRuntimeMax("hp", 100);
+    const hpNow = clamp(getRuntimeStat("hp", hpMax), 0, hpMax);
+    if(id === HEAL_TYPE.PATCH){
+      return clamp(toNumber(state.stats.damage, 0), 0, toPositiveInt(state.stats.damageMax, 10)) > 0
+        || hpNow < hpMax;
+    }
+    if(id === HEAL_TYPE.STABILIZE){
+      return clamp(toNumber(state.stats.stability, 0), 0, toPositiveInt(state.stats.stabilityMax, 10))
+        < toPositiveInt(state.stats.stabilityMax, 10)
+        || getHealAbnormalLevel(detail, "desync") > 0;
+    }
+    if(id === HEAL_TYPE.PURGE){
+      for(let i = 0; i < HEAL_ABNORMAL_KEYS.length; i++){
+        if(getHealAbnormalLevel(detail, HEAL_ABNORMAL_KEYS[i]) > 0){
+          return true;
+        }
+      }
+      return false;
+    }
+    return false;
+  }
+
+  function getHealActionAvailability(action, detail){
+    const cost = getHealActionStaminaCost(action?.id);
+    const staminaMax = getRuntimeMax("stamina", 100);
+    const staminaNow = clamp(getRuntimeStat("stamina", staminaMax), 0, staminaMax);
+    if(state.isSleeping){
+      return {
+        canUse: false,
+        hasTarget: false,
+        hasEffect: false,
+        preview: null,
+        reason: "睡眠中は治療できない。",
+        staminaCost: cost,
+      };
+    }
+    if(staminaNow < cost){
+      return {
+        canUse: false,
+        hasTarget: false,
+        hasEffect: false,
+        preview: null,
+        reason: `スタミナ ${cost} 必要。`,
+        staminaCost: cost,
+      };
+    }
+    const hasTarget = hasHealTargetForAction(action?.id, detail);
+    const preview = hasTarget ? getHealActionPreview(action?.id, detail) : null;
+    const hasEffect = hasTarget ? hasHealPreviewBenefit(preview) : false;
+    return {
+      canUse: true,
+      hasTarget,
+      hasEffect,
+      preview,
+      reason: !hasTarget
+        ? "治療の必要なし。"
+        : (hasEffect ? "実行可能。" : "このサイクルではこれ以上治療できない。"),
+      staminaCost: cost,
+    };
+  }
+
+  function formatHealForecastValue(current, next){
+    const currentValue = Math.max(0, Math.floor(toNumber(current, 0)));
+    const nextValue = Math.max(0, Math.floor(toNumber(next, currentValue)));
+    return currentValue === nextValue ? String(currentValue) : `${currentValue}>${nextValue}`;
+  }
+
+  function createHealGaugePreviewRowElement(label, current, next, max){
+    const currentValue = clamp(Math.floor(toNumber(current, 0)), 0, Math.max(1, Math.floor(toNumber(max, 1))));
+    const nextValue = clamp(Math.floor(toNumber(next, currentValue)), 0, Math.max(1, Math.floor(toNumber(max, 1))));
+    const maxValue = Math.max(1, Math.floor(toNumber(max, 1)));
+    const low = Math.min(currentValue, nextValue);
+    const high = Math.max(currentValue, nextValue);
+    const lowRatio = clamp(low / maxValue, 0, 1);
+    const deltaRatio = clamp((high - low) / maxValue, 0, 1);
+
+    const row = document.createElement("div");
+    row.className = "overlay-heal-preview-row";
+
+    const labelEl = document.createElement("div");
+    labelEl.className = "overlay-heal-preview-label";
+    labelEl.textContent = String(label || "--");
+
+    const track = document.createElement("div");
+    track.className = "overlay-heal-preview-track";
+
+    const solid = document.createElement("div");
+    solid.className = "overlay-heal-preview-fill";
+    solid.style.width = `${(lowRatio * 100).toFixed(2)}%`;
+    track.appendChild(solid);
+
+    if(high > low){
+      const delta = document.createElement("div");
+      delta.className = "overlay-heal-preview-fill overlay-heal-preview-fill-delta";
+      delta.style.left = `${(lowRatio * 100).toFixed(2)}%`;
+      delta.style.width = `${Math.max(deltaRatio * 100, 1.2).toFixed(2)}%`;
+      track.appendChild(delta);
+    }
+
+    const valueEl = document.createElement("div");
+    valueEl.className = "overlay-heal-preview-value";
+    valueEl.textContent = formatHealForecastValue(currentValue, nextValue);
+
+    row.appendChild(labelEl);
+    row.appendChild(track);
+    row.appendChild(valueEl);
+    return row;
+  }
+
+  function createHealLevelPreviewRowElement(label, current, next, maxLevel = 3){
+    const currentValue = clamp(Math.floor(toNumber(current, 0)), 0, Math.max(1, Math.floor(toNumber(maxLevel, 3))));
+    const nextValue = clamp(Math.floor(toNumber(next, currentValue)), 0, Math.max(1, Math.floor(toNumber(maxLevel, 3))));
+    const total = Math.max(1, Math.floor(toNumber(maxLevel, 3)));
+    const low = Math.min(currentValue, nextValue);
+    const high = Math.max(currentValue, nextValue);
+
+    const row = document.createElement("div");
+    row.className = "overlay-heal-preview-row";
+
+    const labelEl = document.createElement("div");
+    labelEl.className = "overlay-heal-preview-label";
+    labelEl.textContent = String(label || "--");
+
+    const levels = document.createElement("div");
+    levels.className = "overlay-heal-preview-levels";
+    for(let i = 0; i < total; i++){
+      const cell = document.createElement("span");
+      cell.className = "overlay-heal-preview-level";
+      if(i < low){
+        cell.classList.add("is-current");
+      }else if(i < high){
+        cell.classList.add("is-delta");
+      }
+      levels.appendChild(cell);
+    }
+
+    const valueEl = document.createElement("div");
+    valueEl.className = "overlay-heal-preview-value";
+    valueEl.textContent = formatHealForecastValue(currentValue, nextValue);
+
+    row.appendChild(labelEl);
+    row.appendChild(levels);
+    row.appendChild(valueEl);
+    return row;
+  }
+
+  function createHealCostPreviewRowElement(label, cost){
+    const row = document.createElement("div");
+    row.className = "overlay-heal-preview-row overlay-heal-preview-row-cost";
+
+    const labelEl = document.createElement("div");
+    labelEl.className = "overlay-heal-preview-label";
+    labelEl.textContent = String(label || "COST");
+
+    const track = document.createElement("div");
+    track.className = "overlay-heal-preview-cost";
+    track.textContent = "STA";
+
+    const valueEl = document.createElement("div");
+    valueEl.className = "overlay-heal-preview-value";
+    valueEl.textContent = formatUiDeltaValue(-Math.abs(toNumber(cost, 0)));
+
+    row.appendChild(labelEl);
+    row.appendChild(track);
+    row.appendChild(valueEl);
+    return row;
+  }
+
+  function buildHealPreviewRows(action, detail){
+    const selectedAction = getHealActionById(action?.id);
+    const actionId = normalizeHealActionId(selectedAction?.id, "");
+    const rows = [];
+    const hpMax = getRuntimeMax("hp", 100);
+    const hpNow = clamp(getRuntimeStat("hp", hpMax), 0, hpMax);
+    const damageMax = toPositiveInt(state.stats.damageMax, 10);
+    const damageNow = clamp(toNumber(state.stats.damage, 0), 0, damageMax);
+    const stabilityMax = toPositiveInt(state.stats.stabilityMax, 10);
+    const stabilityNow = clamp(toNumber(state.stats.stability, stabilityMax), 0, stabilityMax);
+    const staminaMax = getRuntimeMax("stamina", 100);
+    const staminaNow = clamp(getRuntimeStat("stamina", staminaMax), 0, staminaMax);
+    const staminaCost = getHealActionStaminaCost(actionId);
+
+    if(actionId === HEAL_TYPE.PATCH){
+      const preview = previewPatchHeal(detail);
+      rows.push(createHealGaugePreviewRowElement("DMG", damageNow, preview?.damage?.next ?? damageNow, damageMax));
+      rows.push(createHealGaugePreviewRowElement("HP", hpNow, preview?.hp?.next ?? hpNow, hpMax));
+      rows.push(createHealCostPreviewRowElement("COST", staminaCost));
+      return rows;
+    }
+
+    if(actionId === HEAL_TYPE.STABILIZE){
+      const preview = previewStabilizeHeal(detail);
+      rows.push(createHealLevelPreviewRowElement("DESYNC", getHealAbnormalLevel(detail, "desync"), preview?.desync?.next ?? getHealAbnormalLevel(detail, "desync"), 3));
+      rows.push(createHealGaugePreviewRowElement("STB", stabilityNow, preview?.stability?.next ?? stabilityNow, stabilityMax));
+      rows.push(createHealCostPreviewRowElement("COST", staminaCost));
+      return rows;
+    }
+
+    if(actionId === HEAL_TYPE.PURGE){
+      const preview = previewPurgeHeal(detail);
+      rows.push(createHealLevelPreviewRowElement("NOISE", getHealAbnormalLevel(detail, "noise"), preview?.noise?.next ?? getHealAbnormalLevel(detail, "noise"), 3));
+      rows.push(createHealLevelPreviewRowElement("CONTAM", getHealAbnormalLevel(detail, "contamination"), preview?.contamination?.next ?? getHealAbnormalLevel(detail, "contamination"), 3));
+      rows.push(createHealLevelPreviewRowElement("DECAY", getHealAbnormalLevel(detail, "decay"), preview?.decay?.next ?? getHealAbnormalLevel(detail, "decay"), 3));
+      rows.push(createHealCostPreviewRowElement("COST", staminaCost));
+      return rows;
+    }
+
+    rows.push(createHealGaugePreviewRowElement("STA", staminaNow, staminaNow, staminaMax));
+    return rows;
+  }
+
+  function getHealBottomNoteText(action, availability){
+    const warning = String(uiState.healWarningMessage || "").trim();
+    if(warning.length > 0){
+      return `警告: ${warning}`;
+    }
+    if(!availability?.canUse || !availability?.hasTarget || availability?.hasEffect === false){
+      return String(availability?.reason || "変化なし。").trim();
+    }
+    return String(action?.resultLead || "").trim();
+  }
+
+  function getHealWaveSeverity(actionId, detail){
+    const id = normalizeHealActionId(actionId, "");
+    const safeDetail = ensureHealDetailState(detail || state.detailed);
+    const damageMax = Math.max(1, toPositiveInt(state.stats.damageMax, 10));
+    const damageNow = clamp(toNumber(state.stats.damage, 0), 0, damageMax);
+    const hpMax = Math.max(1, getRuntimeMax("hp", 100));
+    const hpNow = clamp(getRuntimeStat("hp", hpMax), 0, hpMax);
+    const stabilityMax = Math.max(1, toPositiveInt(state.stats.stabilityMax, 10));
+    const stabilityNow = clamp(toNumber(state.stats.stability, stabilityMax), 0, stabilityMax);
+
+    const damageRatio = damageNow / damageMax;
+    const hpMissingRatio = 1 - (hpNow / hpMax);
+    const stabilityMissingRatio = 1 - (stabilityNow / stabilityMax);
+    const desyncRatio = getHealAbnormalLevel(safeDetail, "desync") / 3;
+    const noiseRatio = getHealAbnormalLevel(safeDetail, "noise") / 3;
+    const contaminationRatio = getHealAbnormalLevel(safeDetail, "contamination") / 3;
+    const decayRatio = getHealAbnormalLevel(safeDetail, "decay") / 3;
+
+    if(id === HEAL_TYPE.PATCH){
+      return clamp((damageRatio * 0.78) + (hpMissingRatio * 0.34), 0.05, 1);
+    }
+    if(id === HEAL_TYPE.STABILIZE){
+      return clamp((desyncRatio * 0.76) + (stabilityMissingRatio * 0.40), 0.05, 1);
+    }
+    if(id === HEAL_TYPE.PURGE){
+      return clamp((noiseRatio * 0.38) + (contaminationRatio * 0.36) + (decayRatio * 0.26), 0.05, 1);
+    }
+    return 0.08;
+  }
+
+  function getHealAdDisplaySeverity(actionId, detail){
+    const id = normalizeHealActionId(actionId, "");
+    const safeDetail = ensureHealDetailState(detail || state.detailed);
+    const damageMax = Math.max(1, toPositiveInt(state.stats.damageMax, 10));
+    const damageNow = clamp(toNumber(state.stats.damage, 0), 0, damageMax);
+    const hpMax = Math.max(1, getRuntimeMax("hp", 100));
+    const hpNow = clamp(getRuntimeStat("hp", hpMax), 0, hpMax);
+    const stabilityMax = Math.max(1, toPositiveInt(state.stats.stabilityMax, 10));
+    const stabilityNow = clamp(toNumber(state.stats.stability, stabilityMax), 0, stabilityMax);
+
+    const damageRatio = damageNow / damageMax;
+    const hpMissingRatio = 1 - (hpNow / hpMax);
+    const stabilityMissingRatio = 1 - (stabilityNow / stabilityMax);
+    const desyncRatio = getHealAbnormalLevel(safeDetail, "desync") / 3;
+    const noiseRatio = getHealAbnormalLevel(safeDetail, "noise") / 3;
+    const contaminationRatio = getHealAbnormalLevel(safeDetail, "contamination") / 3;
+    const decayRatio = getHealAbnormalLevel(safeDetail, "decay") / 3;
+
+    if(id === HEAL_TYPE.PATCH){
+      return clamp((damageRatio * 0.86) + (hpMissingRatio * 0.18), 0, 1);
+    }
+    if(id === HEAL_TYPE.STABILIZE){
+      return clamp((desyncRatio * 0.82) + (stabilityMissingRatio * 0.26), 0, 1);
+    }
+    if(id === HEAL_TYPE.PURGE){
+      return clamp((contaminationRatio * 0.44) + (noiseRatio * 0.34) + (decayRatio * 0.28), 0, 1);
+    }
+    return 0;
+  }
+
+  function createHealWaveCanvasElement(actionId, selected, detail, nowMs = performance.now()){
+    const canvas = document.createElement("canvas");
+    canvas.className = "overlay-heal-wave-canvas";
+    canvas.width = 176;
+    canvas.height = 54;
+    const ctx = canvas.getContext("2d", { alpha: true });
+    if(!ctx){
+      return canvas;
+    }
+
+    const w = canvas.width;
+    const h = canvas.height;
+    const severity = getHealWaveSeverity(actionId, detail);
+    const now = toNumber(nowMs, performance.now());
+    const phase = now * 0.0034;
+    const selectedBoost = selected ? 1 : 0;
+    const stroke = selected
+      ? "rgba(14,20,15,0.88)"
+      : "rgba(14,20,15,0.48)";
+    const accent = selected
+      ? "rgba(14,20,15,0.30)"
+      : "rgba(14,20,15,0.16)";
+    const guide = "rgba(14,20,15,0.10)";
+    const midY = Math.round(h * 0.5);
+    const drawPath = (resolver, samples = 32) => {
+      ctx.beginPath();
+      for(let i = 0; i <= samples; i++){
+        const progress = i / Math.max(1, samples);
+        const px = Math.round(progress * (w - 1));
+        const py = clamp(Math.round(resolver(progress)), 2, h - 3);
+        if(i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+    };
+    const triangle = (angle) => (2 / Math.PI) * Math.asin(Math.sin(angle));
+
+    ctx.clearRect(0, 0, w, h);
+    ctx.strokeStyle = guide;
+    ctx.lineWidth = 1;
+    for(let i = 1; i <= 3; i++){
+      const gy = Math.round((h * i) / 4);
+      ctx.beginPath();
+      ctx.moveTo(0, gy);
+      ctx.lineTo(w, gy);
+      ctx.stroke();
+    }
+
+    ctx.strokeStyle = accent;
+    ctx.beginPath();
+    ctx.moveTo(0, midY);
+    ctx.lineTo(w, midY);
+    ctx.stroke();
+
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = selected ? 2 : 1;
+    if(actionId === HEAL_TYPE.PATCH){
+      const amplitude = 3 + (severity * 11);
+      const fracture = 1 + (severity * 3.4);
+      const drift = (severity * 2.6) * Math.sin(phase * 0.8);
+      drawPath((progress) => {
+        const triA = triangle((progress * Math.PI * (5.0 + fracture)) + (phase * 1.25));
+        const triB = triangle((progress * Math.PI * (8.4 + (fracture * 1.6))) + (phase * 2.2));
+        const settle = Math.sin((progress * Math.PI * 2.1) + (phase * 0.45)) * (1.2 + (severity * 1.6));
+        return midY + (triA * amplitude * 0.58) + (triB * amplitude * 0.22 * severity) + settle + drift;
+      }, 30);
+    }else if(actionId === HEAL_TYPE.STABILIZE){
+      const amplitude = 2 + (severity * 8);
+      const harmonic = severity * 3.8;
+      const drift = (0.5 + (severity * 0.8)) * Math.sin(phase * 0.52);
+      drawPath((progress) => {
+        const primary = Math.sin((progress * Math.PI * (2.3 + (severity * 0.8))) + (phase * 1.8)) * amplitude;
+        const secondary = Math.sin((progress * Math.PI * (6.8 + harmonic)) + (phase * 0.9)) * harmonic * 0.42;
+        const damping = 1 - (progress * 0.18);
+        return midY + ((primary + secondary) * damping) + drift;
+      }, 34);
+    }else{
+      const amplitude = 3 + (severity * 12);
+      const noiseSwing = 1.2 + (severity * 4.4);
+      drawPath((progress) => {
+        const tri = triangle((progress * Math.PI * (9.0 + (severity * 5.5))) + (phase * 2.8));
+        const chatter = Math.sin((progress * Math.PI * (18 + (severity * 8))) + (phase * 4.4)) * noiseSwing;
+        return midY + (tri * amplitude * 0.72) + chatter;
+      }, 36);
+      if(selectedBoost > 0 || severity > 0.4){
+        ctx.fillStyle = selected ? "rgba(14,20,15,0.20)" : "rgba(14,20,15,0.10)";
+        const speckCount = 3 + Math.round(severity * 7);
+        for(let i = 0; i < speckCount; i++){
+          const px = Math.round(6 + (((i * 31) + (now * 0.08)) % (w - 12)));
+          const py = Math.round(6 + (((i * 17) + (now * 0.05)) % (h - 12)));
+          ctx.fillRect(px, py, 1, 1);
+        }
+      }
+    }
+    return canvas;
+  }
+
+  function buildHealWavePaneElement(selectedAction){
+    const selectedId = normalizeHealActionId(selectedAction?.id, "");
+    const detail = ensureHealDetailState(state.detailed);
+    const nowMs = performance.now();
+    const pane = document.createElement("div");
+    pane.className = "overlay-heal-subpane overlay-heal-wave-pane";
+    for(let i = 0; i < HEAL_ACTION_CATALOG.length; i++){
+      const action = HEAL_ACTION_CATALOG[i];
+      const isSelected = String(action?.id || "") === selectedId;
+      const row = document.createElement("div");
+      row.className = `overlay-heal-wave-row${isSelected ? " is-selected" : ""}`;
+
+      const head = document.createElement("div");
+      head.className = "overlay-heal-wave-head";
+
+      const cursorEl = document.createElement("span");
+      cursorEl.className = "overlay-heal-wave-cursor";
+      cursorEl.textContent = isSelected ? ">" : " ";
+
+      const labelEl = document.createElement("span");
+      labelEl.className = "overlay-heal-wave-name";
+      labelEl.textContent = String(action?.label || "--");
+
+      const waveWrap = document.createElement("div");
+      waveWrap.className = "overlay-heal-wave-track";
+      waveWrap.appendChild(createHealWaveCanvasElement(action?.id, isSelected, detail, nowMs));
+
+      head.appendChild(cursorEl);
+      head.appendChild(labelEl);
+      row.appendChild(head);
+      row.appendChild(waveWrap);
+      pane.appendChild(row);
+    }
+    return pane;
+  }
+
+  const HEAL_AD_DISPLAY_SPRITE_FALLBACK = spriteFromStrings([
+    "0000011111110000",
+    "0001111111111000",
+    "0011110000111100",
+    "0111000000001110",
+    "0110011111100110",
+    "1110110000110111",
+    "1101100000011011",
+    "1101101111011011",
+    "1101101111011011",
+    "1110110000110111",
+    "0110011111100110",
+    "0111000000001110",
+    "0011110000111100",
+    "0001111111111000",
+    "0000011111110000",
+    "0000000000000000",
+  ]);
+
+  const HEAL_AD_MEDIA_IMAGE = (() => {
+    if(typeof Image !== "function"){
+      return null;
+    }
+    const image = new Image();
+    image.decoding = "async";
+    image.src = "./assets/ad/ad_media_base.png";
+    image.addEventListener("load", () => {
+      if(String(state?.screen || "") === "heal"){
+        showOverlayHeal();
+      }
+    });
+    return image;
+  })();
+
+  const HEAL_AD_SLOT_BASE_IMAGE = (() => {
+    if(typeof Image !== "function"){
+      return null;
+    }
+    const image = new Image();
+    image.decoding = "async";
+    image.src = "./assets/ad/ad_slot_base_v1.png";
+    image.addEventListener("load", () => {
+      if(String(state?.screen || "") === "heal"){
+        showOverlayHeal();
+      }
+    });
+    return image;
+  })();
+
+  let healAdDisplayMaskCanvas = null;
+  let healAdSlotBaseMaskCanvas = null;
+  let healAdSlotBaseVisibleRect = null;
+
+  function getHealDisplayMaskCanvas(){
+    if(
+      typeof document !== "object" ||
+      !(HEAL_AD_MEDIA_IMAGE instanceof Image) ||
+      !HEAL_AD_MEDIA_IMAGE.complete ||
+      HEAL_AD_MEDIA_IMAGE.naturalWidth <= 0 ||
+      HEAL_AD_MEDIA_IMAGE.naturalHeight <= 0
+    ){
+      return null;
+    }
+    if(healAdDisplayMaskCanvas){
+      return healAdDisplayMaskCanvas;
+    }
+
+    const maskCanvas = document.createElement("canvas");
+    maskCanvas.width = HEAL_AD_MEDIA_IMAGE.naturalWidth;
+    maskCanvas.height = HEAL_AD_MEDIA_IMAGE.naturalHeight;
+    const maskCtx = maskCanvas.getContext("2d", { alpha: true });
+    if(!maskCtx){
+      return null;
+    }
+
+    maskCtx.clearRect(0, 0, maskCanvas.width, maskCanvas.height);
+    maskCtx.imageSmoothingEnabled = false;
+    maskCtx.drawImage(HEAL_AD_MEDIA_IMAGE, 0, 0);
+    const imageData = maskCtx.getImageData(0, 0, maskCanvas.width, maskCanvas.height);
+    const data = imageData.data;
+    for(let i = 0; i < data.length; i += 4){
+      const alpha = toNumber(data[i + 3], 0);
+      const brightness = Math.round((data[i] + data[i + 1] + data[i + 2]) / 3);
+      const isForeground = alpha > 12 && brightness < 240;
+      data[i] = 255;
+      data[i + 1] = 255;
+      data[i + 2] = 255;
+      data[i + 3] = isForeground ? 255 : 0;
+    }
+    maskCtx.putImageData(imageData, 0, 0);
+    healAdDisplayMaskCanvas = maskCanvas;
+    return healAdDisplayMaskCanvas;
+  }
+
+  function getHealSlotBaseMaskCanvas(){
+    if(
+      typeof document !== "object" ||
+      !(HEAL_AD_SLOT_BASE_IMAGE instanceof Image) ||
+      !HEAL_AD_SLOT_BASE_IMAGE.complete ||
+      HEAL_AD_SLOT_BASE_IMAGE.naturalWidth <= 0 ||
+      HEAL_AD_SLOT_BASE_IMAGE.naturalHeight <= 0
+    ){
+      return null;
+    }
+    if(healAdSlotBaseMaskCanvas){
+      return healAdSlotBaseMaskCanvas;
+    }
+
+    const maskCanvas = document.createElement("canvas");
+    maskCanvas.width = HEAL_AD_SLOT_BASE_IMAGE.naturalWidth;
+    maskCanvas.height = HEAL_AD_SLOT_BASE_IMAGE.naturalHeight;
+    const maskCtx = maskCanvas.getContext("2d", { alpha: true });
+    if(!maskCtx){
+      return null;
+    }
+
+    maskCtx.clearRect(0, 0, maskCanvas.width, maskCanvas.height);
+    maskCtx.imageSmoothingEnabled = false;
+    maskCtx.drawImage(HEAL_AD_SLOT_BASE_IMAGE, 0, 0);
+    const imageData = maskCtx.getImageData(0, 0, maskCanvas.width, maskCanvas.height);
+    const data = imageData.data;
+    let minX = maskCanvas.width;
+    let minY = maskCanvas.height;
+    let maxX = -1;
+    let maxY = -1;
+    for(let i = 0; i < data.length; i += 4){
+      const alpha = toNumber(data[i + 3], 0);
+      const x = Math.floor((i / 4) % maskCanvas.width);
+      const y = Math.floor((i / 4) / maskCanvas.width);
+      const isForeground = alpha > 12;
+      data[i] = 255;
+      data[i + 1] = 255;
+      data[i + 2] = 255;
+      data[i + 3] = isForeground ? 255 : 0;
+      if(isForeground){
+        minX = Math.min(minX, x);
+        minY = Math.min(minY, y);
+        maxX = Math.max(maxX, x);
+        maxY = Math.max(maxY, y);
+      }
+    }
+    maskCtx.putImageData(imageData, 0, 0);
+    healAdSlotBaseVisibleRect = (maxX >= minX && maxY >= minY)
+      ? {
+          x: minX,
+          y: minY,
+          width: (maxX - minX) + 1,
+          height: (maxY - minY) + 1,
+        }
+      : null;
+    healAdSlotBaseMaskCanvas = maskCanvas;
+    return healAdSlotBaseMaskCanvas;
+  }
+
+  function getHealSlotBaseVisibleRect(){
+    if(healAdSlotBaseVisibleRect){
+      return healAdSlotBaseVisibleRect;
+    }
+    getHealSlotBaseMaskCanvas();
+    return healAdSlotBaseVisibleRect;
+  }
+
+  function drawHealDisplaySprite(ctx, x, y, size, options = {}){
+    const pixelColor = String(options.pixelColor || "rgba(14,20,15,0.76)");
+    if(
+      typeof Image !== "function" ||
+      !(HEAL_AD_MEDIA_IMAGE instanceof Image) ||
+      !HEAL_AD_MEDIA_IMAGE.complete ||
+      HEAL_AD_MEDIA_IMAGE.naturalWidth <= 0 ||
+      HEAL_AD_MEDIA_IMAGE.naturalHeight <= 0
+    ){
+      itemIconDrawItemIconWithRank(ctx, HEAL_AD_DISPLAY_SPRITE_FALLBACK, x, y, size, 0, options);
+      return;
+    }
+
+    const maskCanvas = getHealDisplayMaskCanvas();
+    if(!maskCanvas){
+      itemIconDrawItemIconWithRank(ctx, HEAL_AD_DISPLAY_SPRITE_FALLBACK, x, y, size, 0, options);
+      return;
+    }
+
+    const tintCanvas = createHealDisplayTintCanvas(pixelColor);
+    if(!tintCanvas){
+      itemIconDrawItemIconWithRank(ctx, HEAL_AD_DISPLAY_SPRITE_FALLBACK, x, y, size, 0, options);
+      return;
+    }
+
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(tintCanvas, Math.round(x), Math.round(y), Math.round(size), Math.round(size));
+  }
+
+  function createHealDisplayTintCanvas(pixelColor = "rgba(14,20,15,0.76)"){
+    const maskCanvas = getHealDisplayMaskCanvas();
+    if(!maskCanvas){
+      return null;
+    }
+
+    const tintCanvas = document.createElement("canvas");
+    tintCanvas.width = maskCanvas.width;
+    tintCanvas.height = maskCanvas.height;
+    const tintCtx = tintCanvas.getContext("2d", { alpha: true });
+    if(!tintCtx){
+      return null;
+    }
+
+    tintCtx.clearRect(0, 0, tintCanvas.width, tintCanvas.height);
+    tintCtx.imageSmoothingEnabled = false;
+    tintCtx.drawImage(maskCanvas, 0, 0);
+    tintCtx.globalCompositeOperation = "source-in";
+    tintCtx.fillStyle = pixelColor;
+    tintCtx.fillRect(0, 0, tintCanvas.width, tintCanvas.height);
+    tintCtx.globalCompositeOperation = "source-over";
+    return tintCanvas;
+  }
+
+  function createHealSlotBaseTintCanvas(pixelColor = "rgba(14,20,15,0.76)"){
+    const maskCanvas = getHealSlotBaseMaskCanvas();
+    if(!maskCanvas){
+      return null;
+    }
+
+    const tintCanvas = document.createElement("canvas");
+    tintCanvas.width = maskCanvas.width;
+    tintCanvas.height = maskCanvas.height;
+    const tintCtx = tintCanvas.getContext("2d", { alpha: true });
+    if(!tintCtx){
+      return null;
+    }
+
+    tintCtx.clearRect(0, 0, tintCanvas.width, tintCanvas.height);
+    tintCtx.imageSmoothingEnabled = false;
+    tintCtx.drawImage(maskCanvas, 0, 0);
+    tintCtx.globalCompositeOperation = "source-in";
+    tintCtx.fillStyle = pixelColor;
+    tintCtx.fillRect(0, 0, tintCanvas.width, tintCanvas.height);
+    tintCtx.globalCompositeOperation = "source-over";
+    return tintCanvas;
+  }
+
+  function createHealDisplaySpriteCanvas(size, options = {}){
+    const spriteSize = Math.max(1, Math.round(toNumber(size, 1)));
+    const canvas = document.createElement("canvas");
+    canvas.width = spriteSize;
+    canvas.height = spriteSize;
+    const ctx = canvas.getContext("2d", { alpha: true });
+    if(!ctx){
+      return canvas;
+    }
+    drawHealDisplaySprite(ctx, 0, 0, spriteSize, options);
+    return canvas;
+  }
+
+  function drawHealDirtyCluster(ctx, x, y, size, color = "rgba(14,20,15,0.30)"){
+    const px = Math.round(x);
+    const py = Math.round(y);
+    const s = Math.max(3, Math.round(toNumber(size, 3)));
+    ctx.fillStyle = color;
+    ctx.fillRect(px + 1, py, s - 2, s);
+    ctx.fillRect(px, py + 1, s, s - 2);
+    ctx.fillRect(px + Math.max(1, Math.round(s * 0.28)), py + Math.max(1, Math.round(s * 0.28)), Math.max(2, Math.round(s * 0.42)), Math.max(2, Math.round(s * 0.42)));
+  }
+
+  function applyHealPatchSpriteDamage(ctx, size, severity, nowMs = performance.now()){
+    const pulse = 0.5 + (Math.sin(toNumber(nowMs, performance.now()) * 0.011) * 0.5);
+    const holes = [
+      { x: 0.04, y: 0.06, w: 0.18, h: 0.16 },
+      { x: 0.68, y: 0.08, w: 0.18, h: 0.14 },
+      { x: 0.12, y: 0.22, w: 0.18, h: 0.18 },
+      { x: 0.56, y: 0.24, w: 0.22, h: 0.16 },
+      { x: 0.04, y: 0.44, w: 0.18, h: 0.18 },
+      { x: 0.46, y: 0.50, w: 0.24, h: 0.18 },
+      { x: 0.20, y: 0.72, w: 0.16, h: 0.14 },
+      { x: 0.68, y: 0.70, w: 0.16, h: 0.16 },
+      { x: 0.34, y: 0.10, w: 0.12, h: 0.10 },
+      { x: 0.30, y: 0.60, w: 0.12, h: 0.12 },
+    ];
+    const activeCount = Math.max(2, Math.round(holes.length * clamp((severity * 1.08) + 0.06, 0.14, 1)));
+
+    ctx.save();
+    ctx.globalCompositeOperation = "destination-out";
+    ctx.fillStyle = "rgba(0,0,0,1)";
+    for(let i = 0; i < activeCount; i++){
+      const hole = holes[i];
+      const grow = 1 + (severity * 0.42);
+      const hw = Math.max(6, Math.round(hole.w * size * grow));
+      const hh = Math.max(6, Math.round(hole.h * size * grow));
+      const hx = Math.round(hole.x * size) + ((i % 2 === 0) ? Math.round((pulse - 0.5) * 3) : 0);
+      const hy = Math.round(hole.y * size) + ((i % 3 === 0) ? Math.round((0.5 - pulse) * 2) : 0);
+      ctx.fillRect(hx, hy, hw, hh);
+      ctx.fillRect(hx - 3, hy + Math.round(hh * 0.24), Math.max(3, Math.round(hw * 0.26)), Math.max(3, Math.round(hh * 0.34)));
+      ctx.fillRect(hx + Math.round(hw * 0.28), hy - 3, Math.max(3, Math.round(hw * 0.32)), Math.max(3, Math.round(hh * 0.22)));
+      if(i % 2 === 0){
+        ctx.fillRect(hx + Math.round(hw * 0.70), hy + Math.round(hh * 0.44), Math.max(3, Math.round(hw * 0.20)), Math.max(3, Math.round(hh * 0.26)));
+      }
+    }
+    const crackCount = 5 + Math.round(severity * 8);
+    for(let i = 0; i < crackCount; i++){
+      const cx = Math.round(size * (0.08 + ((((i * 17) + (nowMs * 0.00015)) % 80) / 100)));
+      const cy = Math.round(size * (0.10 + ((((i * 13) + (nowMs * 0.00011)) % 76) / 100)));
+      const crackLen = Math.max(3, Math.round(6 + (severity * 7)));
+      ctx.fillRect(cx, cy, crackLen, 1);
+      ctx.fillRect(cx + Math.round(crackLen * 0.25), cy + 1, Math.max(2, Math.round(crackLen * 0.30)), 1);
+      if(i % 2 === 0){
+        ctx.fillRect(cx + 1, cy + 1, 1, 3);
+      }else{
+        ctx.fillRect(cx + crackLen - 1, cy - 1, 1, 3);
+      }
+    }
+    ctx.restore();
+  }
+
+  function applyHealPurgeSpriteContamination(ctx, size, severity, nowMs = performance.now()){
+    const phase = toNumber(nowMs, performance.now()) * 0.0014;
+    const stainCount = 3 + Math.round(severity * 7);
+    ctx.save();
+    ctx.globalCompositeOperation = "source-atop";
+    for(let i = 0; i < stainCount; i++){
+      const px = size * (0.14 + ((((i * 19) + (phase * 11)) % 58) / 100));
+      const py = size * (0.12 + ((((i * 23) + (phase * 9)) % 60) / 100));
+      const scale = (0.06 + ((i % 3) * 0.015) + (severity * 0.045)) * size;
+      drawHealDirtyCluster(ctx, px, py, scale, "rgba(200,214,194,0.44)");
+    }
+    const dustCount = 10 + Math.round(severity * 16);
+    ctx.fillStyle = "rgba(200,214,194,0.28)";
+    for(let i = 0; i < dustCount; i++){
+      const px = Math.round(size * (0.10 + ((((i * 7) + (phase * 13)) % 80) / 100)));
+      const py = Math.round(size * (0.10 + ((((i * 11) + (phase * 17)) % 80) / 100)));
+      const dot = 1 + ((i + Math.round(severity * 10)) % 3);
+      ctx.fillRect(px, py, dot, dot);
+    }
+    ctx.restore();
+  }
+
+  function drawHealStabilizeGlitch(ctx, spriteCanvas, x, y, size, severity, nowMs = performance.now()){
+    const time = toNumber(nowMs, performance.now());
+    const ghostDrift = 2 + Math.round((severity * 10) + (Math.sin(time * 0.0062) * (2 + (severity * 4))));
+    ctx.save();
+    ctx.globalAlpha = 0.10 + (severity * 0.08);
+    ctx.drawImage(spriteCanvas, Math.round(x - ghostDrift), Math.round(y + 1), size, size);
+    ctx.globalAlpha = 0.16 + (severity * 0.10);
+    ctx.drawImage(spriteCanvas, Math.round(x + (ghostDrift * 0.75)), Math.round(y + 2), size, size);
+    ctx.restore();
+
+    const sliceCount = 2 + Math.round(severity * 5);
+    for(let i = 0; i < sliceCount; i++){
+      const sliceY = Math.round((((i * 19) + (time * 0.05)) % Math.max(8, size - 12)));
+      const sliceH = Math.max(4, Math.round(5 + (severity * 7) + ((i % 2) * 2)));
+      const shift = Math.round(Math.sin((time * 0.013) + (i * 1.6)) * (3 + (severity * 9)));
+      ctx.save();
+      ctx.globalAlpha = 0.16 + (severity * 0.12);
+      ctx.drawImage(spriteCanvas, 0, sliceY, size, sliceH, Math.round(x + shift), Math.round(y + sliceY), size, sliceH);
+      ctx.restore();
+    }
+  }
+
+  function drawHealSocketFallback(ctx, centerX, topY, options = {}){
+    const socketW = Math.max(72, Math.round(toNumber(options.width, 108)));
+    const socketH = Math.max(28, Math.round(toNumber(options.height, 46)));
+    const actionId = normalizeHealActionId(options.actionId, "");
+    const execFrame = isRecord(options.executionFrame) ? options.executionFrame : null;
+    const left = Math.round(centerX - (socketW * 0.5));
+    const top = Math.round(topY);
+    const wallW = 9;
+    const bodyX = left + 8;
+    const bodyY = top + 4;
+    const bodyW = socketW - 16;
+    const bodyH = 22;
+    const slotX = bodyX + wallW + 2;
+    const slotY = bodyY + 5;
+    const slotW = bodyW - ((wallW + 2) * 2);
+    const slotH = 10;
+    const innerBedY = slotY + 2;
+    const latchW = 7;
+    const latchH = 14;
+    const latchY = bodyY + 4;
+    const baseX = left + 6;
+    const baseY = bodyY + bodyH + 4;
+    const baseW = socketW - 12;
+    const baseH = 12;
+    const boardY = baseY + 6;
+
+    ctx.save();
+    ctx.strokeStyle = "rgba(14,20,15,0.46)";
+    ctx.lineWidth = 1;
+
+    // Thick lower base / pedestal.
+    ctx.fillStyle = "rgba(14,20,15,0.10)";
+    ctx.fillRect(baseX + 1, baseY + 1, baseW - 2, baseH - 2);
+    ctx.strokeRect(baseX, baseY, baseW, baseH);
+    ctx.fillStyle = "rgba(14,20,15,0.22)";
+    ctx.fillRect(baseX + 3, baseY + 3, baseW - 6, 2);
+    ctx.fillRect(baseX + 6, baseY + baseH - 3, baseW - 12, 1);
+
+    // Main receiver shell.
+    ctx.fillStyle = "rgba(14,20,15,0.08)";
+    ctx.fillRect(bodyX + 1, bodyY + 1, bodyW - 2, bodyH - 2);
+    ctx.strokeRect(bodyX, bodyY, bodyW, bodyH);
+
+    // Top frame and lower chin to sell the "slot" silhouette.
+    ctx.fillStyle = "rgba(14,20,15,0.18)";
+    ctx.fillRect(bodyX + 6, bodyY - 2, bodyW - 12, 3);
+    ctx.strokeRect(bodyX + 6, bodyY - 2, bodyW - 12, 3);
+    ctx.fillRect(bodyX + 10, bodyY + bodyH - 4, bodyW - 20, 2);
+
+    // Side latch / retaining walls.
+    ctx.strokeRect(bodyX - 4, latchY, latchW, latchH);
+    ctx.strokeRect(bodyX + bodyW - 3, latchY, latchW, latchH);
+    ctx.fillStyle = "rgba(14,20,15,0.30)";
+    ctx.fillRect(bodyX - 1, latchY + 3, 2, latchH - 6);
+    ctx.fillRect(bodyX + bodyW - 1, latchY + 3, 2, latchH - 6);
+    ctx.fillRect(bodyX - 2, latchY + 5, 4, 2);
+    ctx.fillRect(bodyX + bodyW - 2, latchY + 5, 4, 2);
+
+    // Main slot opening. Keep it thick and horizontal so it reads as a receiver.
+    ctx.fillStyle = "rgba(14,20,15,0.64)";
+    ctx.fillRect(slotX, slotY, slotW, slotH);
+    ctx.clearRect(Math.round(centerX - 5), slotY + slotH - 2, 10, 2);
+    if(execFrame && execFrame.flashStrength > 0.001){
+      ctx.fillStyle = `rgba(200,214,194,${(0.18 + (execFrame.flashStrength * 0.28)).toFixed(3)})`;
+      ctx.fillRect(slotX + 1, slotY + 1, slotW - 2, slotH - 2);
+    }
+
+    // Pin bed deep inside the opening.
+    ctx.fillStyle = "rgba(200,214,194,0.12)";
+    ctx.fillRect(slotX + 2, innerBedY, slotW - 4, slotH - 4);
+
+    // Visible contact row at the back of the opening.
+    const contactCount = 15;
+    const contactStep = (slotW - 10) / Math.max(1, contactCount - 1);
+    for(let i = 0; i < contactCount; i++){
+      const px = Math.round(slotX + 5 + (i * contactStep));
+      let isActive = false;
+      if(execFrame){
+        if(actionId === HEAL_TYPE.PATCH){
+          const centerBias = Math.abs(i - Math.floor(contactCount * 0.5));
+          isActive = centerBias <= (1 + Math.round(execFrame.effectPulse * 2));
+        }else if(actionId === HEAL_TYPE.STABILIZE){
+          isActive = execFrame.flashStrength > 0.05 || ((i + Math.floor(execFrame.effectPulse * 6)) % 2 === 0);
+        }else if(actionId === HEAL_TYPE.PURGE){
+          const flickerSeed = Math.floor((execFrame.elapsed * 0.09) + (i * 1.7));
+          isActive = execFrame.flashStrength > 0.02 || ((flickerSeed % 3) !== 0);
+        }
+      }
+      ctx.fillStyle = isActive
+        ? "rgba(200,214,194,0.94)"
+        : "rgba(200,214,194,0.72)";
+      ctx.fillRect(px, slotY + 2, 1, slotH - 5);
+    }
+
+    // Connector teeth / support pins between shell and pedestal.
+    const supportPinCount = 16;
+    const supportPinStep = (bodyW - 18) / Math.max(1, supportPinCount - 1);
+    ctx.fillStyle = "rgba(14,20,15,0.28)";
+    for(let i = 0; i < supportPinCount; i++){
+      const px = Math.round(bodyX + 9 + (i * supportPinStep));
+      ctx.fillRect(px, bodyY + bodyH, 1, baseY - bodyY - bodyH + 1);
+    }
+
+    // Sub-board line and small mounting hints.
+    ctx.fillStyle = "rgba(14,20,15,0.22)";
+    ctx.fillRect(baseX + 8, boardY, baseW - 16, 1);
+    ctx.fillRect(baseX + 5, baseY + 4, 2, 2);
+    ctx.fillRect(baseX + baseW - 7, baseY + 4, 2, 2);
+    ctx.restore();
+  }
+
+  function drawHealSocket(ctx, centerX, topY, options = {}){
+    const socketW = Math.max(72, Math.round(toNumber(options.width, 108)));
+    const socketH = Math.max(28, Math.round(toNumber(options.height, 46)));
+    const execFrame = isRecord(options.executionFrame) ? options.executionFrame : null;
+    const left = Math.round(centerX - (socketW * 0.5));
+    const top = Math.round(topY);
+    const tintCanvas = createHealSlotBaseTintCanvas("rgba(14,20,15,0.76)");
+    const visibleRect = getHealSlotBaseVisibleRect();
+    if(!tintCanvas || !visibleRect){
+      drawHealSocketFallback(ctx, centerX, topY, options);
+      return;
+    }
+
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(
+      tintCanvas,
+      visibleRect.x,
+      visibleRect.y,
+      visibleRect.width,
+      visibleRect.height,
+      left,
+      top,
+      socketW,
+      socketH
+    );
+
+    if(execFrame && execFrame.flashStrength > 0.001){
+      ctx.save();
+      const slotFlashAlpha = 0.18 + (execFrame.flashStrength * 0.42);
+      ctx.globalAlpha = slotFlashAlpha;
+      ctx.fillStyle = "rgba(200,214,194,0.95)";
+      ctx.fillRect(
+        left + Math.round(socketW * 0.14),
+        top + Math.round(socketH * 0.16),
+        Math.round(socketW * 0.72),
+        Math.max(5, Math.round(socketH * 0.34))
+      );
+      ctx.globalAlpha = 0.36 + (execFrame.flashStrength * 0.44);
+      const blinkCount = 8;
+      const blinkStep = (socketW * 0.58) / Math.max(1, blinkCount - 1);
+      const blinkY = top + Math.round(socketH * 0.28);
+      for(let i = 0; i < blinkCount; i++){
+        const px = Math.round(left + (socketW * 0.21) + (i * blinkStep));
+        ctx.fillRect(px, blinkY, 2, Math.max(4, Math.round(socketH * 0.18)));
+      }
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+
+  function createHealAdCanvasElement(action){
+    const canvas = document.createElement("canvas");
+    canvas.className = "overlay-heal-ad-canvas";
+    canvas.width = 184;
+    canvas.height = 196;
+    const ctx = canvas.getContext("2d", { alpha: true });
+    if(!ctx){
+      return canvas;
+    }
+
+    const actionId = normalizeHealActionId(action?.id, "");
+    const detail = ensureHealDetailState(state.detailed);
+    const nowMs = performance.now();
+    const pulse01 = 0.5 + (Math.sin(nowMs * 0.006) * 0.5);
+    const pulseFast01 = 0.5 + (Math.sin(nowMs * 0.012) * 0.5);
+    const severity = getHealAdDisplaySeverity(actionId, detail);
+    const hasEffect = severity > 0.001;
+    const executionSession = getHealExecutionSession();
+    const executionFrame = (
+      isRecord(executionSession) &&
+      normalizeHealActionId(executionSession.actionId, "") === actionId
+    ) ? getHealExecutionFrame(executionSession, nowMs) : null;
+    const spriteSize = 132;
+    const spriteBaseX = Math.round((canvas.width - spriteSize) * 0.5);
+    const spriteBaseY = 6;
+    let spriteX = spriteBaseX;
+    let spriteY = spriteBaseY;
+    const centerX = Math.round(canvas.width * 0.5);
+    const socketTop = spriteBaseY + spriteSize + 9;
+    const socketW = 136;
+    const socketH = 38;
+    const insertOffsetY = executionFrame
+      ? Math.round(HEAL_EXECUTION_FULL_INSERT_Y * executionFrame.dockProgress)
+      : 0;
+    const idlePhaseOffset = actionId === HEAL_TYPE.STABILIZE
+      ? 1.4
+      : (actionId === HEAL_TYPE.PURGE ? 2.5 : 0);
+    const idleBobOffsetY = (!hasEffect && !executionFrame)
+      ? Math.round(Math.sin((nowMs * 0.0046) + idlePhaseOffset) * 2)
+      : 0;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const spriteCanvas = createHealDisplaySpriteCanvas(spriteSize, {
+      pixelColor: "rgba(14,20,15,0.76)",
+      accentColor: "rgba(14,20,15,0.90)",
+    });
+    const spriteCtx = spriteCanvas.getContext("2d", { alpha: true });
+    if(spriteCtx && hasEffect){
+      if(actionId === HEAL_TYPE.PATCH){
+        applyHealPatchSpriteDamage(spriteCtx, spriteSize, severity, nowMs);
+      }else if(actionId === HEAL_TYPE.PURGE){
+        applyHealPurgeSpriteContamination(spriteCtx, spriteSize, severity, nowMs);
+      }else if(actionId === HEAL_TYPE.STABILIZE){
+        spriteCtx.save();
+        spriteCtx.globalCompositeOperation = "source-atop";
+        spriteCtx.fillStyle = "rgba(200,214,194,0.20)";
+        const glitchBandCount = 2 + Math.round(severity * 3);
+        for(let i = 0; i < glitchBandCount; i++){
+          const bandY = Math.round((((i * 23) + (nowMs * 0.03)) % Math.max(6, spriteSize - 10)));
+          const bandH = Math.max(2, Math.round(2 + (severity * 3)));
+          spriteCtx.fillRect(0, bandY, spriteSize, bandH);
+        }
+        spriteCtx.restore();
+      }
+    }
+
+    if(actionId === HEAL_TYPE.STABILIZE && hasEffect){
+      drawHealStabilizeGlitch(ctx, spriteCanvas, spriteBaseX, spriteBaseY, spriteSize, severity, nowMs);
+      spriteX = spriteBaseX + Math.round(Math.sin(nowMs * 0.009) * (1 + (severity * 4)));
+      spriteY = spriteBaseY + Math.round(Math.cos(nowMs * 0.007) * (severity * 2));
+    }
+
+    if(actionId === HEAL_TYPE.PURGE && hasEffect){
+      const specks = [
+        [spriteBaseX - 14, spriteBaseY + 8], [spriteBaseX + spriteSize + 12, spriteBaseY + 12],
+        [spriteBaseX - 8, spriteBaseY + 34], [spriteBaseX + spriteSize + 16, spriteBaseY + 42],
+        [spriteBaseX + 16, spriteBaseY - 6], [spriteBaseX + spriteSize - 10, spriteBaseY - 4],
+        [spriteBaseX + 3, spriteBaseY + 70], [spriteBaseX + spriteSize + 8, spriteBaseY + 88],
+        [spriteBaseX + 28, spriteBaseY - 10], [spriteBaseX + 82, spriteBaseY - 8],
+      ];
+      const speckBaseSize = 4 + Math.round(severity * 8);
+      for(let i = 0; i < specks.length; i++){
+        const pulse = (i % 2 === 0 ? pulseFast01 : 1 - pulseFast01);
+        const dx = Math.round(Math.sin((nowMs * 0.01) + i) * (3 + (severity * 3)));
+        const dy = Math.round(Math.cos((nowMs * 0.008) + (i * 0.7)) * (2 + (severity * 2)));
+        const speckSize = speckBaseSize + Math.round(pulse * 3) - (i % 2);
+        drawHealDirtyCluster(ctx, specks[i][0] + dx, specks[i][1] + dy, speckSize, "rgba(14,20,15,0.30)");
+      }
+      spriteY = spriteBaseY + Math.round(Math.sin(nowMs * 0.011) * (1 + (severity * 2)));
+    }
+
+    if(actionId === HEAL_TYPE.PATCH && hasEffect){
+      const fragmentCount = 2 + Math.round(severity * 4);
+      const fragmentSize = 4 + Math.round(severity * 5);
+      for(let i = 0; i < fragmentCount; i++){
+        const fx = (i % 2 === 0)
+          ? (spriteBaseX - 10 - (i * 4))
+          : (spriteBaseX + spriteSize + 4 + (i * 3));
+        const fy = spriteBaseY + 16 + (i * 17) + Math.round(Math.sin((nowMs * 0.01) + i) * (2 + (severity * 2)));
+        drawHealDirtyCluster(ctx, fx, fy, fragmentSize - (i % 2), "rgba(14,20,15,0.38)");
+      }
+      spriteY = spriteBaseY + Math.round((pulse01 - 0.5) * (3 + (severity * 4)));
+    }
+
+    spriteY += insertOffsetY;
+    spriteY += idleBobOffsetY;
+
+    ctx.drawImage(spriteCanvas, Math.round(spriteX), Math.round(spriteY), spriteSize, spriteSize);
+
+    if(actionId === HEAL_TYPE.STABILIZE && hasEffect){
+      const overlaySliceCount = 1 + Math.round(severity * 3);
+      for(let i = 0; i < overlaySliceCount; i++){
+        const sliceY = Math.round((((i * 29) + (nowMs * 0.04)) % Math.max(10, spriteSize - 14)));
+        const sliceH = Math.max(4, Math.round(4 + (severity * 4)));
+        const shift = Math.round(Math.cos((nowMs * 0.012) + (i * 1.2)) * (2 + (severity * 7)));
+        ctx.save();
+        ctx.globalAlpha = 0.10 + (severity * 0.10);
+        ctx.drawImage(spriteCanvas, 0, sliceY, spriteSize, sliceH, Math.round(spriteX + shift), Math.round(spriteY + sliceY), spriteSize, sliceH);
+        ctx.restore();
+      }
+    }
+
+    if(executionFrame){
+      if(executionFrame.flashStrength > 0.001){
+        ctx.save();
+        ctx.globalAlpha = 0.18 + (executionFrame.flashStrength * 0.34);
+        ctx.fillStyle = "rgba(200,214,194,0.96)";
+        ctx.fillRect(Math.round(spriteX + 4), Math.round(spriteY + 4), spriteSize - 8, spriteSize - 8);
+        ctx.globalAlpha = 0.28 + (executionFrame.flashStrength * 0.42);
+        ctx.fillRect(Math.round(spriteX + 12), Math.round(spriteY + 12), spriteSize - 24, spriteSize - 24);
+        ctx.restore();
+      }
+      if(actionId === HEAL_TYPE.PATCH && executionFrame.effectProgress > 0){
+        ctx.fillStyle = "rgba(200,214,194,0.82)";
+        const patchBlink = 3 + Math.round(executionFrame.effectPulse * 2);
+        const patchStep = Math.max(6, Math.round((spriteSize - 28) / Math.max(1, patchBlink - 1)));
+        for(let i = 0; i < patchBlink; i++){
+          const px = Math.round(spriteX + 14 + (i * patchStep));
+          ctx.fillRect(px, Math.round(spriteY + spriteSize - 6), 2, 4);
+        }
+      }else if(actionId === HEAL_TYPE.STABILIZE && executionFrame.effectProgress > 0){
+        ctx.save();
+        ctx.globalAlpha = 0.06 + (executionFrame.effectPulse * 0.10);
+        ctx.fillStyle = "rgba(200,214,194,0.92)";
+        ctx.fillRect(Math.round(spriteX + 4), Math.round(spriteY + 4), spriteSize - 8, spriteSize - 8);
+        ctx.restore();
+      }else if(actionId === HEAL_TYPE.PURGE && executionFrame.effectProgress > 0){
+        ctx.fillStyle = "rgba(200,214,194,0.82)";
+        const purgeFlicker = 5 + Math.round(executionFrame.effectPulse * 5);
+        for(let i = 0; i < purgeFlicker; i++){
+          const px = Math.round(spriteX + 8 + (((i * 17) + (executionFrame.elapsed * 0.12)) % (spriteSize - 16)));
+          const py = Math.round(spriteY + 8 + (((i * 11) + (executionFrame.elapsed * 0.09)) % (spriteSize - 16)));
+          ctx.fillRect(px, py, 2 + (i % 2), 2 + ((i + 1) % 2));
+        }
+      }
+    }
+
+    const linkStartY = spriteY + spriteSize + 4;
+    const linkEndY = socketTop + 2;
+    if(linkEndY - linkStartY > 2 && (!executionFrame || executionFrame.dockProgress < 0.92)){
+      ctx.strokeStyle = "rgba(14,20,15,0.38)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(centerX, linkStartY);
+      ctx.lineTo(centerX, linkEndY);
+      ctx.stroke();
+    }
+
+    drawHealSocket(ctx, centerX, socketTop, {
+      width: socketW,
+      height: socketH,
+      actionId,
+      executionFrame,
+    });
+    return canvas;
+  }
+
+  function buildHealCenterPaneElement(action){
+    const pane = document.createElement("div");
+    pane.className = "overlay-heal-subpane overlay-heal-center-pane";
+    pane.appendChild(createHealAdCanvasElement(action));
+    return pane;
+  }
+
+  function buildHealPreviewPaneElement(action, availability){
+    const iconPane = document.createElement("div");
+    iconPane.className = "overlay-heal-subpane overlay-heal-forecast-pane";
+    const detail = ensureHealDetailState(state.detailed);
+    const rows = buildHealPreviewRows(action, detail);
+    const wrap = document.createElement("div");
+    wrap.className = "overlay-heal-preview-wrap";
+    for(let i = 0; i < rows.length; i++){
+      wrap.appendChild(rows[i]);
+    }
+    iconPane.appendChild(wrap);
+    return iconPane;
+  }
+
+  function buildHealSelectOverlayElement(){
+    const selectedAction = getSelectedHealAction();
+    const availability = getHealActionAvailability(selectedAction, ensureHealDetailState(state.detailed));
+    const executionSession = getHealExecutionSession();
+    const actionId = normalizeHealActionId(selectedAction?.id, "");
+    const isExecuting = isRecord(executionSession) && normalizeHealActionId(executionSession.actionId, "") === actionId;
+
+    const page = document.createElement("div");
+    page.className = "overlay-heal-page";
+    const topLayout = document.createElement("div");
+    topLayout.className = "overlay-heal-top-layout";
+    topLayout.appendChild(buildHealWavePaneElement(selectedAction));
+    topLayout.appendChild(buildHealCenterPaneElement(selectedAction));
+    topLayout.appendChild(buildHealPreviewPaneElement(selectedAction, availability));
+
+    const bottomPane = document.createElement("div");
+    bottomPane.className = "overlay-food-pane overlay-food-pane-bottom overlay-heal-pane-bottom";
+    if(selectedAction){
+      const name = document.createElement("div");
+      name.className = "overlay-food-detail-name";
+      name.textContent = String(selectedAction.label || "HEAL");
+
+      const meta = document.createElement("div");
+      meta.className = "overlay-food-detail-meta";
+      meta.textContent = `COST  STA ${formatUiDeltaValue(-Math.abs(toNumber(availability?.staminaCost, 0)))}`;
+
+      const desc = document.createElement("div");
+      desc.className = "overlay-food-detail-desc";
+      desc.textContent = isExecuting
+        ? `${String(selectedAction.label || "HEAL")} 実行`
+        : getHealBottomNoteText(selectedAction, availability);
+
+      bottomPane.appendChild(name);
+      bottomPane.appendChild(meta);
+      bottomPane.appendChild(desc);
+    }
+
+    page.appendChild(topLayout);
+    page.appendChild(bottomPane);
+    return page;
+  }
+
+  function buildHealResultOverlayElement(){
+    const result = getHealResultPayload();
+    const wrap = document.createElement("div");
+    wrap.className = "overlay-food-result-wrap";
+    const title = document.createElement("div");
+    title.className = "overlay-food-result-title";
+    title.textContent = String(result?.title || "HEAL RESULT");
+    const body = document.createElement("div");
+    body.className = "overlay-food-result-body";
+    const lines = [];
+    const lead = String(result?.lead || "").trim();
+    if(lead.length > 0){
+      lines.push(lead);
+    }
+    if(Array.isArray(result?.lines)){
+      for(let i = 0; i < result.lines.length; i++){
+        const line = String(result.lines[i] || "").trim();
+        if(line.length > 0){
+          lines.push(line);
+        }
+      }
+    }
+    body.textContent = (lines.length > 0 ? lines : ["結果なし。"]).join("\n");
+    wrap.appendChild(title);
+    wrap.appendChild(body);
+    return wrap;
+  }
+
+  function showOverlayHeal(){
+    if(!showOverlayShell("food", OVERLAY_STAT_RECT)) return;
+    const currentFontPx = toNumber(parseFloat(String(overlayLog.style.fontSize || "")), 15);
+    overlayLog.style.fontSize = `${Math.max(15, Math.round(currentFontPx))}px`;
+    overlayLog.style.lineHeight = "1.35";
+    overlayLogTitle.textContent = "";
+    overlayLogBody.textContent = "";
+    overlayLogHint.textContent = "";
+    if(getHealScreenMode() === HEAL_SCREEN_MODE.RESULT){
+      overlayLogBody.appendChild(buildHealResultOverlayElement());
+      return;
+    }
+    overlayLogBody.appendChild(buildHealSelectOverlayElement());
+  }
+
+  function createHealResultPayload(action, delta, options = {}){
+    const safeDelta = sanitizeDelta(delta);
+    const lines = [];
+    const orderedKeys = LOG_STAT_SPECS.map((spec) => String(spec?.key || ""));
+    for(let i = 0; i < orderedKeys.length; i++){
+      const key = orderedKeys[i];
+      if(!Object.prototype.hasOwnProperty.call(safeDelta, key)){
+        continue;
+      }
+      const specSign = (() => {
+        for(let j = 0; j < LOG_STAT_SPECS.length; j++){
+          if(String(LOG_STAT_SPECS[j]?.key || "") === key){
+            return toNumber(LOG_STAT_SPECS[j]?.sign, 1);
+          }
+        }
+        return 1;
+      })();
+      const value = toNumber(safeDelta[key], 0) * specSign;
+      if(value === 0) continue;
+      lines.push(`${getLogStatLabel(key)} ${formatUiDeltaValue(value)}`);
+    }
+    if(lines.length <= 0){
+      lines.push("変化なし。");
+    }
+    return {
+      title: String(options.title || "HEAL RESULT"),
+      lead: String(options.lead || action?.resultLead || "治療を実行。"),
+      lines,
+    };
+  }
+
+  function previewPatchHeal(detail){
+    const repeat = getHealSameTypePenalty(detail, HEAL_TYPE.PATCH);
+    const ambient = getHealAmbientPenalty(detail);
+    const damageMax = toPositiveInt(state.stats.damageMax, 10);
+    const damageNow = clamp(toNumber(state.stats.damage, 0), 0, damageMax);
+    const hpMax = getRuntimeMax("hp", 100);
+    const hpNow = clamp(getRuntimeStat("hp", hpMax), 0, hpMax);
+    return {
+      damage: previewHealFloorLimitedReduction(
+        detail,
+        "damage",
+        damageNow,
+        computeHealEffectAmount(2, 1, { repeat, noise: ambient.noise, decay: ambient.decay })
+      ),
+      hp: previewHealGain(
+        hpNow,
+        hpMax,
+        computeHealEffectAmount(1, 0, { repeat, noise: ambient.noise, decay: ambient.decay })
+      ),
+    };
+  }
+
+  function previewStabilizeHeal(detail){
+    const repeat = getHealSameTypePenalty(detail, HEAL_TYPE.STABILIZE);
+    const ambient = getHealAmbientPenalty(detail);
+    const stabilityMax = toPositiveInt(state.stats.stabilityMax, 10);
+    const stabilityNow = clamp(toNumber(state.stats.stability, stabilityMax), 0, stabilityMax);
+    const desyncNow = getHealAbnormalLevel(detail, "desync");
+    return {
+      stability: previewHealGain(
+        stabilityNow,
+        stabilityMax,
+        computeHealEffectAmount(2, 1, { repeat, noise: ambient.noise, decay: ambient.decay })
+      ),
+      desync: previewHealFloorLimitedReduction(
+        detail,
+        "desync",
+        desyncNow,
+        computeHealEffectAmount(2, 1, { repeat, noise: ambient.noise, decay: ambient.decay })
+      ),
+    };
+  }
+
+  function previewPurgeHeal(detail){
+    const repeat = getHealSameTypePenalty(detail, HEAL_TYPE.PURGE);
+    const ambient = getHealAmbientPenalty(detail);
+    return {
+      noise: previewHealFloorLimitedReduction(
+        detail,
+        "noise",
+        getHealAbnormalLevel(detail, "noise"),
+        computeHealEffectAmount(2, 1, { repeat, noise: ambient.noise, decay: ambient.decay })
+      ),
+      contamination: previewHealFloorLimitedReduction(
+        detail,
+        "contamination",
+        getHealAbnormalLevel(detail, "contamination"),
+        computeHealEffectAmount(2, 1, { repeat, noise: ambient.noise, decay: ambient.decay })
+      ),
+      desync: previewHealFloorLimitedReduction(
+        detail,
+        "desync",
+        getHealAbnormalLevel(detail, "desync"),
+        computeHealEffectAmount(1, 0, { repeat, noise: ambient.noise, decay: ambient.decay })
+      ),
+      decay: previewHealFloorLimitedReduction(
+        detail,
+        "decay",
+        getHealAbnormalLevel(detail, "decay"),
+        computeHealEffectAmount(1, 0, { repeat, noise: ambient.noise, decay: ambient.decay })
+      ),
+    };
+  }
+
+  function getHealActionPreview(actionId, detail){
+    const id = normalizeHealActionId(actionId, "");
+    if(id === HEAL_TYPE.PATCH){
+      return previewPatchHeal(detail);
+    }
+    if(id === HEAL_TYPE.STABILIZE){
+      return previewStabilizeHeal(detail);
+    }
+    if(id === HEAL_TYPE.PURGE){
+      return previewPurgeHeal(detail);
+    }
+    return null;
+  }
+
+  function hasHealPreviewBenefit(preview){
+    if(!isRecord(preview)) return false;
+    const keys = Object.keys(preview);
+    for(let i = 0; i < keys.length; i++){
+      const entry = preview[keys[i]];
+      if(toNumber(entry?.applied, 0) > 0){
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function commitHealFloorLimitedReduction(detail, preview, setter){
+    if(typeof setter !== "function" || !isRecord(preview) || toNumber(preview.applied, 0) <= 0){
+      return 0;
+    }
+    if(toNumber(preview.floor, 0) > toNumber(preview.storedFloor, 0)){
+      setHealCycleFloor(detail, preview.key, preview.floor);
+    }
+    setter(preview.next);
+    return Math.max(0, Math.floor(toNumber(preview.applied, 0)));
+  }
+
+  function commitHealGain(preview, setter){
+    if(typeof setter !== "function" || !isRecord(preview) || toNumber(preview.applied, 0) <= 0){
+      return 0;
+    }
+    setter(preview.next);
+    return Math.max(0, Math.floor(toNumber(preview.applied, 0)));
+  }
+
+  function markHealCycleUse(detail, actionId){
+    if(!isRecord(detail)) return;
+    ensureHealDetailState(detail);
+    const id = normalizeHealActionId(actionId, "");
+    if(id.length <= 0){
+      detail.healCycle.lastType = "";
+      detail.healCycle.sameTypeCount = 0;
+      return;
+    }
+    if(detail.healCycle.lastType === id){
+      detail.healCycle.sameTypeCount = Math.max(1, Math.floor(toNumber(detail.healCycle.sameTypeCount, 0)) + 1);
+    }else{
+      detail.healCycle.lastType = id;
+      detail.healCycle.sameTypeCount = 1;
+    }
+  }
+
+  function applyHealActionById(actionId){
+    if(!isRecord(state.detailed)){
+      state.detailed = createDefaultDetailedState(state.monster?.id || "mon001");
+    }
+    const detail = ensureHealDetailState(state.detailed);
+    const action = getHealActionById(actionId);
+    if(!action){
+      return {
+        success: false,
+        reason: "missing_action",
+        warning: "治療項目が不明。",
+        action: null,
+        delta: {},
+      };
+    }
+
+    const availability = getHealActionAvailability(action, detail);
+    if(!availability.canUse){
+      return {
+        success: false,
+        reason: "unavailable",
+        warning: String(availability.reason || "実行不可。"),
+        action,
+        delta: {},
+      };
+    }
+
+    const preview = isRecord(availability.preview)
+      ? availability.preview
+      : getHealActionPreview(action.id, detail);
+
+    if(!hasHealPreviewBenefit(preview)){
+      updateLogParams("heal", {});
+      recordLastDeltaLine({});
+      return {
+        success: true,
+        reason: availability?.hasTarget ? "cycle_limited" : "no_target",
+        action,
+        delta: {},
+        payload: createHealResultPayload(action, {}, {
+          lead: String(availability?.reason || "変化なし。"),
+        }),
+      };
+    }
+
+    const staminaCost = Math.max(0, Math.floor(toNumber(availability.staminaCost, 0)));
+    const staminaMax = getRuntimeMax("stamina", 100);
+    const staminaNow = clamp(getRuntimeStat("stamina", staminaMax), 0, staminaMax);
+    const staminaNext = clamp(staminaNow - staminaCost, 0, staminaMax);
+    const delta = {};
+    const spent = staminaNow - staminaNext;
+    setRuntimeStat("stamina", staminaNext);
+    if(spent > 0){
+      delta.stamina = -spent;
+    }
+
+    if(action.id === HEAL_TYPE.PATCH){
+      const damageApplied = commitHealFloorLimitedReduction(detail, preview.damage, (next) => {
+        state.stats.damage = clamp(next, 0, toPositiveInt(state.stats.damageMax, 10));
+      });
+      if(damageApplied > 0){
+        delta.damage = damageApplied;
+      }
+      const hpApplied = commitHealGain(preview.hp, (next) => {
+        setRuntimeStat("hp", clamp(next, 0, getRuntimeMax("hp", 100)));
+      });
+      if(hpApplied > 0){
+        delta.hp = hpApplied;
+      }
+    }else if(action.id === HEAL_TYPE.STABILIZE){
+      const desyncApplied = commitHealFloorLimitedReduction(detail, preview.desync, (next) => {
+        setHealAbnormalLevel(detail, "desync", next);
+      });
+      if(desyncApplied > 0){
+        delta.desync = desyncApplied;
+      }
+      const stabilityApplied = commitHealGain(preview.stability, (next) => {
+        state.stats.stability = clamp(next, 0, toPositiveInt(state.stats.stabilityMax, 10));
+      });
+      if(stabilityApplied > 0){
+        delta.stability = stabilityApplied;
+      }
+    }else if(action.id === HEAL_TYPE.PURGE){
+      const noiseApplied = commitHealFloorLimitedReduction(detail, preview.noise, (next) => {
+        setHealAbnormalLevel(detail, "noise", next);
+      });
+      if(noiseApplied > 0){
+        delta.noise = noiseApplied;
+      }
+      const contaminationApplied = commitHealFloorLimitedReduction(detail, preview.contamination, (next) => {
+        setHealAbnormalLevel(detail, "contamination", next);
+      });
+      if(contaminationApplied > 0){
+        delta.contamination = contaminationApplied;
+      }
+      const desyncApplied = commitHealFloorLimitedReduction(detail, preview.desync, (next) => {
+        setHealAbnormalLevel(detail, "desync", next);
+      });
+      if(desyncApplied > 0){
+        delta.desync = desyncApplied;
+      }
+      const decayApplied = commitHealFloorLimitedReduction(detail, preview.decay, (next) => {
+        setHealAbnormalLevel(detail, "decay", next);
+      });
+      if(decayApplied > 0){
+        delta.decay = decayApplied;
+      }
+    }
+
+    markHealCycleUse(detail, action.id);
+    const sanitizedDelta = sanitizeDelta(delta);
+    updateLogParams("heal", sanitizedDelta);
+    recordLastDeltaLine(sanitizedDelta);
+    saveDetailedState();
+    return {
+      success: true,
+      reason: "ok",
+      action,
+      delta: sanitizedDelta,
+      payload: createHealResultPayload(action, sanitizedDelta),
+    };
+  }
+
+  function applyFoodById(foodId){
+    if(!isRecord(state.detailed)){
+      state.detailed = createDefaultDetailedState(state.monster?.id || "mon001");
+    }
+    const detail = ensureHealDetailState(ensureFoodDetailState(state.detailed));
+    const food = getFoodById(foodId);
+    if(!food){
+      return { success: false, reason: "missing_food", food: null, delta: {} };
+    }
+    const currentStock = getFoodInventoryCount(detail, food.id);
+    if(!hasFoodStock(currentStock)){
+      return { success: false, reason: "out_of_stock", food, delta: {} };
+    }
+    if(!isFoodStockInfinite(currentStock)){
+      detail.foodInventory[food.id] = clamp(currentStock - 1, 0, FOOD_STOCK_MAX);
+    }
+
+    const effects = isRecord(food.effects) ? food.effects : {};
+    const delta = {};
+
+    const hungerDelta = Math.floor(toNumber(effects.hunger, 0));
+    if(hungerDelta !== 0){
+      const hungerMax = toPositiveInt(state.stats.hungerMax, 10);
+      const hunger = applyClampedDelta(state.stats.hunger, hungerDelta, 0, hungerMax);
+      state.stats.hunger = hunger.value;
+      if(hunger.appliedDelta !== 0){
+        delta.hunger = roundTo1(hunger.appliedDelta);
+      }
+    }
+
+    const stabilityDelta = Math.floor(toNumber(effects.stability, 0));
+    if(stabilityDelta !== 0){
+      const stabilityMax = toPositiveInt(state.stats.stabilityMax, 10);
+      const stability = applyClampedDelta(state.stats.stability, stabilityDelta, 0, stabilityMax);
+      state.stats.stability = stability.value;
+      if(stability.appliedDelta !== 0){
+        delta.stability = roundTo1(stability.appliedDelta);
+      }
+    }
+
+    const signalDelta = roundTo1(toNumber(effects.signalQuality, 0));
+    if(signalDelta !== 0){
+      const signalMax = clamp(toNumber(detail.adIntegrity, 100), 0, 100);
+      const signalNow = clamp(toNumber(detail.signalQuality, signalMax), 0, signalMax);
+      const signalNext = clamp(roundTo1(signalNow + signalDelta), 0, signalMax);
+      const applied = roundTo1(signalNext - signalNow);
+      detail.signalQuality = signalNext;
+      detail.lastSignalQualityForTrend = signalNext;
+      if(applied >= SIGNAL_TREND_DIFF_THRESHOLD){
+        detail.signalTrend = "↑";
+      }else if(applied <= -SIGNAL_TREND_DIFF_THRESHOLD){
+        detail.signalTrend = "↓";
+      }else{
+        detail.signalTrend = "→";
+      }
+      if(applied !== 0){
+        delta.signalQuality = applied;
+      }
+    }
+
+    const hpDelta = Math.floor(toNumber(effects.hp, 0));
+    if(hpDelta !== 0){
+      const hpMax = getRuntimeMax("hp", 100);
+      const hpNow = clamp(getRuntimeStat("hp", hpMax), 0, hpMax);
+      const hpNext = clamp(hpNow + hpDelta, 0, hpMax);
+      const applied = hpNext - hpNow;
+      setRuntimeStat("hp", hpNext);
+      if(applied !== 0){
+        delta.hp = roundTo1(applied);
+      }
+    }
+
+    const damageRecover = Math.max(0, Math.floor(toNumber(effects.damageRecover, 0)));
+    if(damageRecover > 0){
+      const damageMax = toPositiveInt(state.stats.damageMax, 10);
+      const damageNow = clamp(toNumber(state.stats.damage, 0), 0, damageMax);
+      const damageNext = clamp(damageNow - damageRecover, 0, damageMax);
+      const applied = damageNow - damageNext;
+      state.stats.damage = damageNext;
+      if(applied > 0){
+        delta.damage = roundTo1(applied);
+      }
+    }
+
+    const weightGain = Math.max(0, roundTo1(toNumber(food.weightGain, 0)));
+    if(weightGain > 0){
+      const weightNow = clamp(toNumber(detail.weight, FOOD_DEFAULT_WEIGHT), FOOD_WEIGHT_MIN, FOOD_WEIGHT_MAX);
+      const weightNext = clamp(roundTo1(weightNow + weightGain), FOOD_WEIGHT_MIN, FOOD_WEIGHT_MAX);
+      const applied = roundTo1(weightNext - weightNow);
+      detail.weight = weightNext;
+      if(applied !== 0){
+        delta.weight = applied;
+      }
+    }
+
+    const sanitizedDelta = sanitizeDelta(delta);
+    resetHealCycle(detail);
+    updateLogParams("food", sanitizedDelta);
+    recordLastDeltaLine(sanitizedDelta);
+    saveDetailedState();
+    return {
+      success: true,
+      reason: "ok",
+      food,
+      delta: sanitizedDelta,
+      remainingStock: getFoodInventoryCount(detail, food.id),
     };
   }
 
   function applySleep(){
+    if(isRecord(state.detailed)){
+      resetHealCycle(ensureHealDetailState(state.detailed));
+    }
     const staminaMax = getRuntimeMax("stamina", 100);
     const staminaNow = clamp(getRuntimeStat("stamina", staminaMax), 0, staminaMax);
     const missingStamina = staminaMax - staminaNow;
@@ -3082,54 +7209,6 @@
     recordLastDeltaLine(delta);
     return {
       logKey: `log.${state.logStyle || "normal"}.sleep`,
-      delta,
-    };
-  }
-
-  function applyHeal(){
-    const hpMax = getRuntimeMax("hp", 100);
-    const staminaMax = getRuntimeMax("stamina", 100);
-    const damageMax = toPositiveInt(state.stats.damageMax, 10);
-
-    const hpNow = clamp(getRuntimeStat("hp", hpMax), 0, hpMax);
-    const staminaNow = clamp(getRuntimeStat("stamina", staminaMax), 0, staminaMax);
-    const damageNow = clamp(toNumber(state.stats.damage, 0), 0, damageMax);
-
-    let staminaSpent = 0;
-    let hpGain = 0;
-    let damageReduced = 0;
-
-    if(staminaNow >= HEAL_COST_STAMINA){
-      staminaSpent = HEAL_COST_STAMINA;
-      const staminaNext = clamp(staminaNow - staminaSpent, 0, staminaMax);
-      setRuntimeStat("stamina", staminaNext);
-
-      const missingHp = hpMax - hpNow;
-      const hpGainRaw = HEAL_HP_BASE + Math.ceil(missingHp * HEAL_HP_GAIN_RATE);
-      hpGain = clamp(hpGainRaw, 0, missingHp);
-      const hpNext = clamp(hpNow + hpGain, 0, hpMax);
-      setRuntimeStat("hp", hpNext);
-
-      damageReduced = Math.min(HEAL_DAMAGE_HEAL, damageNow);
-      state.stats.damage = clamp(damageNow - damageReduced, 0, damageMax);
-    }else{
-      setRuntimeStat("hp", hpNow);
-      setRuntimeStat("stamina", staminaNow);
-      state.stats.damage = damageNow;
-    }
-
-    state.stats.hygiene = clamp(state.stats.hygiene + 3, 0, 10);
-    state.stats.mood = clamp(state.stats.mood + 1, 0, 10);
-
-    const delta = sanitizeDelta({
-      hp: hpGain,
-      damage: damageReduced,
-      stamina: -staminaSpent,
-    });
-    updateLogParams("heal", delta);
-    recordLastDeltaLine(delta);
-    return {
-      logKey: `log.${state.logStyle || "normal"}.heal`,
       delta,
     };
   }
@@ -3252,6 +7331,21 @@
     bootErrors.push("DotmonBitmapFontSpec");
   }
   if(
+    !DeltaFormatAPI ||
+    typeof DeltaFormatAPI.getDeltaSymbol !== "function" ||
+    typeof DeltaFormatAPI.formatDeltaValue !== "function"
+  ){
+    bootErrors.push("DotmonDeltaFormat");
+  }
+  if(
+    !ItemIconAPI ||
+    typeof ItemIconAPI.rankToLabel !== "function" ||
+    typeof ItemIconAPI.drawRankLabel !== "function" ||
+    typeof ItemIconAPI.drawItemIconWithRank !== "function"
+  ){
+    bootErrors.push("DotmonItemIconRenderer");
+  }
+  if(
     !UiCursorAPI ||
     typeof UiCursorAPI.isBlinkOn !== "function" ||
     typeof UiCursorAPI.shouldShowCursor !== "function" ||
@@ -3284,6 +7378,9 @@
   const uiTextDraw = UiTextAPI.draw;
   const uiTextMeasure = UiTextAPI.measure;
   const uiTextDrawInRect = UiTextAPI.drawInRect;
+  const getUiDeltaSymbol = DeltaFormatAPI.getDeltaSymbol;
+  const formatUiDeltaValue = DeltaFormatAPI.formatDeltaValue;
+  const itemIconDrawItemIconWithRank = ItemIconAPI.drawItemIconWithRank;
   const uiCursorShouldShow = UiCursorAPI.shouldShowCursor;
   const uiCursorOnMoved = UiCursorAPI.onCursorMoved;
   hideOverlayLog();
@@ -3358,7 +7455,7 @@
   const state = {
     day: 1,
     t: 0,
-    screen: "menu", // menu | status | feed | toilet | trnmode | trn | trnlog | bttl | bttllog | adv | sleep | heal | edit
+    screen: "menu", // menu | status | food | toilet | trnmode | trn | trnlog | bttl | bttllog | adv | sleep | heal | edit
     ui: uiState,
     menu: {
       active: false,
@@ -3368,7 +7465,7 @@
     },
     logStyle: "normal",
     logParamsByAction: {
-      feed: {},
+      food: {},
       sleep: {},
       heal: {},
     },
@@ -3725,7 +7822,7 @@
   const MENU_ROWS = [
     [
       { id: "stat", label: "STAT" },
-      { id: "feed", label: "FEED" },
+      { id: "food", label: "FOOD" },
       { id: "trn",  label: "TRN"  },
       { id: "bttl", label: "BTTL" },
       { id: "adv",  label: "ADV"  },
@@ -3941,6 +8038,12 @@
         ratio: calcMetricRatio(state.stats?.hunger, state.stats?.hungerMax),
       },
       {
+        id: "weight",
+        label: "体重",
+        value: formatWeightKgNumber(),
+        ratio: null,
+      },
+      {
         id: "damage",
         label: "損傷",
         value: formatMetricPair(state.stats?.damage, state.stats?.damageMax),
@@ -4040,7 +8143,8 @@
   }
 
   function formatWeightKgNumber(){
-    const weight = toNumber(state.monster?.weight, NaN);
+    const detail = ensureFoodDetailState(state.detailed);
+    const weight = toNumber(detail?.weight, NaN);
     if(!Number.isFinite(weight)) return "--";
     const normalized = Math.max(0, weight);
     return normalized.toFixed(1);
@@ -4200,11 +8304,567 @@
     ];
   }
 
+  function getBttlSkillEffectSummary(skill){
+    if(!isRecord(skill)){
+      return "詳細なし";
+    }
+    if(skill.type === BTTL_SKILL_TYPE.ATTACK){
+      const dmgMult = clamp(toNumber(skill.damageMult, 1), 0.5, 2.5);
+      const dmgBonus = Math.max(0, Math.floor(toNumber(skill.flatDamageBonus, 0)));
+      const breakMult = clamp(toNumber(skill.breakMult, 1), 0.5, 2.2);
+      return `威力x${dmgMult.toFixed(2)} +${dmgBonus} / BREAKx${breakMult.toFixed(2)}`;
+    }
+    if(skill.type === BTTL_SKILL_TYPE.SUPPORT){
+      const durationMs = Math.max(0, Math.floor(toNumber(skill.durationMs, 0)));
+      const sec = (durationMs / 1000).toFixed(1);
+      const intervalMult = clamp(toNumber(skill.intervalMult, 1), 0.65, 1.4);
+      const dmgTaken = clamp(toNumber(skill.damageTakenMult, 1), 0.55, 1.8);
+      const breakTaken = clamp(toNumber(skill.breakTakenMult, 1), 0.55, 1.8);
+      return `持続${sec}s / 行動x${intervalMult.toFixed(2)} / 被ダメx${dmgTaken.toFixed(2)} / 被BRKx${breakTaken.toFixed(2)}`;
+    }
+    if(skill.type === BTTL_SKILL_TYPE.FINISH){
+      const dmgMin = Math.max(0, Math.floor(toNumber(skill.baseDamageByTier?.[0], 0)));
+      const dmgMax = Math.max(dmgMin, Math.floor(toNumber(skill.baseDamageByTier?.[3], dmgMin)));
+      const brkMin = Math.max(0, Math.floor(toNumber(skill.breakBonusByTier?.[0], 0)));
+      const brkMax = Math.max(brkMin, Math.floor(toNumber(skill.breakBonusByTier?.[3], brkMin)));
+      return `必殺威力 ${dmgMin}-${dmgMax} / 追加BREAK ${brkMin}-${brkMax}`;
+    }
+    return "詳細なし";
+  }
+
+  function buildBttlSkillDescription(skill, options = {}){
+    if(!isRecord(skill)){
+      return "スキル情報なし。";
+    }
+    const rangeText = formatBttlSkillRangesJa(skill.ranges);
+    const typeText = getBttlSkillTypeJa(skill.type);
+    const effectText = getBttlSkillEffectSummary(skill);
+    const isUnique = Boolean(options.unique);
+    const isFinish = String(skill.type || "").trim().toLowerCase() === BTTL_SKILL_TYPE.FINISH;
+    const parts = [];
+    if(isUnique){
+      parts.push("必殺");
+    }else{
+      parts.push("共有スキル");
+      parts.push(typeText);
+    }
+    if(isFinish){
+      parts.push("FINISH OK 必要");
+    }
+    parts.push(`対応 ${rangeText}`);
+    parts.push(effectText);
+    return parts.join(" / ");
+  }
+
+  function setBttlSharedSkillSlot(detail, slotIndex, skillId){
+    if(!isRecord(detail)) return false;
+    const slot = clamp(Math.floor(toNumber(slotIndex, -1)), 0, BTTL_SKILL_SLOT_COUNT - 1);
+    const normalizedSkillId = String(skillId || "").trim().toLowerCase();
+    const targetSkill = getBttlSharedSkillById(normalizedSkillId);
+    if(!targetSkill) return false;
+    const stagePlan = getBttlSkillPlanByStage(state.monster?.stage);
+    const learned = normalizeBttlSkillIdList(detail.skillSharedLearnedIds, getBttlSharedSkillById);
+    if(!learned.includes(targetSkill.id)){
+      return false;
+    }
+    const current = normalizeBttlSharedSetIds(
+      detail.skillSharedSetIds,
+      learned,
+      stagePlan,
+      { fallbackWhenEmpty: false }
+    );
+    const next = current.slice();
+    const existingIndex = next.findIndex((id) => String(id || "").trim().toLowerCase() === targetSkill.id);
+    if(existingIndex === slot){
+      return false;
+    }
+    if(existingIndex >= 0){
+      const tmp = next[slot];
+      next[slot] = targetSkill.id;
+      next[existingIndex] = String(tmp || "").trim().toLowerCase();
+    }else{
+      next[slot] = targetSkill.id;
+    }
+    const normalizedNext = normalizeBttlSharedSetIds(
+      next,
+      learned,
+      stagePlan,
+      { fallbackWhenEmpty: false }
+    );
+    let changed = false;
+    for(let i = 0; i < BTTL_SKILL_SLOT_COUNT; i++){
+      const prevId = String(current[i] || "").trim().toLowerCase();
+      const nextId = String(normalizedNext[i] || "").trim().toLowerCase();
+      if(prevId !== nextId){
+        changed = true;
+        break;
+      }
+    }
+    if(!changed){
+      return false;
+    }
+    detail.skillSharedSetIds = normalizedNext;
+    return true;
+  }
+
+  function unsetBttlSharedSkillFromSet(detail, skillId){
+    if(!isRecord(detail)) return false;
+    const normalizedSkillId = String(skillId || "").trim().toLowerCase();
+    const targetSkill = getBttlSharedSkillById(normalizedSkillId);
+    if(!targetSkill) return false;
+    const stagePlan = getBttlSkillPlanByStage(state.monster?.stage);
+    const learned = normalizeBttlSkillIdList(detail.skillSharedLearnedIds, getBttlSharedSkillById);
+    const current = normalizeBttlSharedSetIds(
+      detail.skillSharedSetIds,
+      learned,
+      stagePlan,
+      { fallbackWhenEmpty: false }
+    );
+    let changed = false;
+    for(let i = 0; i < current.length; i++){
+      if(String(current[i] || "").trim().toLowerCase() === targetSkill.id){
+        current[i] = "";
+        changed = true;
+      }
+    }
+    if(!changed){
+      return false;
+    }
+    detail.skillSharedSetIds = normalizeBttlSharedSetIds(
+      current,
+      learned,
+      stagePlan,
+      { fallbackWhenEmpty: false }
+    );
+    return true;
+  }
+
+  function resolveBttlAutoSetSlotIndex(setIds){
+    const src = Array.isArray(setIds) ? setIds : [];
+    for(let i = 0; i < BTTL_SKILL_SLOT_COUNT; i++){
+      if(String(src[i] || "").trim().length <= 0){
+        return i;
+      }
+    }
+    return 0;
+  }
+
+  function applyStatSkillSlotAssignment(slotIndex, skillId){
+    if(!isRecord(state.detailed)){
+      state.detailed = createDefaultDetailedState(state.monster?.id || "mon001");
+    }
+    const detail = ensureBttlSkillDetailState(state.detailed, state.monster);
+    if(!detail) return false;
+    const changed = setBttlSharedSkillSlot(detail, slotIndex, skillId);
+    if(!changed){
+      return false;
+    }
+    saveDetailedState();
+    return true;
+  }
+
+  function applyStatSkillGridSet(skillId){
+    if(!isRecord(state.detailed)){
+      state.detailed = createDefaultDetailedState(state.monster?.id || "mon001");
+    }
+    const detail = ensureBttlSkillDetailState(state.detailed, state.monster);
+    if(!detail) return { changed: false, slotIndex: -1 };
+    const stagePlan = getBttlSkillPlanByStage(state.monster?.stage);
+    const learned = normalizeBttlSkillIdList(detail.skillSharedLearnedIds, getBttlSharedSkillById);
+    const setIds = normalizeBttlSharedSetIds(
+      detail.skillSharedSetIds,
+      learned,
+      stagePlan,
+      { fallbackWhenEmpty: false }
+    );
+    const selectedSlot = getStatSkillEditingSlot();
+    const slotIndex = (selectedSlot >= 0 && selectedSlot < BTTL_SKILL_SLOT_COUNT)
+      ? selectedSlot
+      : resolveBttlAutoSetSlotIndex(setIds);
+    const changed = setBttlSharedSkillSlot(detail, slotIndex, skillId);
+    if(!changed){
+      return { changed: false, slotIndex };
+    }
+    saveDetailedState();
+    return { changed: true, slotIndex };
+  }
+
+  function applyStatSkillGridUnset(skillId){
+    if(!isRecord(state.detailed)){
+      state.detailed = createDefaultDetailedState(state.monster?.id || "mon001");
+    }
+    const detail = ensureBttlSkillDetailState(state.detailed, state.monster);
+    if(!detail) return false;
+    const changed = unsetBttlSharedSkillFromSet(detail, skillId);
+    if(!changed){
+      return false;
+    }
+    saveDetailedState();
+    return true;
+  }
+
+  function getStatusSkillGridCols(){
+    return Math.max(1, Math.floor(toNumber(buildStatusSkillGridLayout().cols, 1)));
+  }
+
+  function getStatusSkillGridRows(){
+    return Math.max(1, Math.floor(toNumber(buildStatusSkillGridLayout().rows, 4)));
+  }
+
+  function getStatusSkillGridRowOrder(){
+    return ["short", "mid", "long", "support"];
+  }
+
+  function getStatusSkillGridRowLabels(){
+    return ["SHORT", "MID", "LONG", "SUPPORT"];
+  }
+
+  function getBttlSkillPrimaryRangeId(skill){
+    if(!isRecord(skill)){
+      return "mid";
+    }
+    const ranges = Array.isArray(skill.ranges) ? skill.ranges : [];
+    if(ranges.length <= 0){
+      return "mid";
+    }
+    const id = normalizeBttlRangeStateId(ranges[0]);
+    if(id === "short" || id === "mid" || id === "long"){
+      return id;
+    }
+    return "mid";
+  }
+
+  function getStatusSkillGridRowId(skill){
+    if(!isRecord(skill)){
+      return "mid";
+    }
+    const typeId = String(skill.type || "").trim().toLowerCase();
+    if(typeId === BTTL_SKILL_TYPE.SUPPORT){
+      return "support";
+    }
+    return getBttlSkillPrimaryRangeId(skill);
+  }
+
+  function buildStatusSkillGridLayout(){
+    const rowOrder = getStatusSkillGridRowOrder();
+    const grouped = {
+      short: [],
+      mid: [],
+      long: [],
+      support: [],
+    };
+    for(let i = 0; i < BTTL_SHARED_SKILL_CATALOG.length; i++){
+      const skill = BTTL_SHARED_SKILL_CATALOG[i];
+      const skillId = String(skill?.id || "").trim().toLowerCase();
+      if(skillId.length <= 0){
+        continue;
+      }
+      const rowId = getStatusSkillGridRowId(skill);
+      const bucket = grouped[rowId] || grouped.mid;
+      if(!bucket.includes(skillId)){
+        bucket.push(skillId);
+      }
+    }
+    const cols = 10;
+    const skillIds = [];
+    for(let row = 0; row < rowOrder.length; row++){
+      const bucket = grouped[rowOrder[row]];
+      for(let col = 0; col < cols; col++){
+        skillIds.push(String(bucket[col] || "").trim().toLowerCase());
+      }
+    }
+    return {
+      rows: rowOrder.length,
+      cols,
+      skillIds,
+    };
+  }
+
+  function getStatusSkillPageItems(){
+    if(!isRecord(state.detailed)){
+      state.detailed = createDefaultDetailedState(state.monster?.id || "mon001");
+    }
+    const detail = ensureBttlSkillDetailState(state.detailed, state.monster);
+    const stagePlan = getBttlSkillPlanByStage(state.monster?.stage);
+    const learnedIds = normalizeBttlSkillIdList(detail?.skillSharedLearnedIds, getBttlSharedSkillById);
+    const learnableIds = normalizeBttlSkillIdList(stagePlan?.sharedSkillIds, getBttlSharedSkillById);
+    const setIds = normalizeBttlSharedSetIds(
+      detail?.skillSharedSetIds,
+      learnedIds,
+      stagePlan,
+      { fallbackWhenEmpty: false }
+    );
+    const uniqueSkill = getBttlUniqueSkillById(detail?.skillUniqueId) || getBttlUniqueSkillById(stagePlan.uniqueSkillId);
+    const editingSlot = getStatSkillEditingSlot();
+    const items = [];
+
+    items.push({
+      id: "skillUnique",
+      label: "FINISH SKILL",
+      value: uniqueSkill
+        ? String(uniqueSkill.label || "").trim()
+        : "--",
+      valueRange: uniqueSkill ? formatBttlSkillRangesJa(uniqueSkill.ranges) : "",
+      kind: "unique",
+      description: buildBttlSkillDescription(uniqueSkill, { unique: true }),
+    });
+
+    for(let i = 0; i < BTTL_SKILL_SLOT_COUNT; i++){
+      const skill = getBttlSharedSkillById(setIds[i]);
+      const slotLabel = editingSlot === i
+        ? `SET ${i + 1} *`
+        : `SET ${i + 1}`;
+      const value = skill
+        ? String(skill.label || "").trim()
+        : "--";
+      const valueRange = skill ? formatBttlSkillRangesJa(skill.ranges) : "";
+      const description = skill
+        ? `優先度${i + 1}。${buildBttlSkillDescription(skill)}`
+        : `優先度${i + 1}。未設定。`;
+      items.push({
+        id: `skillSlot${i + 1}`,
+        label: slotLabel,
+        value,
+        kind: "slot",
+        slotIndex: i,
+        skillId: skill ? skill.id : "",
+        valueRange,
+        description,
+      });
+    }
+
+    const gridLayout = buildStatusSkillGridLayout();
+    const gridCols = Math.max(1, Math.floor(toNumber(gridLayout.cols, 1)));
+    const gridRows = Math.max(1, Math.floor(toNumber(gridLayout.rows, 3)));
+    const gridSize = gridCols * gridRows;
+    const catalogIds = Array.isArray(gridLayout.skillIds) ? gridLayout.skillIds : [];
+    for(let i = 0; i < gridSize; i++){
+      const skillId = String(catalogIds[i] || "").trim().toLowerCase();
+      const row = Math.floor(i / gridCols);
+      const col = i % gridCols;
+      if(skillId.length <= 0){
+        items.push({
+          id: `skillGridEmpty_${i}`,
+          kind: "grid_empty",
+          gridIndex: i,
+          gridRow: row,
+          gridCol: col,
+          gridCols,
+          gridRows,
+          selectable: false,
+          label: "",
+          value: "",
+          description: "空スロット。",
+        });
+        continue;
+      }
+      const skill = getBttlSharedSkillById(skillId);
+      if(!skill){
+        continue;
+      }
+      const isLearned = learnedIds.includes(skill.id);
+      const isLearnable = learnableIds.includes(skill.id);
+      const setSlotIndex = setIds.findIndex((id) => String(id || "").trim().toLowerCase() === skill.id);
+      const skillState = isLearned ? "learned" : (isLearnable ? "learnable" : "locked");
+      const slotText = setSlotIndex >= 0 ? `SET${setSlotIndex + 1}` : "--";
+      const stateDescription = skillState === "learned"
+        ? ""
+        : (skillState === "learnable" ? "未習得。" : "習得不可。");
+      items.push({
+        id: `skillGrid_${skill.id}`,
+        kind: "grid_skill",
+        gridIndex: i,
+        gridRow: row,
+        gridCol: col,
+        gridCols,
+        gridRows,
+        selectable: true,
+        skillId: skill.id,
+        skillState,
+        setSlotIndex,
+        label: String(skill.label || "").trim(),
+        value: `${formatBttlSkillRangesJa(skill.ranges)} ${getBttlSkillTypeJa(skill.type)} ${slotText}`,
+        description: `${stateDescription}${stateDescription.length > 0 ? " " : ""}${buildBttlSkillDescription(skill)}`,
+      });
+    }
+    return items;
+  }
+
   function getStatItemsForPage(page){
     const nextPage = normalizeStatPage(page);
     if(nextPage === 0) return getStatusRows();
     if(nextPage === 1) return getStatusPage2Items();
-    return getStatusPage3Items();
+    if(nextPage === 2) return getStatusPage3Items();
+    return getStatusSkillPageItems();
+  }
+
+  function getCurrentStatSelectedItem(){
+    const page = setStatPage(uiState.statPage);
+    const items = getStatItemsForPage(page);
+    if(items.length <= 0){
+      return null;
+    }
+    const idx = setStatCursor(page, getStatCursor(page));
+    return items[idx] || null;
+  }
+
+  function getStatSkillGridCellItems(items){
+    const src = Array.isArray(items) ? items : [];
+    return src.filter((item) => {
+      const kind = String(item?.kind || "");
+      return kind === "grid_skill" || kind === "grid_empty";
+    });
+  }
+
+  function findStatSkillSlotItemIndex(items, slotIndex){
+    const src = Array.isArray(items) ? items : [];
+    const targetSlot = Math.floor(toNumber(slotIndex, -1));
+    if(targetSlot < 0) return -1;
+    return src.findIndex((item) => (
+      String(item?.kind || "") === "slot" &&
+      Math.floor(toNumber(item?.slotIndex, -1)) === targetSlot
+    ));
+  }
+
+  function getStatSkillTopItemIndices(items){
+    const src = Array.isArray(items) ? items : [];
+    const out = [];
+    for(let i = 0; i < src.length; i++){
+      const kind = String(src[i]?.kind || "");
+      if(kind === "unique" || kind === "slot"){
+        out.push(i);
+      }
+    }
+    return out;
+  }
+
+  function moveStatSkillTopCursor(delta){
+    if(state.screen !== "status") return false;
+    const page = setStatPage(uiState.statPage);
+    if(!isStatSkillPage(page)) return false;
+    const items = getStatItemsForPage(page);
+    if(items.length <= 0) return false;
+    const topIndices = getStatSkillTopItemIndices(items);
+    if(topIndices.length <= 0) return false;
+    const current = setStatCursor(page, getStatCursor(page));
+    const currentPos = topIndices.indexOf(current);
+    const basePos = currentPos >= 0 ? currentPos : 0;
+    const len = topIndices.length;
+    const step = Math.floor(toNumber(delta, 0));
+    const nextPos = ((basePos + step) % len + len) % len;
+    const nextIndex = topIndices[nextPos];
+    if(current === nextIndex){
+      return false;
+    }
+    setStatCursor(page, nextIndex);
+    clearStatSkillWarningMessage();
+    showOverlayStat();
+    markCursorMoved();
+    return true;
+  }
+
+  function resolveStatSkillGridFocusIndex(items, preferredSkillId = ""){
+    const src = Array.isArray(items) ? items : [];
+    const preferredId = String(preferredSkillId || "").trim().toLowerCase();
+    if(preferredId.length > 0){
+      const preferredIndex = src.findIndex((item) => (
+        String(item?.kind || "") === "grid_skill" &&
+        String(item?.skillId || "").trim().toLowerCase() === preferredId
+      ));
+      if(preferredIndex >= 0){
+        return preferredIndex;
+      }
+    }
+    return src.findIndex((item) => {
+      const kind = String(item?.kind || "");
+      return kind === "grid_skill" || kind === "grid_empty";
+    });
+  }
+
+  function moveStatSkillGridCursor(dx, dy){
+    if(state.screen !== "status") return false;
+    const page = setStatPage(uiState.statPage);
+    if(!isStatSkillPage(page)) return false;
+    const items = getStatItemsForPage(page);
+    if(items.length <= 0) return false;
+    const selectedIndex = setStatCursor(page, getStatCursor(page));
+    const selected = items[selectedIndex];
+    const selectedKind = String(selected?.kind || "");
+    if(!isRecord(selected) || (selectedKind !== "grid_skill" && selectedKind !== "grid_empty")){
+      return false;
+    }
+    const cols = Math.max(1, Math.floor(toNumber(selected.gridCols, getStatusSkillGridCols())));
+    const rows = Math.max(1, Math.floor(toNumber(selected.gridRows, getStatusSkillGridRows())));
+    const row = clamp(Math.floor(toNumber(selected.gridRow, 0)), 0, rows - 1);
+    const col = clamp(Math.floor(toNumber(selected.gridCol, 0)), 0, cols - 1);
+    const deltaRow = Math.floor(toNumber(dy, 0));
+    const deltaCol = Math.floor(toNumber(dx, 0));
+    const nextRow = ((row + deltaRow) % rows + rows) % rows;
+    const nextCol = ((col + deltaCol) % cols + cols) % cols;
+    if(nextRow === row && nextCol === col){
+      return false;
+    }
+    const nextIndex = items.findIndex((item) => {
+      const kind = String(item?.kind || "");
+      if(kind !== "grid_skill" && kind !== "grid_empty"){
+        return false;
+      }
+      return (
+        Math.floor(toNumber(item?.gridRow, -1)) === nextRow &&
+        Math.floor(toNumber(item?.gridCol, -1)) === nextCol
+      );
+    });
+    if(nextIndex < 0){
+      return false;
+    }
+    setStatCursor(page, nextIndex);
+    clearStatSkillWarningMessage();
+    showOverlayStat();
+    markCursorMoved();
+    return true;
+  }
+
+  function handleStatSkillPageConfirm(){
+    const page = setStatPage(uiState.statPage);
+    if(!isStatSkillPage(page)){
+      return false;
+    }
+    const items = getStatItemsForPage(page);
+    const selected = getCurrentStatSelectedItem();
+    if(!isRecord(selected)){
+      return false;
+    }
+    const kind = String(selected.kind || "");
+    if(kind === "slot"){
+      const slotIndex = clamp(Math.floor(toNumber(selected.slotIndex, -1)), 0, BTTL_SKILL_SLOT_COUNT - 1);
+      setStatSkillEditingSlot(slotIndex);
+      const focusIndex = resolveStatSkillGridFocusIndex(items, selected.skillId);
+      if(focusIndex >= 0){
+        setStatCursor(page, focusIndex);
+      }
+      clearStatSkillWarningMessage();
+      showOverlayStat();
+      markCursorMoved();
+      return true;
+    }
+    if(kind === "grid_skill"){
+      if(String(selected.skillState || "") !== "learned"){
+        return false;
+      }
+      const skillId = String(selected.skillId || "").trim().toLowerCase();
+      if(skillId.length <= 0){
+        return false;
+      }
+      const applied = applyStatSkillGridSet(skillId);
+      clearStatSkillWarningMessage();
+      showOverlayStat();
+      if(applied.changed){
+        setStatSkillEditingSlot(applied.slotIndex);
+        markCursorMoved();
+      }
+      return applied.changed;
+    }
+    return false;
   }
 
   function drawSprite16x16(x, y, sprite, dotScale){
@@ -5395,10 +10055,6 @@
     const ghostActive = isBadShakeActive && ((nowMs - badShakeStartedAtMs) < TRN_BAD_GHOST_MS);
 
     const drawBody = () => {
-      ctx.save();
-      ctx.fillStyle = "rgba(12,18,14,0.14)";
-      ctx.fillRect(frame.x + 1, frame.y + 1, frame.w - 2, frame.h - 2);
-      ctx.restore();
       drawBox(frame.x, frame.y, frame.w, frame.h);
       drawBox(left.x, left.y, left.w, left.h);
       drawBox(right.x, right.y, right.w, right.h);
@@ -5482,10 +10138,6 @@
     const ghostActive = isBadShakeActive && ((nowMs - badShakeStartedAtMs) < TRN_BAD_GHOST_MS);
 
     const drawBody = (ghostPass = false) => {
-      ctx.save();
-      ctx.fillStyle = "rgba(12,18,14,0.14)";
-      ctx.fillRect(frame.x + 1, frame.y + 1, frame.w - 2, frame.h - 2);
-      ctx.restore();
       drawBox(frame.x, frame.y, frame.w, frame.h);
       drawBox(left.x, left.y, left.w, left.h);
       drawBox(right.x, right.y, right.w, right.h);
@@ -5919,6 +10571,19 @@
     return now < toNumber(ctxBattle.endOutroUntilMs, 0);
   }
 
+  function getBttlBottomPaneOutroOpacity(ctxBattle, nowMs = performance.now()){
+    if(!isBttlEndOutroActive(ctxBattle, nowMs)){
+      return 1;
+    }
+    const now = toNumber(nowMs, performance.now());
+    const startedAt = toNumber(ctxBattle?.endOutroStartedAtMs, now);
+    const elapsed = Math.max(0, now - startedAt);
+    const outroType = normalizeBttlEndOutroType(ctxBattle?.endOutroType);
+    const timing = getBttlEndOutroTiming(outroType);
+    const overlayAlpha = clamp(computeBttlEndOutroHandoffAlpha(outroType, elapsed, timing), 0, 1);
+    return clamp(1 - overlayAlpha, 0, 1);
+  }
+
   function computeBttlHitChance(sig, sync){
     const sigRatio = clamp(toNumber(sig, 0), 0, 100) / 100;
     const syncRatio = clamp(toNumber(sync, 0), 0, 100) / 100;
@@ -5950,11 +10615,12 @@
     const layout = getTrnLayout();
     const frame = layout.frame;
     const contentPadX = 8;
-    const contentPadY = 8;
+    const contentPadTop = 8;
+    const contentPadBottom = 8;
     const contentX = frame.x + contentPadX;
-    const contentY = frame.y + contentPadY;
+    const contentY = frame.y + contentPadTop;
     const contentW = Math.max(24, frame.w - (contentPadX * 2));
-    const contentH = Math.max(24, frame.h - (contentPadY * 2));
+    const contentH = Math.max(24, frame.h - contentPadTop - contentPadBottom);
     const splitGap = BTTL_PANE_GAP;
     const bottomH = clamp(
       Math.floor(contentH * BTTL_BOTTOM_PANE_RATIO),
@@ -6019,7 +10685,7 @@
 
     const spritePx = SPRITE_SIZE * DOT_SCALE;
     const enemyBaseX = topLaneRect.x + 6;
-    const enemyBaseY = topLaneRect.y + Math.floor((topLaneRect.h - spritePx) / 2);
+    const enemyBaseY = topLaneRect.y + Math.floor((topLaneRect.h - spritePx) / 2) - 3;
     const allyBaseX = bottomLaneRect.x + bottomLaneRect.w - spritePx - 6;
     const allyBaseY = bottomLaneRect.y + Math.floor((bottomLaneRect.h - spritePx) / 2);
     const projectileHalf = Math.ceil(getBttlProjectileDrawSize() / 2) + 1;
@@ -6342,6 +11008,46 @@
     };
   }
 
+  function drawBttlFinishGauge(x, y, w, ctxBattle, opts = {}){
+    const barX = Math.round(toNumber(x, 0));
+    const barY = Math.round(toNumber(y, 0));
+    const barW = Math.max(44, Math.floor(toNumber(w, 0)));
+    const barH = 3;
+    const nowMs = toNumber(opts.nowMs, performance.now());
+    const used = hasBttlFinishBeenUsed(ctxBattle);
+    const ready = isBttlFinishReady(ctxBattle);
+    const gaugeMax = getBttlFinishGaugeMaxValue();
+    const gauge = getBttlFinishGaugeValue(ctxBattle);
+    const ratio = used ? 0 : clamp(gauge / gaugeMax, 0, 1);
+    const fillW = Math.floor((barW - 2) * ratio);
+    const pulse = ready ? getBttlFinishReadyPulse01(nowMs) : 0;
+    const strokeAlpha = ready ? (0.50 + (pulse * 0.45)) : 0.56;
+    const fillAlpha = ready ? (0.52 + (pulse * 0.42)) : 0.62;
+
+    ctx.save();
+    ctx.fillStyle = ready
+      ? `rgba(14,20,15,${(0.06 + (pulse * 0.10)).toFixed(3)})`
+      : "rgba(14,20,15,0.10)";
+    ctx.fillRect(barX, barY, barW, barH);
+    ctx.strokeStyle = `rgba(14,20,15,${strokeAlpha.toFixed(3)})`;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(barX + 0.5, barY + 0.5, barW - 1, barH - 1);
+    if(fillW > 0){
+      ctx.fillStyle = `rgba(14,20,15,${fillAlpha.toFixed(3)})`;
+      ctx.fillRect(barX + 1, barY + 1, fillW, Math.max(1, barH - 2));
+    }
+    ctx.restore();
+    return {
+      barX,
+      barY,
+      barW,
+      barH,
+      ratio,
+      ready,
+      used,
+    };
+  }
+
   function ensureBttlBreakActorState(actor){
     if(!isRecord(actor)) return;
     const maxValue = Math.max(1, Math.floor(toNumber(actor.breakMax, BTTL_BREAK_MAX)));
@@ -6402,6 +11108,7 @@
       gain += toNumber(BTTL_BREAK_GAIN_HIT_HEAVY_BONUS, 10);
     }
     gain *= getBttlBreakGainRangeMult(rangeId);
+    gain *= clamp(toNumber(projectile?.meta?.skillBreakMult, 1), 0.5, 2.2);
     return Math.max(0, Math.round(gain));
   }
 
@@ -6549,6 +11256,270 @@
 
   function getBttlTargetRangeByOwner(field, owner){
     return owner === "enemy" ? field.allyHitRange : field.enemyHitRange;
+  }
+
+  function cloneBttlSkillIdList(input){
+    return Array.isArray(input)
+      ? input.map((id) => String(id || "").trim().toLowerCase()).filter((id) => id.length > 0)
+      : [];
+  }
+
+  function resolveBttlAllySkillLoadout(){
+    const detail = ensureBttlSkillDetailState(state.detailed, state.monster);
+    const stagePlan = getBttlSkillPlanByStage(state.monster?.stage);
+    const learned = normalizeBttlSkillIdList(detail?.skillSharedLearnedIds, getBttlSharedSkillById);
+    const setIds = normalizeBttlSharedSetIds(
+      detail?.skillSharedSetIds,
+      learned,
+      stagePlan,
+      { fallbackWhenEmpty: false }
+    );
+    const uniqueSkill = getBttlUniqueSkillById(detail?.skillUniqueId) || getBttlUniqueSkillById(stagePlan.uniqueSkillId);
+    return {
+      uniqueSkillId: uniqueSkill ? uniqueSkill.id : "",
+      sharedLearnedIds: learned,
+      sharedSetIds: setIds,
+    };
+  }
+
+  function resolveBttlEnemySkillLoadout(){
+    const stagePlan = getBttlSkillPlanByStage(state.monster?.stage);
+    const learned = normalizeBttlSkillIdList(stagePlan.sharedSkillIds, getBttlSharedSkillById);
+    const setIds = normalizeBttlSharedSetIds(stagePlan.defaultSetIds, learned, stagePlan);
+    const uniqueSkill = getBttlUniqueSkillById(stagePlan.uniqueSkillId);
+    return {
+      uniqueSkillId: uniqueSkill ? uniqueSkill.id : "",
+      sharedLearnedIds: learned,
+      sharedSetIds: setIds,
+    };
+  }
+
+  function createBttlSkillRuntime(loadout){
+    const sharedLearnedIds = cloneBttlSkillIdList(loadout?.sharedLearnedIds);
+    const sharedSetIds = normalizeBttlSharedSetIds(
+      loadout?.sharedSetIds,
+      sharedLearnedIds,
+      getBttlSkillPlanByStage(state.monster?.stage),
+      { fallbackWhenEmpty: false }
+    );
+    const uniqueSkillId = String(loadout?.uniqueSkillId || "").trim().toLowerCase();
+    return {
+      uniqueSkillId,
+      sharedLearnedIds,
+      sharedSetIds,
+      cooldownUntilBySkillId: {},
+      activeSupport: null,
+      lastUsedSkillId: "",
+      lastUsedAtMs: 0,
+      lastNoSkillLogAtMs: 0,
+    };
+  }
+
+  function getBttlActorSkillRuntime(ctxBattle, actorKey){
+    if(!ctxBattle) return createBttlSkillRuntime(null);
+    if(!isRecord(ctxBattle.skillRuntime)){
+      ctxBattle.skillRuntime = {
+        ally: createBttlSkillRuntime(resolveBttlAllySkillLoadout()),
+        enemy: createBttlSkillRuntime(resolveBttlEnemySkillLoadout()),
+      };
+    }
+    const key = actorKey === "enemy" ? "enemy" : "ally";
+    if(!isRecord(ctxBattle.skillRuntime[key])){
+      ctxBattle.skillRuntime[key] = createBttlSkillRuntime(
+        key === "enemy" ? resolveBttlEnemySkillLoadout() : resolveBttlAllySkillLoadout()
+      );
+    }
+    return ctxBattle.skillRuntime[key];
+  }
+
+  function getBttlActorUniqueSkill(ctxBattle, actorKey){
+    const runtime = getBttlActorSkillRuntime(ctxBattle, actorKey);
+    const fromRuntime = getBttlUniqueSkillById(runtime?.uniqueSkillId);
+    if(fromRuntime){
+      return fromRuntime;
+    }
+    const loadout = actorKey === "enemy"
+      ? resolveBttlEnemySkillLoadout()
+      : resolveBttlAllySkillLoadout();
+    return getBttlUniqueSkillById(loadout?.uniqueSkillId);
+  }
+
+  function getBttlFinishGaugeMaxValue(){
+    return Math.max(1000, Math.floor(toNumber(BTTL_FINISH_GAUGE_MAX_MS, 32000)));
+  }
+
+  function getBttlFinishGaugeValue(ctxBattle){
+    if(!ctxBattle) return 0;
+    return Math.max(0, toNumber(ctxBattle.finishGaugeValue, 0));
+  }
+
+  function hasBttlFinishBeenUsed(ctxBattle){
+    if(!ctxBattle) return false;
+    return Boolean(ctxBattle.finishUsed) || toNumber(ctxBattle.finishGaugeValue, 0) === BTTL_FINISH_COOLDOWN_USED_VALUE;
+  }
+
+  function isBttlFinishReady(ctxBattle){
+    if(!ctxBattle || hasBttlFinishBeenUsed(ctxBattle)) return false;
+    return getBttlFinishGaugeValue(ctxBattle) >= getBttlFinishGaugeMaxValue();
+  }
+
+  function getBttlFinishReadyPulse01(nowMs = performance.now()){
+    const now = toNumber(nowMs, performance.now());
+    const periodMs = Math.max(240, Math.floor(toNumber(BTTL_FINISH_READY_FLASH_MS, 720)));
+    const phase = (((now % periodMs) + periodMs) % periodMs) / periodMs;
+    return 0.5 - (Math.cos(phase * Math.PI * 2) * 0.5);
+  }
+
+  function isBttlFinishReadyBadgeVisible(ctxBattle, nowMs = performance.now()){
+    if(!isBttlFinishReady(ctxBattle)) return false;
+    if(isRecord(ctxBattle?.finishSession) || isRecord(ctxBattle?.finishResult)) return false;
+    const pulse = getBttlFinishReadyPulse01(nowMs);
+    return pulse >= 0.42;
+  }
+
+  function getBttlAllyFinisherSkill(ctxBattle){
+    return getBttlActorUniqueSkill(ctxBattle, "ally");
+  }
+
+  function canBttlUseFinisherAtCurrentRange(ctxBattle, skill = null){
+    const finisher = skill || getBttlAllyFinisherSkill(ctxBattle);
+    if(!isRecord(finisher)) return false;
+    const rangeId = normalizeBttlRangeStateId(ctxBattle?.rangeState);
+    const ranges = Array.isArray(finisher.ranges) ? finisher.ranges : [];
+    return ranges.includes(rangeId);
+  }
+
+  function noteBttlFinishNgLog(ctxBattle, text, nowMs = performance.now(), minIntervalMs = 900){
+    if(!ctxBattle) return;
+    const now = toNumber(nowMs, performance.now());
+    const elapsed = now - toNumber(ctxBattle.finishLastNgLogAtMs, 0);
+    if(elapsed < Math.max(0, Math.floor(toNumber(minIntervalMs, 0)))){
+      return;
+    }
+    ctxBattle.finishLastNgLogAtMs = now;
+    pushBttlLog(ctxBattle, text);
+  }
+
+  function getBttlFinishTierArrayValue(list, tier, fallback = 0){
+    const src = Array.isArray(list) ? list : [];
+    if(src.length <= 0) return fallback;
+    const t = clamp(Math.floor(toNumber(tier, 0)), 0, src.length - 1);
+    return toNumber(src[t], fallback);
+  }
+
+  function getBttlActorActiveSupport(ctxBattle, actorKey, nowMs = performance.now()){
+    const runtime = getBttlActorSkillRuntime(ctxBattle, actorKey);
+    const support = isRecord(runtime.activeSupport) ? runtime.activeSupport : null;
+    if(!support) return null;
+    const now = toNumber(nowMs, performance.now());
+    if(now >= toNumber(support.untilMs, 0)){
+      runtime.activeSupport = null;
+      return null;
+    }
+    const skill = getBttlSharedSkillById(support.skillId);
+    if(!skill || skill.type !== BTTL_SKILL_TYPE.SUPPORT){
+      runtime.activeSupport = null;
+      return null;
+    }
+    return support;
+  }
+
+  function getBttlSkillCooldownRemainMs(ctxBattle, actorKey, skillId, nowMs = performance.now()){
+    const runtime = getBttlActorSkillRuntime(ctxBattle, actorKey);
+    const id = String(skillId || "").trim().toLowerCase();
+    if(id.length <= 0) return 0;
+    const untilMs = toNumber(runtime.cooldownUntilBySkillId?.[id], 0);
+    return Math.max(0, untilMs - toNumber(nowMs, performance.now()));
+  }
+
+  function markBttlSkillCooldown(ctxBattle, actorKey, skillId, cooldownMs, nowMs = performance.now()){
+    const runtime = getBttlActorSkillRuntime(ctxBattle, actorKey);
+    const id = String(skillId || "").trim().toLowerCase();
+    if(id.length <= 0) return;
+    const cdMs = Math.max(0, Math.floor(toNumber(cooldownMs, 0)));
+    runtime.cooldownUntilBySkillId[id] = toNumber(nowMs, performance.now()) + cdMs;
+  }
+
+  function pickBttlSharedSkillForActor(ctxBattle, actorKey, nowMs = performance.now()){
+    const runtime = getBttlActorSkillRuntime(ctxBattle, actorKey);
+    const rangeState = normalizeBttlRangeStateId(ctxBattle?.rangeState);
+    const setIds = Array.isArray(runtime.sharedSetIds)
+      ? runtime.sharedSetIds
+      : [];
+    const now = toNumber(nowMs, performance.now());
+    for(let i = 0; i < setIds.length; i++){
+      const id = String(setIds[i] || "").trim().toLowerCase();
+      if(id.length <= 0) continue;
+      const skill = getBttlSharedSkillById(id);
+      if(!skill) continue;
+      const ranges = Array.isArray(skill.ranges) ? skill.ranges : [];
+      if(!ranges.includes(rangeState)) continue;
+      if(getBttlSkillCooldownRemainMs(ctxBattle, actorKey, id, now) > 0) continue;
+      if(skill.type === BTTL_SKILL_TYPE.SUPPORT){
+        const active = getBttlActorActiveSupport(ctxBattle, actorKey, now);
+        if(active && String(active.skillId || "") === id){
+          continue;
+        }
+      }
+      return skill;
+    }
+    return null;
+  }
+
+  function countBttlActorRangeAttackSkills(ctxBattle, actorKey, rangeState, nowMs = performance.now(), requireReady = false){
+    const runtime = getBttlActorSkillRuntime(ctxBattle, actorKey);
+    const rangeId = normalizeBttlRangeStateId(rangeState);
+    const setIds = Array.isArray(runtime.sharedSetIds) ? runtime.sharedSetIds : [];
+    let count = 0;
+    for(let i = 0; i < setIds.length; i++){
+      const id = String(setIds[i] || "").trim().toLowerCase();
+      if(id.length <= 0) continue;
+      const skill = getBttlSharedSkillById(id);
+      if(!skill || skill.type !== BTTL_SKILL_TYPE.ATTACK) continue;
+      if(!Array.isArray(skill.ranges) || !skill.ranges.includes(rangeId)) continue;
+      if(requireReady && getBttlSkillCooldownRemainMs(ctxBattle, actorKey, id, nowMs) > 0){
+        continue;
+      }
+      count += 1;
+    }
+    return count;
+  }
+
+  function getBttlSkillLogPrefix(actorKey){
+    return actorKey === "enemy" ? "EN" : "AL";
+  }
+
+  function applyBttlSupportSkill(ctxBattle, actorKey, skill, nowMs = performance.now()){
+    if(!ctxBattle || !skill || skill.type !== BTTL_SKILL_TYPE.SUPPORT) return false;
+    const runtime = getBttlActorSkillRuntime(ctxBattle, actorKey);
+    const now = toNumber(nowMs, performance.now());
+    const durationMs = Math.max(300, Math.floor(toNumber(skill.durationMs, 1800)));
+    runtime.activeSupport = {
+      skillId: skill.id,
+      startedAtMs: now,
+      untilMs: now + durationMs,
+      intervalMult: clamp(toNumber(skill.intervalMult, 1), 0.65, 1.4),
+      hitChanceAdj: clamp(toNumber(skill.hitChanceAdj, 0), -0.20, 0.30),
+      damageTakenMult: clamp(toNumber(skill.damageTakenMult, 1), 0.55, 1.8),
+      breakTakenMult: clamp(toNumber(skill.breakTakenMult, 1), 0.55, 1.8),
+    };
+    runtime.lastUsedSkillId = skill.id;
+    runtime.lastUsedAtMs = now;
+    markBttlSkillCooldown(ctxBattle, actorKey, skill.id, toNumber(skill.cooldownMs, 1800), now);
+    pushBttlLog(ctxBattle, `${getBttlSkillLogPrefix(actorKey)} SUP ${skill.label}`);
+    return true;
+  }
+
+  function noteBttlNoAttackSkillLog(ctxBattle, actorKey, nowMs = performance.now()){
+    if(!ctxBattle) return;
+    const runtime = getBttlActorSkillRuntime(ctxBattle, actorKey);
+    const now = toNumber(nowMs, performance.now());
+    const elapsed = now - toNumber(runtime.lastNoSkillLogAtMs, 0);
+    if(elapsed < 1400){
+      return;
+    }
+    runtime.lastNoSkillLogAtMs = now;
+    pushBttlLog(ctxBattle, `${getBttlSkillLogPrefix(actorKey)} NO ATK`);
   }
 
   function normalizeBttlSignalCommand(value){
@@ -6872,6 +11843,17 @@
     return "long";
   }
 
+  function getBttlStableRangeIntentByState(rangeState){
+    const id = normalizeBttlRangeStateId(rangeState);
+    if(id === "long"){
+      return BTTL_RANGE_INTENT.APPROACH;
+    }
+    if(id === "short"){
+      return BTTL_RANGE_INTENT.RETREAT;
+    }
+    return BTTL_RANGE_INTENT.HOLD;
+  }
+
   function getBttlRangeStateWithHysteresis(distance, previousState){
     const d = clamp(toNumber(distance, 1), 0, 1);
     const prev = String(previousState || "").trim().toLowerCase();
@@ -6917,7 +11899,7 @@
     return getBttlRangeStateByDistance(d);
   }
 
-  function getBttlEnemyRangeIntentByAction(actionId){
+  function getBttlEnemyRangeIntentByAction(actionId, rangeState = "mid"){
     const id = getBttlEnemyActionId(actionId);
     if(id === BTTL_ENEMY_ACTION.PRESS){
       return BTTL_RANGE_INTENT.APPROACH;
@@ -6925,10 +11907,10 @@
     if(id === BTTL_ENEMY_ACTION.DEFEND){
       return BTTL_RANGE_INTENT.RETREAT;
     }
-    return BTTL_RANGE_INTENT.HOLD;
+    return getBttlStableRangeIntentByState(rangeState);
   }
 
-  function getBttlAllyRangeIntentByAction(actionId){
+  function getBttlAllyRangeIntentByAction(actionId, rangeState = "mid"){
     const id = getBttlAllyActionId(actionId);
     if(id === BTTL_ALLY_ACTION.PRESS){
       return BTTL_RANGE_INTENT.APPROACH;
@@ -6936,21 +11918,133 @@
     if(id === BTTL_ALLY_ACTION.DEFEND || id === BTTL_ALLY_ACTION.EVADE){
       return BTTL_RANGE_INTENT.RETREAT;
     }
+    return getBttlStableRangeIntentByState(rangeState);
+  }
+
+  function getBttlRangeStateIndex(rangeState){
+    const id = normalizeBttlRangeStateId(rangeState);
+    if(id === "short") return 0;
+    if(id === "long") return 2;
+    return 1;
+  }
+
+  function getBttlRangeStateByIndex(index){
+    const idx = clamp(Math.floor(toNumber(index, 1)), 0, 2);
+    if(idx <= 0) return "short";
+    if(idx >= 2) return "long";
+    return "mid";
+  }
+
+  function getBttlSkillRangeStateList(ranges){
+    const src = Array.isArray(ranges) ? ranges : [];
+    const out = [];
+    for(let i = 0; i < src.length; i++){
+      const id = normalizeBttlRangeStateId(src[i]);
+      if(id !== "short" && id !== "mid" && id !== "long"){
+        continue;
+      }
+      if(!out.includes(id)){
+        out.push(id);
+      }
+    }
+    return out;
+  }
+
+  function getBttlNearestRangeState(currentRangeState, candidates){
+    const list = Array.isArray(candidates) ? candidates : [];
+    if(list.length <= 0){
+      return normalizeBttlRangeStateId(currentRangeState);
+    }
+    const currentIdx = getBttlRangeStateIndex(currentRangeState);
+    let bestId = normalizeBttlRangeStateId(list[0]);
+    let bestDist = Number.POSITIVE_INFINITY;
+    for(let i = 0; i < list.length; i++){
+      const id = normalizeBttlRangeStateId(list[i]);
+      const dist = Math.abs(getBttlRangeStateIndex(id) - currentIdx);
+      if(dist < bestDist){
+        bestDist = dist;
+        bestId = id;
+      }else if(dist === bestDist){
+        // Tie-break toward MID when equal, to avoid jitter.
+        if(id === "mid"){
+          bestId = id;
+        }
+      }
+    }
+    return bestId;
+  }
+
+  function getBttlPredictedRangeStateByIntent(rangeState, intentId){
+    const currentIdx = getBttlRangeStateIndex(rangeState);
+    const intent = normalizeBttlRangeIntent(intentId);
+    if(intent === BTTL_RANGE_INTENT.APPROACH){
+      return getBttlRangeStateByIndex(currentIdx - 1);
+    }
+    if(intent === BTTL_RANGE_INTENT.RETREAT){
+      return getBttlRangeStateByIndex(currentIdx + 1);
+    }
+    return getBttlRangeStateByIndex(currentIdx);
+  }
+
+  function getBttlFinisherSeekIntent(ctxBattle, rangeState = "mid"){
+    if(!ctxBattle || !isBttlFinishReady(ctxBattle)) return "";
+    const finisher = getBttlAllyFinisherSkill(ctxBattle);
+    if(!isRecord(finisher)) return "";
+    const allowedRanges = getBttlSkillRangeStateList(finisher.ranges);
+    if(allowedRanges.length <= 0) return "";
+    const current = normalizeBttlRangeStateId(rangeState);
+    if(allowedRanges.includes(current)){
+      return BTTL_RANGE_INTENT.HOLD;
+    }
+    const target = getBttlNearestRangeState(current, allowedRanges);
+    const currentIdx = getBttlRangeStateIndex(current);
+    const targetIdx = getBttlRangeStateIndex(target);
+    if(targetIdx < currentIdx){
+      return BTTL_RANGE_INTENT.APPROACH;
+    }
+    if(targetIdx > currentIdx){
+      return BTTL_RANGE_INTENT.RETREAT;
+    }
     return BTTL_RANGE_INTENT.HOLD;
   }
 
+  function getBttlAllyRangeIntent(ctxBattle, actionId, rangeState = "mid", nowMs = performance.now()){
+    const currentRange = normalizeBttlRangeStateId(rangeState);
+    const actionIntent = normalizeBttlRangeIntent(getBttlAllyRangeIntentByAction(actionId, currentRange));
+    if(!ctxBattle || !isBttlFinishReady(ctxBattle)){
+      return actionIntent;
+    }
+    if(isBttlHeavyReactionWindowActive(ctxBattle, nowMs)){
+      return actionIntent;
+    }
+    const finisher = getBttlAllyFinisherSkill(ctxBattle);
+    const allowedRanges = getBttlSkillRangeStateList(finisher?.ranges);
+    if(allowedRanges.length <= 0){
+      return actionIntent;
+    }
+    if(!allowedRanges.includes(currentRange)){
+      const seekIntent = getBttlFinisherSeekIntent(ctxBattle, currentRange);
+      return seekIntent.length > 0 ? seekIntent : actionIntent;
+    }
+    const predicted = getBttlPredictedRangeStateByIntent(currentRange, actionIntent);
+    if(!allowedRanges.includes(predicted)){
+      return BTTL_RANGE_INTENT.HOLD;
+    }
+    return actionIntent;
+  }
+
   function getBttlRangeHeavyBonus(rangeState){
-    const id = String(rangeState || "").trim().toLowerCase();
+    const id = normalizeBttlRangeStateId(rangeState);
     return toNumber(BTTL_RANGE_HEAVY_CHANCE_BONUS[id], 0);
   }
 
   function getBttlRangeIntervalMult(rangeState){
-    const id = String(rangeState || "").trim().toLowerCase();
+    const id = normalizeBttlRangeStateId(rangeState);
     return clamp(toNumber(BTTL_RANGE_INTERVAL_MULT[id], 1), 0.8, 1.3);
   }
 
   function getBttlRangeStateLabel(rangeState){
-    const id = String(rangeState || "").trim().toLowerCase();
+    const id = normalizeBttlRangeStateId(rangeState);
     if(id === "short") return "SHORT";
     if(id === "mid") return "MID";
     return "LONG";
@@ -7047,10 +12141,18 @@
       ctxBattle.rangeState = getBttlRangeStateByDistance(ctxBattle.rangeDistance);
     }
     if(typeof ctxBattle.enemyRangeIntent !== "string" || ctxBattle.enemyRangeIntent.length <= 0){
-      ctxBattle.enemyRangeIntent = getBttlEnemyRangeIntentByAction(getBttlEnemyAiState(ctxBattle, now).currentAction);
+      ctxBattle.enemyRangeIntent = getBttlEnemyRangeIntentByAction(
+        getBttlEnemyAiState(ctxBattle, now).currentAction,
+        ctxBattle.rangeState
+      );
     }
     if(typeof ctxBattle.allyRangeIntent !== "string" || ctxBattle.allyRangeIntent.length <= 0){
-      ctxBattle.allyRangeIntent = getBttlAllyRangeIntentByAction(getBttlAllyAiState(ctxBattle, now).currentAction);
+      ctxBattle.allyRangeIntent = getBttlAllyRangeIntent(
+        ctxBattle,
+        getBttlAllyAiState(ctxBattle, now).currentAction,
+        ctxBattle.rangeState,
+        now
+      );
     }
   }
 
@@ -7060,8 +12162,14 @@
     ensureBttlRangeState(ctxBattle, now);
     const aiEnemy = getBttlEnemyAiState(ctxBattle, now);
     const aiAlly = getBttlAllyAiState(ctxBattle, now);
-    const enemyIntent = normalizeBttlRangeIntent(getBttlEnemyRangeIntentByAction(aiEnemy.currentAction));
-    const allyIntent = normalizeBttlRangeIntent(getBttlAllyRangeIntentByAction(aiAlly.currentAction));
+    const rangeStateNow = normalizeBttlRangeStateId(ctxBattle.rangeState);
+    const enemyIntent = normalizeBttlRangeIntent(getBttlEnemyRangeIntentByAction(aiEnemy.currentAction, rangeStateNow));
+    const allyIntent = normalizeBttlRangeIntent(getBttlAllyRangeIntent(
+      ctxBattle,
+      aiAlly.currentAction,
+      rangeStateNow,
+      now
+    ));
     const phaseStartedAtMs = toNumber(ctxBattle.phaseStartedAtMs, now);
     const canLogIntent = (now - phaseStartedAtMs) >= 480;
     if(enemyIntent !== String(ctxBattle.enemyRangeIntent || "")){
@@ -7219,6 +12327,7 @@
     const allyBuffState = activeSignal
       ? getBttlSignalBuffTone(activeSignal)
       : "NONE";
+    const rangeState = normalizeBttlRangeStateId(ctxBattle?.rangeState);
     return {
       hpRatioEnemy: clamp(enemyHp / enemyMax, 0, 1),
       hpRatioAlly: clamp(allyHp / allyMax, 0, 1),
@@ -7226,6 +12335,10 @@
       recentAllyHitRate: getBttlRecentHitRate(ai.recentAllyShots),
       lastDamageTakenMs: lastDamageAgoMs,
       allyBuffState,
+      rangeState,
+      attackSkillsInRange: countBttlActorRangeAttackSkills(ctxBattle, "enemy", rangeState, nowMs, false),
+      readyAttackSkillsInRange: countBttlActorRangeAttackSkills(ctxBattle, "enemy", rangeState, nowMs, true),
+      currentAction: getBttlEnemyActionId(ai.currentAction),
       cooldowns: {
         holdRemainMs: Math.max(0, toNumber(ai.actionLockedUntilMs, 0) - toNumber(nowMs, performance.now())),
         switchRemainMs: Math.max(0, toNumber(ai.switchCooldownUntilMs, 0) - toNumber(nowMs, performance.now())),
@@ -7249,6 +12362,7 @@
     const now = toNumber(nowMs, performance.now());
     const heavyInboundRemainMs = Math.max(0, toNumber(ctxBattle?.heavyInboundUntilMs, 0) - now);
     const heavyImpactRemainMs = Math.max(0, toNumber(ctxBattle?.heavyImpactAtMs, 0) - now);
+    const rangeState = normalizeBttlRangeStateId(ctxBattle?.rangeState);
     return {
       hpRatioSelf: clamp(allyHp / allyMax, 0, 1),
       hpRatioTarget: clamp(enemyHp / enemyMax, 0, 1),
@@ -7258,11 +12372,32 @@
       pendingTone,
       heavyInboundRemainMs,
       heavyImpactRemainMs,
+      rangeState,
+      attackSkillsInRange: countBttlActorRangeAttackSkills(ctxBattle, "ally", rangeState, nowMs, false),
+      readyAttackSkillsInRange: countBttlActorRangeAttackSkills(ctxBattle, "ally", rangeState, nowMs, true),
+      currentAction: getBttlAllyActionId(ai.currentAction),
       cooldowns: {
         holdRemainMs: Math.max(0, toNumber(ai.actionLockedUntilMs, 0) - toNumber(nowMs, performance.now())),
         switchRemainMs: Math.max(0, toNumber(ai.switchCooldownUntilMs, 0) - toNumber(nowMs, performance.now())),
       },
     };
+  }
+
+  function pickBttlActionWithSwitchMargin(options, currentActionId, defaultActionId, switchMargin = 0){
+    const list = Array.isArray(options) ? options.slice() : [];
+    if(list.length <= 0){
+      return { actionId: defaultActionId, score: 0 };
+    }
+    list.sort((a, b) => toNumber(b?.score, 0) - toNumber(a?.score, 0));
+    const best = list[0];
+    const current = list.find((item) => String(item?.actionId || "") === String(currentActionId || ""));
+    if(current && best && current !== best){
+      const gap = toNumber(best?.score, 0) - toNumber(current?.score, 0);
+      if(gap < Math.max(0, toNumber(switchMargin, 0))){
+        return current;
+      }
+    }
+    return best || { actionId: defaultActionId, score: 0 };
   }
 
   function utilityPolicyDecideEnemyAction(input){
@@ -7272,6 +12407,10 @@
     const allyHit = clamp(toNumber(input?.recentAllyHitRate, 0.5), 0, 1);
     const lastDamageMs = toNumber(input?.lastDamageTakenMs, Infinity);
     const buff = String(input?.allyBuffState || "NONE").toUpperCase();
+    const rangeState = normalizeBttlRangeStateId(input?.rangeState);
+    const attackSkillsInRange = Math.max(0, Math.floor(toNumber(input?.attackSkillsInRange, 0)));
+    const readyAttackSkillsInRange = Math.max(0, Math.floor(toNumber(input?.readyAttackSkillsInRange, 0)));
+    const currentAction = getBttlEnemyActionId(input?.currentAction);
 
     let scorePress =
       ((1 - hpAlly) * 1.25) +
@@ -7283,6 +12422,37 @@
       (allyHit * 0.90) +
       ((lastDamageMs <= 2500) ? 0.46 : 0) -
       ((1 - hpAlly) * 0.42);
+    let scoreStable = 0;
+
+    const pressureLead = clamp(enemyHit - allyHit, -0.45, 0.45);
+    scorePress += pressureLead * 0.44;
+    scoreDefend += (-pressureLead) * 0.30;
+
+    if(rangeState === "long"){
+      scorePress += 0.34;
+      scoreDefend -= 0.26;
+    }else if(rangeState === "short"){
+      scorePress -= 0.30;
+      scoreDefend += 0.30;
+    }else{
+      scorePress += 0.06;
+      scoreDefend += 0.04;
+    }
+
+    if(attackSkillsInRange <= 0){
+      if(rangeState === "long"){
+        scorePress += 0.32;
+      }else if(rangeState === "short"){
+        scoreDefend += 0.34;
+      }else{
+        scoreStable += 0.14;
+      }
+      scorePress -= 0.10;
+    }else if(readyAttackSkillsInRange <= 0){
+      scorePress -= 0.18;
+      scoreDefend += 0.08;
+      scoreStable += 0.10;
+    }
 
     if(buff === "UP"){
       scoreDefend += 0.24;
@@ -7293,15 +12463,35 @@
     }
 
     const tension = Math.abs(scorePress - scoreDefend);
-    const scoreStable = 0.86 - Math.min(0.54, tension * 0.40) + (enemyHit < 0.35 ? 0.15 : 0);
+    scoreStable += 0.86 - Math.min(0.54, tension * 0.40) + (enemyHit < 0.35 ? 0.15 : 0);
+    if(rangeState === "mid"){
+      scoreStable += 0.12;
+    }else if(rangeState === "long"){
+      scoreStable -= 0.08;
+    }else{
+      scoreStable -= 0.06;
+    }
+
+    const stickyBonus = Math.max(0, toNumber(BTTL_ENEMY_AI_CURRENT_ACTION_BONUS, 0.14));
+    if(currentAction === BTTL_ENEMY_ACTION.PRESS){
+      scorePress += stickyBonus;
+    }else if(currentAction === BTTL_ENEMY_ACTION.DEFEND){
+      scoreDefend += stickyBonus;
+    }else{
+      scoreStable += stickyBonus;
+    }
 
     const options = [
       { actionId: BTTL_ENEMY_ACTION.PRESS, score: scorePress },
       { actionId: BTTL_ENEMY_ACTION.STABLE, score: scoreStable },
       { actionId: BTTL_ENEMY_ACTION.DEFEND, score: scoreDefend },
     ];
-    options.sort((a, b) => b.score - a.score);
-    return options[0] || { actionId: BTTL_ENEMY_ACTION.STABLE, score: 0 };
+    return pickBttlActionWithSwitchMargin(
+      options,
+      currentAction,
+      BTTL_ENEMY_ACTION.STABLE,
+      BTTL_ENEMY_AI_SWITCH_MARGIN
+    );
   }
 
   function utilityPolicyDecideAllyAction(input){
@@ -7313,6 +12503,10 @@
     const pendingTone = String(input?.pendingTone || "NONE").toUpperCase();
     const heavyInboundRemainMs = Math.max(0, toNumber(input?.heavyInboundRemainMs, 0));
     const heavyImpactRemainMs = Math.max(0, toNumber(input?.heavyImpactRemainMs, 0));
+    const rangeState = normalizeBttlRangeStateId(input?.rangeState);
+    const attackSkillsInRange = Math.max(0, Math.floor(toNumber(input?.attackSkillsInRange, 0)));
+    const readyAttackSkillsInRange = Math.max(0, Math.floor(toNumber(input?.readyAttackSkillsInRange, 0)));
+    const currentAction = getBttlAllyActionId(input?.currentAction);
 
     let scorePress =
       ((1 - hpTarget) * 1.28) +
@@ -7329,6 +12523,39 @@
       (targetHit * 0.82) +
       ((lastDamageMs <= 2100) ? 0.46 : 0) +
       ((targetHit - selfHit) * 0.30);
+    let scoreStable = 0;
+
+    const pressureLead = clamp(selfHit - targetHit, -0.45, 0.45);
+    scorePress += pressureLead * 0.32;
+    scoreDefend += (-pressureLead) * 0.20;
+    scoreEvade += (-pressureLead) * 0.24;
+
+    if(rangeState === "long"){
+      scorePress += 0.20;
+      scoreDefend -= 0.10;
+      scoreEvade -= 0.08;
+    }else if(rangeState === "short"){
+      scorePress -= 0.20;
+      scoreDefend += 0.18;
+      scoreEvade += 0.20;
+    }
+
+    if(attackSkillsInRange <= 0){
+      if(rangeState === "long"){
+        scorePress += 0.28;
+      }else if(rangeState === "short"){
+        scoreDefend += 0.24;
+        scoreEvade += 0.18;
+      }else{
+        scoreStable += 0.12;
+      }
+      scorePress -= 0.12;
+    }else if(readyAttackSkillsInRange <= 0){
+      scorePress -= 0.16;
+      scoreDefend += 0.06;
+      scoreEvade += 0.06;
+      scoreStable += 0.08;
+    }
 
     if(pendingTone === "UP"){
       scorePress += 0.18;
@@ -7354,7 +12581,23 @@
     }
 
     const spike = Math.max(scorePress, scoreDefend, scoreEvade) - Math.min(scorePress, scoreDefend, scoreEvade);
-    const scoreStable = 0.86 - Math.min(0.48, spike * 0.22) + (selfHit < 0.34 ? 0.14 : 0);
+    scoreStable += 0.86 - Math.min(0.48, spike * 0.22) + (selfHit < 0.34 ? 0.14 : 0);
+    if(rangeState === "mid"){
+      scoreStable += 0.10;
+    }else{
+      scoreStable -= 0.05;
+    }
+
+    const stickyBonus = Math.max(0, toNumber(BTTL_ALLY_AI_CURRENT_ACTION_BONUS, 0.12));
+    if(currentAction === BTTL_ALLY_ACTION.PRESS){
+      scorePress += stickyBonus;
+    }else if(currentAction === BTTL_ALLY_ACTION.DEFEND){
+      scoreDefend += stickyBonus;
+    }else if(currentAction === BTTL_ALLY_ACTION.EVADE){
+      scoreEvade += stickyBonus;
+    }else{
+      scoreStable += stickyBonus;
+    }
 
     const options = [
       { actionId: BTTL_ALLY_ACTION.PRESS, score: scorePress },
@@ -7362,8 +12605,12 @@
       { actionId: BTTL_ALLY_ACTION.DEFEND, score: scoreDefend },
       { actionId: BTTL_ALLY_ACTION.EVADE, score: scoreEvade },
     ];
-    options.sort((a, b) => b.score - a.score);
-    return options[0] || { actionId: BTTL_ALLY_ACTION.STABLE, score: 0 };
+    return pickBttlActionWithSwitchMargin(
+      options,
+      currentAction,
+      BTTL_ALLY_ACTION.STABLE,
+      BTTL_ALLY_AI_SWITCH_MARGIN
+    );
   }
 
   function decideEnemyActionIntent(ctxBattle, nowMs = performance.now()){
@@ -7854,9 +13101,11 @@
     if(proc && !procActive){
       ctxBattle.lastSignalProc = null;
     }
-    // Show only the immediate judge/result badge (e.g. "STB NEAR").
-    // Do not show persistent active buff label (e.g. "STABILIZE") here.
-    const rawText = procActive ? getBttlSignalProcBadgeText(proc) : "";
+    // Show immediate judge/result badge first (e.g. "STB NEAR").
+    // When FINISH is ready, periodically flash "FINISH OK" as a badge.
+    const rawText = procActive
+      ? getBttlSignalProcBadgeText(proc)
+      : (isBttlFinishReadyBadgeVisible(ctxBattle, nowMs) ? BTTL_FINISH_READY_TEXT : "");
     if(rawText.length <= 0) return;
 
     const baseOpt = { scale: 1 };
@@ -7869,7 +13118,8 @@
     const yMin = field.bottomLaneRect.y + 1;
     const yMax = (field.bottomLaneRect.y + field.bottomLaneRect.h - 2) - textH;
     const drawX = Math.round(clamp(allyX - textW - 6, xMin, Math.max(xMin, xMax)));
-    const drawY = Math.round(clamp(allyY - 10, yMin, Math.max(yMin, yMax)));
+    const yOffset = Math.floor(toNumber(BTTL_SIGNAL_BADGE_Y_OFFSET, -6));
+    const drawY = Math.round(clamp(allyY + yOffset, yMin, Math.max(yMin, yMax)));
 
     const mainAlpha = 0.98;
     ctx.save();
@@ -7910,7 +13160,12 @@
     const yMax = (lane.y + lane.h - 2) - textH;
     const spriteSize = Math.max(8, Math.floor(toNumber(spritePx, 16)));
     const drawX = Math.round(clamp(enemyX + spriteSize + 6, xMin, Math.max(xMin, xMax)));
-    const drawY = Math.round(clamp(enemyY + Math.floor((spriteSize - textH) / 2), yMin, Math.max(yMin, yMax)));
+    const yOffset = Math.floor(toNumber(BTTL_ENEMY_DRIVE_BADGE_Y_OFFSET, -8));
+    const drawY = Math.round(clamp(
+      enemyY + Math.floor((spriteSize - textH) / 2) + yOffset,
+      yMin,
+      Math.max(yMin, yMax)
+    ));
 
     ctx.save();
     ctx.fillStyle = "rgba(198,212,192,0.34)";
@@ -8152,6 +13407,11 @@
         signalMult = clamp(toNumber(activeSignal.intervalMult, 1), 0.72, 1.35);
       }
     }
+    let supportMult = 1;
+    const support = getBttlActorActiveSupport(ctxBattle, actorKey, nowMs);
+    if(support){
+      supportMult = clamp(toNumber(support.intervalMult, 1), 0.65, 1.4);
+    }
     const tacticalMult = isEnemy
       ? getBttlEnemyActionIntervalMult(getBttlEnemyAiState(ctxBattle).currentAction)
       : getBttlAllyActionIntervalMult(getBttlAllyAiState(ctxBattle).currentAction);
@@ -8159,7 +13419,7 @@
     const breakMult = Boolean(source?.isBreak)
       ? clamp(toNumber(BTTL_BREAK_INTERVAL_MULT, 1.34), 1, 2.5)
       : 1;
-    const interval = base * sigMult * syncMult * hpMult * signalMult * tacticalMult * rangeMult * breakMult;
+    const interval = base * sigMult * syncMult * hpMult * signalMult * supportMult * tacticalMult * rangeMult * breakMult;
     return clamp(Math.round(interval), BTTL_ATTACK_INTERVAL_MIN_MS, BTTL_ATTACK_INTERVAL_MAX_MS);
   }
 
@@ -8361,6 +13621,12 @@
         }
         damage = Math.max(1, Math.floor(toNumber(reaction.damage, damage)));
       }
+      const supportTakenPenalty = getBttlActorActiveSupport(ctxBattle, targetKey, nowMs);
+      if(supportTakenPenalty){
+        damage = Math.max(1, Math.ceil(
+          damage * clamp(toNumber(supportTakenPenalty.damageTakenMult, 1), 0.55, 1.8)
+        ));
+      }
       const allyOverclockPenalty = (targetKey === "ally")
         ? getBttlActiveOverclock(ctxBattle, nowMs)
         : null;
@@ -8385,6 +13651,11 @@
       pushBttlLog(ctxBattle, getBttlOutcomeLogLine(projectile.owner, true, appliedDamage));
       const breakBaseDamage = hpLocked ? toNumber(dmgResolved.damage, appliedDamage) : appliedDamage;
       let breakGain = getBttlBreakGainByHit(projectile, breakBaseDamage);
+      if(supportTakenPenalty){
+        breakGain = Math.max(0, Math.round(
+          breakGain * clamp(toNumber(supportTakenPenalty.breakTakenMult, 1), 0.55, 1.8)
+        ));
+      }
       if(targetKey === "ally" && allyOverclockPenalty){
         breakGain = Math.max(0, Math.round(
           breakGain * clamp(toNumber(allyOverclockPenalty.breakTakenMult, 1), 1, 3)
@@ -8413,18 +13684,45 @@
     const actorKey = attacker === "ally" ? "ally" : "enemy";
     const targetKey = actorKey === "enemy" ? "ally" : "enemy";
     const isEnemy = actorKey === "enemy";
+    const now = toNumber(nowMs, performance.now());
+    const selectedSkill = pickBttlSharedSkillForActor(ctxBattle, actorKey, now);
+    if(!selectedSkill){
+      noteBttlNoAttackSkillLog(ctxBattle, actorKey, now);
+      return { kind: "none", actorKey };
+    }
+    const skillRuntime = getBttlActorSkillRuntime(ctxBattle, actorKey);
+    skillRuntime.lastUsedSkillId = selectedSkill.id;
+    skillRuntime.lastUsedAtMs = now;
+    markBttlSkillCooldown(
+      ctxBattle,
+      actorKey,
+      selectedSkill.id,
+      Math.max(0, Math.floor(toNumber(selectedSkill.cooldownMs, 0))),
+      now
+    );
+    if(selectedSkill.type === BTTL_SKILL_TYPE.SUPPORT){
+      applyBttlSupportSkill(ctxBattle, actorKey, selectedSkill, now);
+      return { kind: "support", actorKey, skill: selectedSkill };
+    }
     const activeSignal = (!isEnemy) ? getBttlActiveSignalBuff(ctxBattle, nowMs) : null;
+    const activeSupport = getBttlActorActiveSupport(ctxBattle, actorKey, nowMs);
     const hitChanceBase = clamp(
       toNumber(ctxBattle[actorKey]?.hitChance, 0.5),
       BTTL_HIT_MIN,
       BTTL_HIT_MAX
     );
-    const hitChanceAdj = toNumber(activeSignal?.hitChanceAdj, 0);
+    const hitChanceAdj = toNumber(activeSignal?.hitChanceAdj, 0) +
+      toNumber(activeSupport?.hitChanceAdj, 0) +
+      toNumber(selectedSkill?.hitChanceAdj, 0);
     const hitChance = clamp(hitChanceBase + hitChanceAdj, BTTL_HIT_MIN, BTTL_HIT_MAX);
-    const launchHeavy = isEnemy && shouldLaunchEnemyHeavy(ctxBattle, nowMs);
+    const launchHeavy = isEnemy && shouldLaunchEnemyHeavy(ctxBattle, now);
     // Heavy attacks must force contact unless the player resolves the heavy reaction window.
     const hit = launchHeavy ? true : (Math.random() < hitChance);
     let damage = rollBttlDamage(actorKey, ctxBattle);
+    damage = Math.max(1, Math.ceil(
+      (damage * clamp(toNumber(selectedSkill.damageMult, 1), 0.5, 2.5)) +
+      Math.max(0, Math.floor(toNumber(selectedSkill.flatDamageBonus, 0)))
+    ));
     if(launchHeavy){
       damage = Math.max(1, damage + BTTL_HEAVY_DAMAGE_BONUS);
     }
@@ -8436,6 +13734,13 @@
     const launchRangeState = normalizeBttlRangeStateId(ctxBattle?.rangeState);
     projectile.rangeStateAtLaunch = launchRangeState;
     projectile.shortDirect = launchRangeState === "short";
+    projectile.meta = {
+      skillId: selectedSkill.id,
+      skillLabel: selectedSkill.label,
+      skillType: selectedSkill.type,
+      skillBreakMult: clamp(toNumber(selectedSkill.breakMult, 1), 0.5, 2.2),
+    };
+    pushBttlLog(ctxBattle, `${getBttlSkillLogPrefix(actorKey)} SK ${selectedSkill.label}`);
     if(launchHeavy){
       projectile.isHeavy = true;
       projectile.speed = Math.max(24, Math.floor(toNumber(projectile.speed, BTTL_PROJECTILE_SPEED) * BTTL_HEAVY_SPEED_MULT));
@@ -8455,10 +13760,10 @@
       projectile.impactAtMs = estimateProjectileImpactAtMs(projectile, field, nowMs);
     }
     if(launchHeavy){
-      startBttlHeavyReactSession(ctxBattle, projectile, field, nowMs);
+      startBttlHeavyReactSession(ctxBattle, projectile, field, now);
       pushBttlLog(ctxBattle, "HEAVY IN");
     }
-    projectile.meta = activeSignal
+    const signalMeta = activeSignal
       ? {
         cmd: normalizeBttlSignalCommand(activeSignal.cmd),
         tier: clamp(Math.floor(toNumber(activeSignal.tier, 0)), 0, 3),
@@ -8466,10 +13771,16 @@
         intervalMult: toNumber(activeSignal.intervalMult, 1),
       }
       : null;
+    if(signalMeta){
+      projectile.meta = {
+        ...(isRecord(projectile.meta) ? projectile.meta : {}),
+        signal: signalMeta,
+      };
+    }
     const pool = Array.isArray(ctxBattle.projectiles) ? ctxBattle.projectiles : [];
     pool.push(projectile);
     ctxBattle.projectiles = pool;
-    return activeSignal;
+    return { kind: "attack", actorKey, skill: selectedSkill };
   }
 
   function updateBttlRealtimeProjectiles(ctxBattle, nowMs = performance.now(), speedScale = 1){
@@ -8562,6 +13873,167 @@
     setBttlSignalMenuIndex(ctxBattle, ctxBattle.signalMenuIndex);
     ctxBattle.signalSession = null;
     ctxBattle.signalResult = null;
+  }
+
+  function startBttlFinisherGame(ctxBattle, nowMs = performance.now()){
+    if(!ctxBattle) return false;
+    if(Boolean(ctxBattle.signalSession) || Boolean(ctxBattle.signalResult)){
+      return false;
+    }
+    if(Boolean(ctxBattle.finishSession)){
+      return false;
+    }
+    if(hasBttlFinishBeenUsed(ctxBattle)){
+      noteBttlFinishNgLog(ctxBattle, BTTL_FINISH_FAIL_LOG, nowMs, 1200);
+      return false;
+    }
+    if(!isBttlFinishReady(ctxBattle)){
+      noteBttlFinishNgLog(ctxBattle, BTTL_FINISH_FAIL_LOG, nowMs, 1200);
+      return false;
+    }
+    const finisher = getBttlAllyFinisherSkill(ctxBattle);
+    if(!finisher){
+      noteBttlFinishNgLog(ctxBattle, BTTL_FINISH_FAIL_LOG, nowMs, 1200);
+      return false;
+    }
+    if(!canBttlUseFinisherAtCurrentRange(ctxBattle, finisher)){
+      noteBttlFinishNgLog(ctxBattle, BTTL_FINISH_RANGE_NG_LOG, nowMs, 800);
+      return false;
+    }
+    const now = toNumber(nowMs, performance.now());
+    const mode = "boost";
+    const cfg = getTrnModeConfig(mode);
+    const metrics = getBttlSignalGameMetrics(getBttlFieldGeometry());
+    const minBandR = metrics.minR + ((metrics.maxR - metrics.minR) * TRN_MIN_BAND_R_RATIO);
+    const maxBandR = metrics.minR + ((metrics.maxR - metrics.minR) * TRN_MAX_BAND_R_RATIO);
+    const spanR = Math.max(1, maxBandR - minBandR);
+    const innerBiased = Math.random() ** 2;
+    const centerR = minBandR + (innerBiased * spanR);
+    const stabilityMax = toPositiveInt(state.stats?.stabilityMax, 10);
+    const stabilityNow = clamp(toNumber(state.stats?.stability, stabilityMax), 0, stabilityMax);
+    const stabilityRatio = stabilityMax > 0 ? stabilityNow / stabilityMax : 0;
+    const bandMin = Math.max(6, Math.floor(toNumber(cfg.bandWMin, 16) * 0.52));
+    const bandMax = Math.max(bandMin + 2, Math.floor(toNumber(cfg.bandWMax, 30) * 0.54));
+    const bandW = clamp(
+      bandMin + ((bandMax - bandMin) * stabilityRatio),
+      bandMin,
+      bandMax
+    );
+    const ad = clamp(toNumber(state.detailed?.adIntegrity, 100), 0, 100);
+    const signal = clamp(toNumber(state.detailed?.signalQuality, 100), 0, 100);
+    const syncRate = resolveSyncRate(ad, signal);
+    const critChance = clamp(
+      toNumber(cfg.critChanceBase, 0.05) + ((syncRate / 100) * toNumber(cfg.critChanceBySync, 0.1)),
+      0.04,
+      toNumber(cfg.critChanceMax, 0.35)
+    );
+    const critEnabled = Math.random() < critChance;
+    const critW = clamp(
+      Math.round(Math.min(toNumber(cfg.critW, 4), Math.max(2, bandW - 2))),
+      2,
+      Math.max(2, bandW)
+    );
+    clearBttlSignalSuccessFx(ctxBattle);
+    ctxBattle.signalFxBadShakeUntilMs = 0;
+    ctxBattle.signalFxBadShakeDir = 0;
+    ctxBattle.finishSession = {
+      skillId: String(finisher.id || "").trim().toLowerCase(),
+      skillLabel: String(finisher.label || "FINISH").trim(),
+      startedAtMs: now,
+      loopMs: trnLoopMsFromBpm(cfg.bpm, 375),
+      minR: metrics.minR,
+      maxR: metrics.maxR,
+      centerR,
+      bandW,
+      critEnabled,
+      critW,
+      nearMargin: Math.max(1, Math.floor(toNumber(cfg.nearMargin, TRN_BASE_NEAR_MARGIN) * 0.8)),
+      internalP: getTrnInternalSuccessBase(mode),
+      wasInBand: false,
+      wasInCrit: false,
+      bandHitFlashUntilMs: 0,
+      critHitFlashUntilMs: 0,
+    };
+    ctxBattle.finishResult = null;
+    ctxBattle.rightPaneMode = BTTL_RIGHTPANE_MODE.FINISH_GAME;
+    pushBttlLog(ctxBattle, BTTL_FINISH_ACTIVATE_LOG);
+    return true;
+  }
+
+  function finishBttlFinisherGame(ctxBattle, forcedTier = null, nowMs = performance.now(), options = null){
+    if(!ctxBattle || !ctxBattle.finishSession) return false;
+    const session = ctxBattle.finishSession;
+    const now = toNumber(nowMs, performance.now());
+    const currentR = getBttlSignalCurrentRadius(session, now);
+    const gameTier = forcedTier || getTrnGameTier(session, currentR);
+    const internalRoll = Math.random() < clamp(toNumber(session.internalP, 0.5), 0, 1);
+    const finalTier = resolveTrnFinalTier(gameTier, internalRoll);
+    const timeout = Boolean(options?.timeout);
+    const gradeRaw = resolveTrnFeedbackGrade(finalTier, timeout);
+    const grade = gradeRaw === "TIMEOUT" ? "BAD" : gradeRaw;
+    const tier = getBttlSignalTierFromGrade(grade);
+    const finisher = getBttlUniqueSkillById(session.skillId) || getBttlAllyFinisherSkill(ctxBattle);
+    const baseDamage = Math.max(1, Math.floor(getBttlFinishTierArrayValue(finisher?.baseDamageByTier, tier, 6)));
+    const breakBonus = Math.max(0, Math.floor(getBttlFinishTierArrayValue(finisher?.breakBonusByTier, tier, 10)));
+    const hitAdjByTier = toNumber(getBttlFinishTierArrayValue(finisher?.hitChanceAdjByTier, tier, 0), 0);
+    const activeSignal = getBttlActiveSignalBuff(ctxBattle, now);
+    const activeSupport = getBttlActorActiveSupport(ctxBattle, "ally", now);
+    const hitChanceBase = clamp(
+      toNumber(ctxBattle.ally?.hitChance, 0.5),
+      BTTL_HIT_MIN,
+      BTTL_HIT_MAX
+    );
+    const hitChanceAdj = hitAdjByTier +
+      toNumber(activeSignal?.hitChanceAdj, 0) +
+      toNumber(activeSupport?.hitChanceAdj, 0);
+    const hitChance = clamp(hitChanceBase + hitChanceAdj, BTTL_HIT_MIN, BTTL_HIT_MAX);
+    const hit = Math.random() < hitChance;
+    const randomBonus = Math.max(0, Math.floor(rollBttlDamage("ally", ctxBattle) * 0.6));
+    const resolvedDamage = Math.max(1, baseDamage + randomBonus);
+    const field = getBttlFieldGeometry();
+    const projectile = createBttlProjectile("ally", field, ctxBattle);
+    projectile.target = "enemy";
+    projectile.willHit = hit;
+    projectile.damage = resolvedDamage;
+    const launchRangeState = normalizeBttlRangeStateId(ctxBattle?.rangeState);
+    projectile.rangeStateAtLaunch = launchRangeState;
+    projectile.shortDirect = launchRangeState === "short";
+    projectile.meta = {
+      skillId: String(finisher?.id || session.skillId || "").trim().toLowerCase(),
+      skillLabel: String(finisher?.label || session.skillLabel || "FINISH").trim(),
+      skillType: BTTL_SKILL_TYPE.FINISH,
+      skillBreakMult: clamp(1 + (breakBonus / 20), 0.8, 3.0),
+      finishTier: tier,
+      finishGrade: grade,
+    };
+    if(projectile.shortDirect){
+      startBttlShortLunge(ctxBattle, "ally", now);
+      projectile.impactAtMs = now + Math.max(40, Math.floor(toNumber(BTTL_SHORT_DIRECT_IMPACT_DELAY_MS, 110)));
+    }else{
+      projectile.impactAtMs = estimateProjectileImpactAtMs(projectile, field, now);
+    }
+    const pool = Array.isArray(ctxBattle.projectiles) ? ctxBattle.projectiles : [];
+    pool.push(projectile);
+    ctxBattle.projectiles = pool;
+    ctxBattle.finishGaugeValue = BTTL_FINISH_COOLDOWN_USED_VALUE;
+    ctxBattle.finishUsed = true;
+    ctxBattle.finishResult = {
+      skillId: projectile.meta.skillId,
+      skillLabel: projectile.meta.skillLabel,
+      grade,
+      tier,
+      hitChance,
+      willHit: hit,
+      damage: resolvedDamage,
+      untilMs: now + BTTL_FINISH_RESULT_HOLD_MS,
+    };
+    ctxBattle.finishSession = null;
+    ctxBattle.rightPaneMode = BTTL_RIGHTPANE_MODE.FINISH_GAME;
+    pushBttlLog(
+      ctxBattle,
+      `AL FIN ${String(projectile.meta.skillLabel || "FINISH")} ${getBttlSignalGradeShort(grade)}`
+    );
+    return true;
   }
 
   function startBttlSignalGame(ctxBattle, cmd, nowMs = performance.now()){
@@ -8747,6 +14219,8 @@
     const ad = clamp(toNumber(state.detailed?.adIntegrity, 100), 0, 100);
     const sig = clamp(toNumber(state.detailed?.signalQuality, 100), 0, 100);
     const sync = resolveSyncRate(ad, sig);
+    const allySkillLoadout = resolveBttlAllySkillLoadout();
+    const enemySkillLoadout = resolveBttlEnemySkillLoadout();
     const allyHp = Math.max(0, hpNow);
     const enemyHp = clamp(
       Math.round(Math.max(1, allyHp) * BTTL_ENEMY_HP_RATIO),
@@ -8809,6 +14283,16 @@
       heavyImpactAtMs: 0,
       heavyIncomingActionHint: "",
       heavyReactSession: null,
+      skillRuntime: {
+        ally: createBttlSkillRuntime(allySkillLoadout),
+        enemy: createBttlSkillRuntime(enemySkillLoadout),
+      },
+      finishGaugeValue: 0,
+      finishReadyAtMs: 0,
+      finishUsed: false,
+      finishSession: null,
+      finishResult: null,
+      finishLastNgLogAtMs: 0,
       enemyAi: createBttlEnemyAiState(nowMs),
       allyAi: createBttlAllyAiState(nowMs),
       enemyHeavyReadyAtMs: toNumber(nowMs, performance.now()) + Math.round(getBttlHeavyTuning().cooldownMs * getBttlHeavyTuning().initialReadyRatio),
@@ -8919,6 +14403,8 @@
     ctxBattle.projectiles = [];
     ctxBattle.signalSession = null;
     ctxBattle.signalResult = null;
+    ctxBattle.finishSession = null;
+    ctxBattle.finishResult = null;
     ctxBattle.lastSignalProc = null;
     ctxBattle.lastEnemyDriveProc = null;
     clearBttlSignalBuffState(ctxBattle);
@@ -9036,6 +14522,18 @@
       const heavyWindowActive = isBttlHeavyReactionWindowActive(ctxBattle, nowMs);
       const timeScale = heavyWindowActive ? BTTL_HEAVY_REACT_SLOW_SCALE : 1;
 
+      if(!hasBttlFinishBeenUsed(ctxBattle) && !ctxBattle.finishSession){
+        const gaugeMax = getBttlFinishGaugeMaxValue();
+        const prevGauge = clamp(toNumber(ctxBattle.finishGaugeValue, 0), 0, gaugeMax);
+        const gainPerSec = Math.max(0, toNumber(BTTL_FINISH_GAUGE_GAIN_PER_SEC, 1000));
+        const gain = (turnDeltaMs * timeScale) * (gainPerSec / 1000);
+        const nextGauge = clamp(prevGauge + gain, 0, gaugeMax);
+        ctxBattle.finishGaugeValue = nextGauge;
+        if(prevGauge < gaugeMax && nextGauge >= gaugeMax){
+          ctxBattle.finishReadyAtMs = toNumber(nowMs, performance.now());
+        }
+      }
+
       const paneMode = String(ctxBattle.rightPaneMode || BTTL_RIGHTPANE_MODE.SIGNAL_MENU);
       if(paneMode === BTTL_RIGHTPANE_MODE.SIGNAL_GAME){
         if(ctxBattle.signalSession){
@@ -9058,6 +14556,27 @@
             clearBttlSignalSuccessFx(ctxBattle);
             ctxBattle.signalFxBadShakeUntilMs = 0;
             ctxBattle.signalFxBadShakeDir = 0;
+            ctxBattle.rightPaneMode = BTTL_RIGHTPANE_MODE.SIGNAL_MENU;
+          }
+        }
+      }else if(paneMode === BTTL_RIGHTPANE_MODE.FINISH_GAME){
+        if(ctxBattle.finishSession){
+          if(heavyWindowActive){
+            const delayMs = turnDeltaMs * (1 - timeScale);
+            ctxBattle.finishSession.startedAtMs = toNumber(ctxBattle.finishSession.startedAtMs, nowMs) + delayMs;
+          }
+          const elapsed = nowMs - toNumber(ctxBattle.finishSession.startedAtMs, nowMs);
+          if(elapsed >= BTTL_FINISH_GAME_MAX_MS){
+            finishBttlFinisherGame(ctxBattle, "FAIL", nowMs, { timeout: true });
+          }
+        }else{
+          const holdUntil = toNumber(ctxBattle.finishResult?.untilMs, 0);
+          if(heavyWindowActive && holdUntil > 0){
+            const delayMs = turnDeltaMs * (1 - timeScale);
+            ctxBattle.finishResult.untilMs = holdUntil + delayMs;
+          }
+          if(holdUntil > 0 && nowMs >= holdUntil){
+            ctxBattle.finishResult = null;
             ctxBattle.rightPaneMode = BTTL_RIGHTPANE_MODE.SIGNAL_MENU;
           }
         }
@@ -9121,6 +14640,8 @@
       // Fallback for old state data: immediately return to live battle loop.
       ctxBattle.signalSession = null;
       ctxBattle.signalResult = null;
+      ctxBattle.finishSession = null;
+      ctxBattle.finishResult = null;
       if(String(ctxBattle.rightPaneMode || "") === BTTL_RIGHTPANE_MODE.SIGNAL_GAME){
         ctxBattle.rightPaneMode = BTTL_RIGHTPANE_MODE.SIGNAL_MENU;
       }
@@ -9235,6 +14756,18 @@
       out = "敵BREAK回復";
     }else if(base === "AL RECOVER"){
       out = "味方BREAK回復";
+    }else if(base === "AL NO ATK"){
+      out = "攻撃スキルが合わない";
+    }else if(base === "EN NO ATK"){
+      out = "敵の攻撃は不発";
+    }else if(base === BTTL_FINISH_READY_TEXT){
+      out = "FINISH OK";
+    }else if(base === BTTL_FINISH_ACTIVATE_LOG){
+      out = "必殺起動";
+    }else if(base === BTTL_FINISH_FAIL_LOG){
+      out = "必殺は未解禁";
+    }else if(base === BTTL_FINISH_RANGE_NG_LOG){
+      out = "レンジ不一致で必殺不可";
     }else{
       let m = base.match(/^(?:ENE|EN) DMG (\d+)$/);
       if(m){
@@ -9257,6 +14790,23 @@
             const grade = m[2] === "SUC" ? "SUCCESS" : m[2];
             out = `${getBttlSignalCommandLabelJa(cmd)} ${getBttlSignalGradeJa(grade)}`;
           }else{
+            m = base.match(/^(AL|EN)\s+SK\s+(.+)$/);
+            if(m){
+              out = m[1] === "AL"
+                ? `スキル起動 ${String(m[2] || "").trim()}`
+                : `敵スキル ${String(m[2] || "").trim()}`;
+            }else{
+              m = base.match(/^(AL|EN)\s+SUP\s+(.+)$/);
+              if(m){
+                out = m[1] === "AL"
+                  ? `補助起動 ${String(m[2] || "").trim()}`
+                  : `敵補助 ${String(m[2] || "").trim()}`;
+              }else{
+                m = base.match(/^AL\s+FIN\s+(.+)\s+(BAD|NEAR|OK|SUC)$/);
+                if(m){
+                  const grade = m[2] === "SUC" ? "SUCCESS" : m[2];
+                  out = `必殺 ${String(m[1] || "").trim()} ${getBttlSignalGradeJa(grade)}`;
+                }else{
             if(base === "BST ON"){
               out = "強化同期 起動";
             }else if(base === "STB ON"){
@@ -9267,6 +14817,9 @@
               out = "過駆動 起動";
             }else{
               out = base;
+            }
+                }
+              }
             }
           }
         }
@@ -9392,6 +14945,18 @@
     if(base === "HEAVY IN"){
       return { kind: "alert_heavy", category: "alert", priority: 100 };
     }
+    if(base === BTTL_FINISH_READY_TEXT){
+      return { kind: "signal_cal_ok", category: "signal", priority: 96, text: "FINISH OK。切り札が解禁された。" };
+    }
+    if(base === BTTL_FINISH_ACTIVATE_LOG){
+      return { kind: "signal_bst_ok", category: "signal", priority: 96, text: "必殺同期を開始。" };
+    }
+    if(base === BTTL_FINISH_FAIL_LOG){
+      return { kind: "signal_bad", category: "signal", priority: 86, text: "必殺はまだ使えない。" };
+    }
+    if(base === BTTL_FINISH_RANGE_NG_LOG){
+      return { kind: "range_hold", category: "hint", priority: 88, text: "レンジ不一致。先に間合いを調整。" };
+    }
     if(base === "APPROACH"){
       return { kind: "range_approach", category: "hint", priority: 78 };
     }
@@ -9462,6 +15027,14 @@
     m = base.match(/^(?:ENE|EN) DMG (\d+)$/);
     if(m){
       return { kind: "cause_ene_dmg", category: "cause", priority: 74 };
+    }
+    m = base.match(/^AL\s+FIN\s+(.+)\s+(BAD|NEAR|OK|SUC)$/);
+    if(m){
+      const grade = m[2];
+      if(grade === "BAD" || grade === "NEAR"){
+        return { kind: "signal_bad", category: "signal", priority: 90, text: "必殺は発動したが精度が低い。" };
+      }
+      return { kind: "signal_bst_ok", category: "signal", priority: 94, text: "必殺同期が噛み合った。" };
     }
     m = base.match(/^(BST|STB|CAL|OVC)\s+(BAD|NEAR|OK|SUC)$/);
     if(m){
@@ -9581,6 +15154,45 @@
 
   function getBttlBottomNarrativeLines(ctxBattle, paneMode, nowMs = performance.now()){
     const mode = String(paneMode || "");
+    if(mode === BTTL_RIGHTPANE_MODE.FINISH_GAME){
+      if(isBttlHeavyReactionWindowActive(ctxBattle, nowMs)){
+        return [
+          "重攻撃接近  Cで反応",
+          "必殺入力は一時停止",
+        ];
+      }
+      if(ctxBattle?.finishSession){
+        const skill = String(ctxBattle.finishSession.skillLabel || "FINISH").trim();
+        return [
+          `${skill} 調整中`,
+          "Aで停止  Bで中断",
+        ];
+      }
+      if(ctxBattle?.finishResult){
+        const gradeJa = getBttlSignalGradeJa(ctxBattle.finishResult.grade);
+        const hitLine = ctxBattle.finishResult.willHit ? "命中判定 有効" : "命中判定 不利";
+        return [
+          `必殺結果 ${gradeJa}`,
+          hitLine,
+        ];
+      }
+      if(hasBttlFinishBeenUsed(ctxBattle)){
+        return [
+          "必殺は使用済み",
+          "この戦闘では再使用不可",
+        ];
+      }
+      if(isBttlFinishReady(ctxBattle)){
+        return [
+          "必殺ゲージ最大",
+          "C短押しで必殺起動",
+        ];
+      }
+      return [
+        "必殺ゲージ蓄積中",
+        "時間経過で解禁",
+      ];
+    }
     if(mode === BTTL_RIGHTPANE_MODE.SIGNAL_GAME){
       if(isBttlHeavyReactionWindowActive(ctxBattle, nowMs)){
         return [
@@ -9670,7 +15282,9 @@
       h: Math.max(8, inner.h - 4),
     });
     if(overlayBottomPane){
-      overlayBottomPane.style.opacity = isBttlHeavyReactionWindowActive(ctxBattle, nowMs) ? "0.62" : "1";
+      const heavyOpacity = isBttlHeavyReactionWindowActive(ctxBattle, nowMs) ? 0.62 : 1;
+      const outroOpacity = getBttlBottomPaneOutroOpacity(ctxBattle, nowMs);
+      overlayBottomPane.style.opacity = (heavyOpacity * outroOpacity).toFixed(3);
     }
   }
 
@@ -9893,6 +15507,119 @@
     ctx.globalAlpha = 1;
     drawBody(false);
     ctx.restore();
+  }
+
+  function drawBttlRightPaneFinishGame(ctxBattle, right, nowMs){
+    const metrics = getBttlSignalGameMetrics(getBttlFieldGeometry());
+    const rightInner = metrics.rightInner;
+    const heavyWindowActive = isBttlHeavyReactionWindowActive(ctxBattle, nowMs);
+    const session = isRecord(ctxBattle?.finishSession) ? ctxBattle.finishSession : null;
+    drawBox(rightInner.x, rightInner.y, rightInner.w, rightInner.h);
+    if(session){
+      drawText(right.x + 8, right.y + 6, "FIN SKILL", { scale: 1 });
+      const ringCx = metrics.cx;
+      const ringCy = metrics.cy;
+      const waveR = getBttlSignalCurrentRadius(session, nowMs);
+      const bandCenterR = clamp(toNumber(session.centerR, metrics.maxR * 0.6), metrics.minR, metrics.maxR);
+      const bandW = toNumber(session.bandW, 8);
+      const critW = toNumber(session.critW, 4);
+      const distToCenter = Math.abs(waveR - bandCenterR);
+      const bandHalf = Math.max(1, bandW / 2);
+      const critHalf = Math.max(1, critW / 2);
+      const inBand = distToCenter <= bandHalf;
+      const inCrit = session.critEnabled && distToCenter <= critHalf;
+      const prevInBand = Boolean(session.wasInBand);
+      const prevInCrit = Boolean(session.wasInCrit);
+      if(inBand && !prevInBand){
+        session.bandHitFlashUntilMs = nowMs + TRN_BAND_HIT_FLASH_MS;
+      }
+      if(inCrit && !prevInCrit){
+        session.critHitFlashUntilMs = nowMs + TRN_CRIT_HIT_FLASH_MS;
+      }
+      const bandFlashRemain = toNumber(session.bandHitFlashUntilMs, 0) - nowMs;
+      const critFlashRemain = toNumber(session.critHitFlashUntilMs, 0) - nowMs;
+      const bandFlashActive = bandFlashRemain > 0;
+      const critFlashActive = critFlashRemain > 0;
+      session.wasInBand = inBand;
+      session.wasInCrit = inCrit;
+
+      let bandLineW = Math.max(1, bandW * 0.82);
+      let bandAlpha = 0.09;
+      if(inBand){
+        bandLineW = Math.max(1, bandW * 0.90);
+        bandAlpha = 0.16;
+      }
+      if(bandFlashActive){
+        bandLineW = Math.max(1, bandW * 0.95);
+        bandAlpha = 0.22;
+      }
+      if(inCrit || critFlashActive){
+        bandLineW = Math.max(bandLineW, bandW * 1.00);
+        bandAlpha = Math.max(bandAlpha, critFlashActive ? 0.26 : 0.20);
+      }
+      const critLineW = Math.max(1, critW * (inCrit ? 0.92 : 0.82));
+      const critAlpha = inCrit ? 0.30 : (critFlashActive ? 0.36 : 0.17);
+
+      if(bandFlashActive){
+        const remain01 = clamp(bandFlashRemain / TRN_BAND_HIT_FLASH_MS, 0, 1);
+        const progress01 = 1 - remain01;
+        const expand = 1 - Math.pow(1 - progress01, 3);
+        const fade = 1 - Math.pow(1 - remain01, 3);
+        const pulseR = Math.min(metrics.maxR - 2, bandCenterR + (expand * (TRN_BAND_PULSE_RADIUS_MAX_PX * 0.54)));
+        const pulseAlpha = 0.13 * fade;
+        drawIdealRing(ringCx, ringCy, pulseR + 1, 2, `rgba(14,20,15,${(pulseAlpha * 0.45).toFixed(3)})`);
+        drawIdealRing(ringCx, ringCy, pulseR, 1, `rgba(14,20,15,${pulseAlpha.toFixed(3)})`);
+      }
+      if(critFlashActive){
+        const remain01 = clamp(critFlashRemain / TRN_CRIT_HIT_FLASH_MS, 0, 1);
+        const progress01 = 1 - remain01;
+        const expand = 1 - Math.pow(1 - progress01, 3);
+        const fade = 1 - Math.pow(1 - remain01, 3);
+        const pulseR = Math.min(metrics.maxR - 2, bandCenterR + (expand * (TRN_CRIT_PULSE_RADIUS_MAX_PX * 0.60)));
+        const pulseAlpha = 0.18 * fade;
+        drawIdealRing(ringCx, ringCy, pulseR + 1, 2, `rgba(14,20,15,${(pulseAlpha * 0.50).toFixed(3)})`);
+        drawIdealRing(ringCx, ringCy, pulseR, 1, `rgba(14,20,15,${pulseAlpha.toFixed(3)})`);
+      }
+
+      drawIdealRing(ringCx, ringCy, bandCenterR, bandLineW, `rgba(14,20,15,${bandAlpha.toFixed(3)})`);
+      if(session.critEnabled){
+        drawIdealRing(ringCx, ringCy, bandCenterR, critLineW, `rgba(14,20,15,${critAlpha.toFixed(3)})`);
+      }
+      drawDistortedRing(
+        ringCx,
+        ringCy,
+        waveR,
+        1.1,
+        nowMs * 0.007,
+        2,
+        "rgba(14,20,15,0.58)"
+      );
+      drawIdealRing(ringCx, ringCy, metrics.minR, 1, "rgba(14,20,15,0.20)");
+      drawIdealRing(ringCx, ringCy, metrics.maxR, 1, "rgba(14,20,15,0.16)");
+      drawText(metrics.footerRect.x, metrics.footerRect.y + 4, heavyWindowActive ? "C:REACT" : "A:STOP B:BACK", { scale: 1 });
+      return;
+    }
+
+    drawText(right.x + 8, right.y + 6, "FIN RESULT", { scale: 1 });
+    drawIdealRing(metrics.cx, metrics.cy, metrics.minR, 1, "rgba(14,20,15,0.20)");
+    drawIdealRing(metrics.cx, metrics.cy, metrics.maxR, 1, "rgba(14,20,15,0.16)");
+    const result = isRecord(ctxBattle?.finishResult) ? ctxBattle.finishResult : null;
+    if(!result){
+      drawText(
+        rightInner.x + Math.floor(rightInner.w / 2),
+        rightInner.y + Math.floor(rightInner.h / 2) - 4,
+        "---",
+        { align: "center", scale: 1, color: "rgba(14,20,15,0.52)" }
+      );
+      return;
+    }
+    const gradeText = getBttlSignalGradeShort(result.grade);
+    drawText(
+      rightInner.x + Math.floor(rightInner.w / 2),
+      rightInner.y + Math.floor(rightInner.h / 2) - 4,
+      gradeText,
+      { align: "center", scale: 1 }
+    );
   }
 
   function drawBttlWarningTapeBand(frameRect, bandY, direction, elapsedMs){
@@ -10359,17 +16086,32 @@
       hudHint.textContent = "HEAVY IN  C:REACT  B:BACK";
     }else{
       const paneMode = String(ctxBattle.rightPaneMode || BTTL_RIGHTPANE_MODE.SIGNAL_MENU);
-      if(paneMode === BTTL_RIGHTPANE_MODE.SIGNAL_GAME){
+      if(paneMode === BTTL_RIGHTPANE_MODE.FINISH_GAME){
+        if(ctxBattle.finishSession){
+          hudHint.textContent = "FINISH  A:STOP  B:BACK";
+        }else if(ctxBattle.finishResult){
+          hudHint.textContent = "FINISH RESOLVE";
+        }else{
+          hudHint.textContent = isBttlFinishReady(ctxBattle)
+            ? "C:FINISH  B:BACK"
+            : "↑↓ SELECT  A:ENTER  B:BACK";
+        }
+      }else if(paneMode === BTTL_RIGHTPANE_MODE.SIGNAL_GAME){
         hudHint.textContent = "A:STOP  B:BACK";
       }else if(paneMode === BTTL_RIGHTPANE_MODE.SIGNAL_MENU){
         const selectedCmd = getBttlSignalSelectedCommand(ctxBattle);
         const cooldownRemainMs = getBttlSignalCooldownRemainMs(ctxBattle, selectedCmd, nowMs);
         const coolSec = Math.ceil(cooldownRemainMs / 1000);
-        hudHint.textContent = cooldownRemainMs > 0
+        const baseHint = cooldownRemainMs > 0
           ? `COOL ${coolSec}S  B:BACK`
           : "↑↓ SELECT  A:ENTER  B:BACK";
+        hudHint.textContent = isBttlFinishReady(ctxBattle)
+          ? `${baseHint}  C:FINISH`
+          : baseHint;
       }else{
-        hudHint.textContent = "↑↓ SELECT  A:ENTER  B:BACK";
+        hudHint.textContent = isBttlFinishReady(ctxBattle)
+          ? "↑↓ SELECT  A:ENTER  C:FINISH  B:BACK"
+          : "↑↓ SELECT  A:ENTER  B:BACK";
       }
     }
 
@@ -10383,10 +16125,6 @@
       }
     }
 
-    ctx.save();
-    ctx.fillStyle = "rgba(12,18,14,0.14)";
-    ctx.fillRect(frame.x + 1, frame.y + 1, frame.w - 2, frame.h - 2);
-    ctx.restore();
     drawBox(frame.x, frame.y, frame.w, frame.h);
     drawBox(left.x, left.y, left.w, left.h);
     drawBox(right.x, right.y, right.w, right.h);
@@ -10481,7 +16219,7 @@
         Math.floor(toNumber(field.dividerY, field.topLaneRect.y + field.topLaneRect.h) - 11)
       )
     );
-    const enemyBreakPreferredY = Math.round(enemyY + spritePx + 2);
+    const enemyBreakPreferredY = Math.round(enemyY + spritePx + 9);
     const enemyBreakY = clamp(
       enemyBreakPreferredY,
       enemyBreakMinY,
@@ -10521,6 +16259,13 @@
       bottomHpGeom.barW,
       ctxBattle.ally?.sta,
       ctxBattle.ally?.maxSta,
+      { nowMs }
+    );
+    drawBttlFinishGauge(
+      bottomHpGeom.barX,
+      bottomStaY + 5,
+      bottomHpGeom.barW,
+      ctxBattle,
       { nowMs }
     );
     const allyBreakW = clamp(Math.floor(field.bottomLaneRect.w * 0.18), 44, 84);
@@ -10585,7 +16330,9 @@
       h: right.h - 8,
     };
     const rightPaneMode = String(ctxBattle.rightPaneMode || BTTL_RIGHTPANE_MODE.SIGNAL_MENU);
-    if(rightPaneMode === BTTL_RIGHTPANE_MODE.SIGNAL_GAME){
+    if(rightPaneMode === BTTL_RIGHTPANE_MODE.FINISH_GAME){
+      drawBttlRightPaneFinishGame(ctxBattle, right, nowMs);
+    }else if(rightPaneMode === BTTL_RIGHTPANE_MODE.SIGNAL_GAME){
       drawBttlRightPaneSignalGame(ctxBattle, right, nowMs);
     }else{
       drawBttlRightPaneSignalMenu(ctxBattle, right, rightInner);
@@ -10624,6 +16371,10 @@
   function startBttlBattle(options = {}){
     hideOverlayLog();
     setOverlayMode(null);
+    if(isRecord(state.detailed)){
+      resetHealCycle(ensureHealDetailState(state.detailed));
+      saveDetailedState();
+    }
     uiState.bttlResultReveal = null;
     setBttlRevealOverlayVisual(0, "black");
     state.bttl = createBttlContext(performance.now(), options);
@@ -10639,11 +16390,8 @@
     }
     menuDeactivate();
 
-    if(id === "feed"){
-      applyFeed();
-      state.screen = "feed";
-      setOverlayMode("log");
-      saveDetailedState();
+    if(id === "food"){
+      openFoodScreen();
       return;
     }
     if(id === "wc"){ state.screen = "toilet"; return; }
@@ -10676,10 +16424,7 @@
       return;
     }
     if(id === "heal"){
-      applyHeal();
-      state.screen = "heal";
-      setOverlayMode("log");
-      saveDetailedState();
+      openHealScreen();
       return;
     }
     if(id === "stat"){
@@ -10699,6 +16444,7 @@
 
   // ===== input =====
   function onLeft(){
+    if(handleDebugMenuLeft()) return;
     if(state.screen === TRN_MODE_SCREEN){
       cycleTrnMode(-1);
       markCursorMoved();
@@ -10708,6 +16454,19 @@
       return;
     }
     if(state.screen === "status"){
+      const page = setStatPage(uiState.statPage);
+      if(isStatSkillPage(page)){
+        const selected = getCurrentStatSelectedItem();
+        const kind = String(selected?.kind || "");
+        if(
+          isRecord(selected) &&
+          getStatSkillEditingSlot() >= 0 &&
+          (kind === "grid_skill" || kind === "grid_empty")
+        ){
+          moveStatSkillGridCursor(-1, 0);
+          return;
+        }
+      }
       setStatPage(uiState.statPage - 1);
       showOverlayStat();
       markCursorMoved();
@@ -10732,6 +16491,7 @@
     }
   }
   function onRight(){
+    if(handleDebugMenuRight()) return;
     if(state.screen === TRN_MODE_SCREEN){
       cycleTrnMode(1);
       markCursorMoved();
@@ -10741,6 +16501,19 @@
       return;
     }
     if(state.screen === "status"){
+      const page = setStatPage(uiState.statPage);
+      if(isStatSkillPage(page)){
+        const selected = getCurrentStatSelectedItem();
+        const kind = String(selected?.kind || "");
+        if(
+          isRecord(selected) &&
+          getStatSkillEditingSlot() >= 0 &&
+          (kind === "grid_skill" || kind === "grid_empty")
+        ){
+          moveStatSkillGridCursor(1, 0);
+          return;
+        }
+      }
       setStatPage(uiState.statPage + 1);
       showOverlayStat();
       markCursorMoved();
@@ -10765,6 +16538,7 @@
     }
   }
   function onUp(){
+    if(handleDebugMenuUp()) return;
     if(state.screen === "bttl"){
       const ctxBattle = state.bttl;
       if(isRecord(ctxBattle) && isBttlStartIntroActive(ctxBattle, performance.now())){
@@ -10793,7 +16567,47 @@
     if(state.screen === TRN_SCREEN){
       return;
     }
+    if(state.screen === "food"){
+      if(getFoodScreenMode() === FOOD_SCREEN_MODE.SELECT){
+        if(moveFoodCursor(-1)){
+          showOverlayFood();
+          markCursorMoved();
+        }
+      }
+      return;
+    }
+    if(state.screen === "heal"){
+      if(isHealExecutionActive()){
+        return;
+      }
+      if(getHealScreenMode() === HEAL_SCREEN_MODE.SELECT){
+        if(moveHealCursor(-1)){
+          showOverlayHeal();
+          markCursorMoved();
+        }
+      }
+      return;
+    }
     if(state.screen === "status"){
+      const page = setStatPage(uiState.statPage);
+      if(isStatSkillPage(page)){
+        if(getStatSkillEditingSlot() < 0){
+          if(moveStatSkillTopCursor(-1)){
+            return;
+          }
+        }
+        const selected = getCurrentStatSelectedItem();
+        const kind = String(selected?.kind || "");
+        if(
+          isRecord(selected) &&
+          getStatSkillEditingSlot() >= 0 &&
+          (kind === "grid_skill" || kind === "grid_empty")
+        ){
+          if(moveStatSkillGridCursor(0, -1)){
+            return;
+          }
+        }
+      }
       moveStatCursor(-1);
       showOverlayStat();
       markCursorMoved();
@@ -10826,6 +16640,7 @@
     }
   }
   function onDown(){
+    if(handleDebugMenuDown()) return;
     if(state.screen === "bttl"){
       const ctxBattle = state.bttl;
       if(isRecord(ctxBattle) && isBttlStartIntroActive(ctxBattle, performance.now())){
@@ -10854,7 +16669,47 @@
     if(state.screen === TRN_SCREEN){
       return;
     }
+    if(state.screen === "food"){
+      if(getFoodScreenMode() === FOOD_SCREEN_MODE.SELECT){
+        if(moveFoodCursor(1)){
+          showOverlayFood();
+          markCursorMoved();
+        }
+      }
+      return;
+    }
+    if(state.screen === "heal"){
+      if(isHealExecutionActive()){
+        return;
+      }
+      if(getHealScreenMode() === HEAL_SCREEN_MODE.SELECT){
+        if(moveHealCursor(1)){
+          showOverlayHeal();
+          markCursorMoved();
+        }
+      }
+      return;
+    }
     if(state.screen === "status"){
+      const page = setStatPage(uiState.statPage);
+      if(isStatSkillPage(page)){
+        if(getStatSkillEditingSlot() < 0){
+          if(moveStatSkillTopCursor(1)){
+            return;
+          }
+        }
+        const selected = getCurrentStatSelectedItem();
+        const kind = String(selected?.kind || "");
+        if(
+          isRecord(selected) &&
+          getStatSkillEditingSlot() >= 0 &&
+          (kind === "grid_skill" || kind === "grid_empty")
+        ){
+          if(moveStatSkillGridCursor(0, 1)){
+            return;
+          }
+        }
+      }
       moveStatCursor(1);
       showOverlayStat();
       markCursorMoved();
@@ -10888,6 +16743,7 @@
   }
 
   function onA(){
+    if(handleDebugMenuConfirm()) return;
     if(state.screen === TRN_MODE_SCREEN){
       enterTrnPlayScreen(performance.now());
       return;
@@ -10915,6 +16771,65 @@
       closeBttlResultLogToMenu();
       return;
     }
+    if(state.screen === "food"){
+      if(getFoodScreenMode() === FOOD_SCREEN_MODE.RESULT){
+        closeFoodScreenToMenu();
+        return;
+      }
+      const selected = getSelectedFoodItem();
+      if(!selected){
+        uiState.foodWarningMessage = "使用可能なフードがありません。";
+        showOverlayFood();
+        return;
+      }
+      const result = applyFoodById(selected.id);
+      if(!result.success){
+        uiState.foodWarningMessage = "在庫がありません。";
+        showOverlayFood();
+        return;
+      }
+      uiState.foodWarningMessage = "";
+      setFoodScreenMode(FOOD_SCREEN_MODE.RESULT);
+      setFoodResultPayload(buildFoodResultPayload(result.food, result.delta, result.remainingStock));
+      showOverlayFood();
+      markCursorMoved();
+      return;
+    }
+    if(state.screen === "heal"){
+      if(isHealExecutionActive()){
+        return;
+      }
+      if(getHealScreenMode() === HEAL_SCREEN_MODE.RESULT){
+        closeHealScreenToMenu();
+        return;
+      }
+      const selectedAction = getSelectedHealAction();
+      if(!selectedAction){
+        uiState.healWarningMessage = "使用可能な治療がありません。";
+        showOverlayHeal();
+        return;
+      }
+      const availability = getHealActionAvailability(selectedAction, ensureHealDetailState(state.detailed));
+      if(availability.canUse && availability.hasTarget && availability.hasEffect){
+        uiState.healWarningMessage = "";
+        startHealExecutionSession(selectedAction.id, performance.now());
+        showOverlayHeal();
+        markCursorMoved();
+        return;
+      }
+      const result = applyHealActionById(selectedAction.id);
+      if(!result.success){
+        uiState.healWarningMessage = String(result.warning || "実行不可。");
+        showOverlayHeal();
+        return;
+      }
+      uiState.healWarningMessage = "";
+      setHealScreenMode(HEAL_SCREEN_MODE.RESULT);
+      setHealResultPayload(result.payload);
+      showOverlayHeal();
+      markCursorMoved();
+      return;
+    }
     if(state.screen === "bttl"){
       const ctxBattle = state.bttl;
       if(isRecord(ctxBattle)){
@@ -10929,6 +16844,12 @@
           return;
         }
         const paneMode = String(ctxBattle.rightPaneMode || "");
+        if(paneMode === BTTL_RIGHTPANE_MODE.FINISH_GAME){
+          if(ctxBattle.finishSession){
+            finishBttlFinisherGame(ctxBattle, null, nowMs);
+          }
+          return;
+        }
         if(paneMode === BTTL_RIGHTPANE_MODE.SIGNAL_MENU){
           const selected = getBttlSignalSelectedCommand(ctxBattle);
           if(getBttlSignalCooldownRemainMs(ctxBattle, selected, nowMs) > 0){
@@ -10942,6 +16863,18 @@
           return;
         }
       }
+      return;
+    }
+    if(state.screen === "status"){
+      const page = setStatPage(uiState.statPage);
+      if(isStatSkillPage(page)){
+        handleStatSkillPageConfirm();
+        return;
+      }
+      clearStatSkillEditingSlot();
+      menuDeactivate();
+      state.screen = "menu";
+      hideOverlayLog();
       return;
     }
     if(state.screen === "menu"){
@@ -10988,6 +16921,7 @@
   }
 
   function onB(){
+    if(handleDebugMenuBack()) return;
     if(state.screen === TRN_MODE_SCREEN){
       uiState.trnSession = null;
       clearTrnResultBuffer();
@@ -11008,6 +16942,43 @@
     }
     if(state.screen === BTTL_LOG_SCREEN){
       closeBttlResultLogToMenu();
+      return;
+    }
+    if(state.screen === "food"){
+      closeFoodScreenToMenu();
+      return;
+    }
+    if(state.screen === "heal"){
+      if(isHealExecutionActive()){
+        return;
+      }
+      closeHealScreenToMenu();
+      return;
+    }
+    if(state.screen === "status"){
+      const page = setStatPage(uiState.statPage);
+      if(isStatSkillPage(page)){
+        const editingSlot = getStatSkillEditingSlot();
+        if(editingSlot >= 0){
+          const items = getStatItemsForPage(page);
+          const slotItemIndex = findStatSkillSlotItemIndex(items, editingSlot);
+          if(slotItemIndex >= 0){
+            const currentIndex = setStatCursor(page, getStatCursor(page));
+            if(currentIndex !== slotItemIndex){
+              clearStatSkillEditingSlot();
+              setStatCursor(page, slotItemIndex);
+              clearStatSkillWarningMessage();
+              showOverlayStat();
+              markCursorMoved();
+              return;
+            }
+          }
+        }
+      }
+      clearStatSkillEditingSlot();
+      menuDeactivate();
+      state.screen = "menu";
+      hideOverlayLog();
       return;
     }
     if(state.screen === "bttl"){
@@ -11053,6 +17024,38 @@
   }
 
   function onCPress(){
+    if(handleDebugMenuAlt()) return;
+    if(state.screen === "heal" && isHealExecutionActive()){
+      return;
+    }
+    if(state.screen === "status"){
+      const page = setStatPage(uiState.statPage);
+      if(isStatSkillPage(page)){
+        const selected = getCurrentStatSelectedItem();
+        if(
+          isRecord(selected) &&
+          String(selected.kind || "") === "grid_skill" &&
+          String(selected.skillState || "") === "learned" &&
+          Math.floor(toNumber(selected.setSlotIndex, -1)) >= 0
+        ){
+          const skillId = String(selected.skillId || "").trim().toLowerCase();
+          if(skillId.length > 0 && applyStatSkillGridUnset(skillId)){
+            clearStatSkillWarningMessage();
+            showOverlayStat();
+            markCursorMoved();
+            return;
+          }
+        }
+        if(getStatSkillEditingSlot() >= 0){
+          clearStatSkillEditingSlot();
+          clearStatSkillWarningMessage();
+          showOverlayStat();
+          markCursorMoved();
+          return;
+        }
+      }
+      return;
+    }
     if(state.screen === "bttl"){
       const ctxBattle = state.bttl;
       if(isRecord(ctxBattle)){
@@ -11065,7 +17068,9 @@
         }
         if(isBttlHeavyReactionWindowActive(ctxBattle, nowMs)){
           judgeBttlHeavyReactionByInput(ctxBattle, nowMs);
+          return;
         }
+        startBttlFinisherGame(ctxBattle, nowMs);
       }
       return;
     }
@@ -11162,6 +17167,31 @@
   document.addEventListener("keydown", (e) => {
     if(e.repeat) return;
 
+    if(e.key === "Escape"){
+      e.preventDefault();
+      e.stopPropagation();
+      toggleDebugMenu();
+      return;
+    }
+
+    if(isDebugMenuOpen()){
+      if(e.key === "ArrowLeft")  { e.preventDefault(); holdDirPress("left", onLeft); return; }
+      if(e.key === "ArrowRight") { e.preventDefault(); holdDirPress("right", onRight); return; }
+      if(e.key === "ArrowUp")    { e.preventDefault(); holdDirPress("up", onUp); return; }
+      if(e.key === "ArrowDown")  { e.preventDefault(); holdDirPress("down", onDown); return; }
+      if(e.key === "z" || e.key === "Z" || e.key === "Enter"){ e.preventDefault(); onA(); return; }
+      if(e.key === "x" || e.key === "X"){ e.preventDefault(); onB(); return; }
+      if(e.key === " "){ e.preventDefault(); onA(); return; }
+      if((e.key === "c" || e.key === "C") && !e.ctrlKey && !e.metaKey && !e.altKey){
+        e.preventDefault();
+        onCPress();
+        return;
+      }
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+
     if(state.screen === "edit" && state.editor.mode === EDITOR_MODE.EDIT && e.ctrlKey && (e.key === "z" || e.key === "Z")){
       e.preventDefault();
       e.stopPropagation();
@@ -11192,7 +17222,7 @@
     if(e.key === "ArrowDown")  { e.preventDefault(); holdDirPress("down", onDown); }
 
     if(e.key === "z" || e.key === "Z" || e.key === "Enter"){ e.preventDefault(); onA(); }
-    if(e.key === "x" || e.key === "X" || e.key === "Escape"){ e.preventDefault(); onB(); }
+    if(e.key === "x" || e.key === "X"){ e.preventDefault(); onB(); }
     if(e.key === " "){ e.preventDefault(); onA(); }
     if((e.key === "c" || e.key === "C") && !e.ctrlKey && !e.metaKey && !e.altKey){
       e.preventDefault();
@@ -11355,12 +17385,10 @@
     ctx.fillStyle = "#c8d6c2";
     ctx.fillRect(0, 0, W, H);
 
-    if(uiState.overlayMode == null){
-      ctx.save();
-      ctx.fillStyle = "rgba(14,20,15,0.03)";
-      for(let y=0;y<H;y+=3) ctx.fillRect(0, y, W, 1);
-      ctx.restore();
-    }
+    ctx.save();
+    ctx.fillStyle = "rgba(14,20,15,0.03)";
+    for(let y=0;y<H;y+=3) ctx.fillRect(0, y, W, 1);
+    ctx.restore();
   }
 
   function drawFrame(){
@@ -11372,6 +17400,7 @@
     const showCursor = uiCursorShouldShow(nowMs, state.cursorFlashUntilMs);
     const finalizeFrame = () => {
       drawBttlResultRevealOverlay(nowMs);
+      renderDebugMenuOverlay();
     };
     if(hudClock) hudClock.textContent = gameHHMM();
     if(state.screen !== "bttl"){
@@ -11380,12 +17409,14 @@
 
     if(state.screen === TRN_MODE_SCREEN){
       drawTrnModeSelect(view, showCursor, nowMs);
+      drawScreenHeader(TRN_MODE_SCREEN);
       finalizeFrame();
       return;
     }
 
     if(state.screen === TRN_SCREEN){
       drawTrnScreen(view, nowMs);
+      drawScreenHeader(TRN_SCREEN);
       finalizeFrame();
       return;
     }
@@ -11398,7 +17429,7 @@
       const panelW = OVERLAY_LOG_RECT.w;
       const panelH = OVERLAY_LOG_RECT.h;
       drawBox(16, 28, W - 32, H - 44);
-      drawText(24, 38, "DOTMON");
+      drawScreenHeader(TRN_LOG_SCREEN);
       ctx.save();
       ctx.fillStyle = "rgba(200,214,194,0.62)";
       ctx.fillRect(panelX + 1, panelY + 1, panelW - 2, panelH - 2);
@@ -11417,7 +17448,7 @@
       const panelW = OVERLAY_BTTL_RESULT_RECT.w;
       const panelH = OVERLAY_BTTL_RESULT_RECT.h;
       drawBox(16, 28, W - 32, H - 44);
-      drawText(24, 38, "DOTMON");
+      drawScreenHeader(BTTL_LOG_SCREEN);
       ctx.save();
       ctx.fillStyle = "rgba(200,214,194,0.62)";
       ctx.fillRect(panelX + 1, panelY + 1, panelW - 2, panelH - 2);
@@ -11435,8 +17466,7 @@
     }
 
     drawBox(16, 28, W - 32, H - 44);
-    drawText(24, 38, "DOTMON");
-    drawText(W - 90, 38, gameHHMM());
+    drawScreenHeader(state.screen);
 
     // monster position
     const spritePx = SPRITE_SIZE * DOT_SCALE;
@@ -11487,12 +17517,55 @@
     if(state.screen === "status"){
       const page = setStatPage(uiState.statPage);
       hudTitle.textContent = `STAT ${page + 1}/${STAT_PAGE_COUNT}`;
+      if(isStatSkillPage(page)){
+        const editingSlot = getStatSkillEditingSlot();
+        const selected = getCurrentStatSelectedItem();
+        const kind = String(selected?.kind || "");
+        if(kind === "grid_skill"){
+          const stateId = String(selected?.skillState || "");
+          const setSlotIndex = Math.floor(toNumber(selected?.setSlotIndex, -1));
+          if(stateId === "learned"){
+            const setLabel = editingSlot >= 0 ? `A:SET${editingSlot + 1}` : "A:SET";
+            const removeLabel = setSlotIndex >= 0 ? " C:外す" : "";
+            hudHint.textContent = `${setLabel}${removeLabel} B:BACK`;
+          }else{
+            hudHint.textContent = "B:BACK";
+          }
+        }else if(kind === "grid_empty"){
+          hudHint.textContent = "B:BACK";
+        }else if(kind === "slot"){
+          hudHint.textContent = editingSlot >= 0
+            ? `SET ${editingSlot + 1} A:枠確定 C:解除 B:BACK`
+            : "A:SLOT選択 B:BACK";
+        }else{
+          hudHint.textContent = "A:SLOT選択 B:BACK";
+        }
+      }else{
+        hudHint.textContent = "A/B BACK";
+      }
+    }else if(state.screen === "food"){
+      const mode = getFoodScreenMode();
+      const hasStock = getFoodSelectableItems().length > 0;
+      hudTitle.textContent = "FOOD";
+      hudHint.textContent = mode === FOOD_SCREEN_MODE.RESULT
+        ? "A/B BACK"
+        : (hasStock ? "↑↓ SELECT  A:USE  B:BACK" : "B:BACK");
+    }else if(state.screen === "heal"){
+      const mode = getHealScreenMode();
+      hudTitle.textContent = "HEAL";
+      hudHint.textContent = isHealExecutionActive()
+        ? "PROCESSING..."
+        : (mode === HEAL_SCREEN_MODE.RESULT
+        ? "A/B BACK"
+        : "↑↓ SELECT  A:USE  B:BACK");
     }else{
       hudTitle.textContent = state.screen.toUpperCase();
+      hudHint.textContent = "A/B BACK";
     }
-    hudHint.textContent = "A/B BACK";
 
-    const overlayRect = (state.screen === "status") ? OVERLAY_STAT_RECT : OVERLAY_LOG_RECT;
+    const overlayRect = (state.screen === "status" || state.screen === "food" || state.screen === "heal")
+      ? OVERLAY_STAT_RECT
+      : OVERLAY_LOG_RECT;
     const panelX = overlayRect.x;
     const panelY = overlayRect.y;
     const panelW = overlayRect.w;
@@ -11506,6 +17579,17 @@
 
     if(state.screen === "status"){
       showOverlayStat();
+      finalizeFrame();
+      return;
+    }
+    if(state.screen === "food"){
+      showOverlayFood();
+      finalizeFrame();
+      return;
+    }
+    if(state.screen === "heal"){
+      updateHealExecutionSession(nowMs);
+      showOverlayHeal();
       finalizeFrame();
       return;
     }
