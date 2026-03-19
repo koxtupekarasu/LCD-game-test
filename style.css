@@ -127,11 +127,31 @@ body {
   inset: 0;
   pointer-events: none;
   z-index: 2;
+  --overlay-backdrop-header-mask: 0px;
+}
+
+.overlay-backdrop{
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+  opacity: 0.08;
+  object-fit: fill;
+  filter: blur(1.2px);
+  transform: scale(1.01);
+  transform-origin: center center;
+  clip-path: inset(var(--overlay-backdrop-header-mask) 0 0 0);
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
 }
 
 .overlay-log{
   position: absolute;
   pointer-events: none;
+  z-index: 2;
   display: grid;
   grid-template-rows: auto 1fr auto;
   gap: 8px;
@@ -208,6 +228,14 @@ body {
   min-height: 0;
 }
 
+.overlay-log.mode-food .overlay-sleep-page{
+  display: grid;
+  grid-template-rows: minmax(0, 1.42fr) auto;
+  gap: 6px;
+  height: 100%;
+  min-height: 0;
+}
+
 .overlay-log.mode-food .overlay-food-pane{
   border: 1px solid rgba(14, 20, 15, 0.34);
   padding: 6px;
@@ -225,7 +253,14 @@ body {
 
 .overlay-log.mode-food .overlay-heal-top-layout{
   display: grid;
-  grid-template-columns: minmax(0, 34%) minmax(0, 40%) minmax(0, 26%);
+  grid-template-columns: minmax(0, 28%) minmax(0, 40%) minmax(0, 32%);
+  gap: 6px;
+  min-height: 0;
+}
+
+.overlay-log.mode-food .overlay-sleep-top-layout{
+  display: grid;
+  grid-template-columns: minmax(0, 28%) minmax(0, 40%) minmax(0, 32%);
   gap: 6px;
   min-height: 0;
 }
@@ -236,6 +271,180 @@ body {
   min-height: 0;
   overflow: hidden;
   background: rgba(14, 20, 15, 0.03);
+}
+
+.overlay-log.mode-food .overlay-sleep-subpane{
+  border: 1px solid rgba(14, 20, 15, 0.34);
+  padding: 4px;
+  min-height: 0;
+  overflow: hidden;
+  background: rgba(14, 20, 15, 0.03);
+}
+
+.overlay-log.mode-food .overlay-sleep-status-pane{
+  display: grid;
+  align-content: start;
+  row-gap: 16px;
+  padding-top: 8px;
+}
+
+.overlay-log.mode-food .overlay-sleep-status-row{
+  display: grid;
+  row-gap: 7px;
+}
+
+.overlay-log.mode-food .overlay-sleep-status-label{
+  opacity: 0.72;
+  font-size: 1.00em;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.overlay-log.mode-food .overlay-sleep-status-gauge{
+  position: relative;
+  height: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(14, 20, 15, 0.20);
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(14, 20, 15, 0.03),
+      rgba(14, 20, 15, 0.07)
+    );
+}
+
+.overlay-log.mode-food .overlay-sleep-status-fill{
+  position: absolute;
+  top: 1px;
+  bottom: 1px;
+  left: 1px;
+  background:
+    linear-gradient(
+      to right,
+      rgba(14, 20, 15, 0.26),
+      rgba(14, 20, 15, 0.42)
+    );
+}
+
+.overlay-log.mode-food .overlay-sleep-status-fill::after{
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-top: 1px solid rgba(200, 214, 194, 0.12);
+}
+
+.overlay-log.mode-food .overlay-sleep-center-pane{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.overlay-log.mode-food .overlay-sleep-center-slot{
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(14, 20, 15, 0.34);
+  background: transparent;
+}
+
+.overlay-log.mode-food .overlay-sleep-center-slot::after{
+  content: none;
+}
+
+.overlay-log.mode-food .overlay-sleep-ad-canvas,
+.overlay-log.mode-food .overlay-sleep-clock-canvas{
+  width: min(100%, 100%);
+  height: auto;
+  max-height: 100%;
+  aspect-ratio: 1 / 1;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  opacity: 1;
+}
+
+.overlay-log.mode-food .overlay-sleep-curtain-canvas{
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.overlay-log.mode-food .overlay-sleep-zzz{
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  font-size: 0.84em;
+  letter-spacing: 0.08em;
+  opacity: 0.72;
+}
+
+.overlay-log.mode-food .overlay-sleep-forecast-pane{
+  display: grid;
+  align-content: start;
+  row-gap: 14px;
+  padding-top: 8px;
+}
+
+.overlay-log.mode-food .overlay-sleep-forecast-row{
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  column-gap: 14px;
+}
+
+.overlay-log.mode-food .overlay-sleep-forecast-label{
+  opacity: 0.88;
+  font-size: 1.08em;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.overlay-log.mode-food .overlay-sleep-forecast-value{
+  font-size: 1.34em;
+  letter-spacing: 0.10em;
+}
+
+.overlay-log.mode-food .overlay-sleep-light-row{
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  column-gap: 10px;
+  margin-bottom: 4px;
+}
+
+.overlay-log.mode-food .overlay-sleep-light-label{
+  opacity: 0.72;
+  font-size: 0.86em;
+  letter-spacing: 0.04em;
+}
+
+.overlay-log.mode-food .overlay-sleep-light-options{
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.overlay-log.mode-food .overlay-sleep-light-chip{
+  min-width: 34px;
+  padding: 1px 6px 0;
+  border: 1px solid rgba(14, 20, 15, 0.22);
+  opacity: 0.5;
+  text-align: center;
+  cursor: pointer;
+}
+
+.overlay-log.mode-food .overlay-sleep-light-chip.is-active{
+  border-color: rgba(14, 20, 15, 0.62);
+  background: rgba(14, 20, 15, 0.08);
+  opacity: 1;
 }
 
 .overlay-log.mode-food .overlay-heal-wave-pane{
@@ -260,7 +469,7 @@ body {
 
 .overlay-log.mode-food .overlay-heal-wave-head{
   display: grid;
-  grid-template-columns: 1ch 1fr;
+  grid-template-columns: 1ch minmax(0, 1fr) auto;
   column-gap: 4px;
   align-items: baseline;
 }
@@ -268,6 +477,16 @@ body {
 .overlay-log.mode-food .overlay-heal-wave-name{
   white-space: nowrap;
   font-size: 0.86em;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.overlay-log.mode-food .overlay-heal-wave-meta{
+  white-space: nowrap;
+  font-size: 0.70em;
+  opacity: 0.74;
+  justify-self: end;
 }
 
 .overlay-log.mode-food .overlay-heal-wave-track{
@@ -383,36 +602,67 @@ body {
 .overlay-log.mode-food .overlay-heal-preview-wrap{
   display: grid;
   align-content: start;
-  row-gap: 7px;
+  row-gap: 9px;
   width: 100%;
   min-height: 0;
 }
 
 .overlay-log.mode-food .overlay-heal-preview-row{
   display: grid;
-  grid-template-columns: 7ch minmax(0, 1fr) max-content;
-  column-gap: 6px;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  grid-template-areas:
+    "label value"
+    "track track";
+  column-gap: 8px;
+  row-gap: 3px;
   align-items: center;
-  min-height: 1.3em;
+  min-height: 0;
 }
 
 .overlay-log.mode-food .overlay-heal-preview-label{
+  grid-area: label;
   opacity: 0.84;
-  font-size: 0.82em;
+  font-size: 0.84em;
+  line-height: 1;
 }
 
 .overlay-log.mode-food .overlay-heal-preview-value{
-  font-size: 0.82em;
+  grid-area: value;
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: 0.28em;
+  font-size: 0.84em;
   opacity: 0.92;
   text-align: right;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.overlay-log.mode-food .overlay-heal-preview-value-current{
+  opacity: 0.46;
+}
+
+.overlay-log.mode-food .overlay-heal-preview-value-arrow{
+  opacity: 0.70;
+}
+
+.overlay-log.mode-food .overlay-heal-preview-value-next{
+  opacity: 0.98;
 }
 
 .overlay-log.mode-food .overlay-heal-preview-track{
+  grid-area: track;
   position: relative;
-  height: 12px;
+  width: 100%;
+  height: 15px;
   border: 1px solid rgba(14, 20, 15, 0.34);
   background: rgba(14, 20, 15, 0.04);
   overflow: hidden;
+}
+
+.overlay-log.mode-food .overlay-heal-preview-track.is-cost{
+  background: rgba(14, 20, 15, 0.06);
 }
 
 .overlay-log.mode-food .overlay-heal-preview-fill{
@@ -433,17 +683,27 @@ body {
   min-width: 2px;
 }
 
+.overlay-log.mode-food .overlay-heal-preview-fill.overlay-heal-preview-fill-delta.is-cost{
+  background:
+    repeating-linear-gradient(
+      135deg,
+      rgba(14, 20, 15, 0.40) 0 2px,
+      rgba(14, 20, 15, 0.10) 2px 5px
+    );
+}
+
 .overlay-log.mode-food .overlay-heal-preview-levels{
+  grid-area: track;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 3px;
-  min-height: 11px;
+  gap: 4px;
+  min-height: 15px;
 }
 
 .overlay-log.mode-food .overlay-heal-preview-level{
   border: 1px solid rgba(14, 20, 15, 0.34);
   background: rgba(14, 20, 15, 0.04);
-  min-height: 11px;
+  min-height: 15px;
 }
 
 .overlay-log.mode-food .overlay-heal-preview-level.is-current{
@@ -460,11 +720,13 @@ body {
 }
 
 .overlay-log.mode-food .overlay-heal-preview-cost{
+  grid-area: track;
   border-bottom: 1px solid rgba(14, 20, 15, 0.28);
+  width: 100%;
   font-size: 0.82em;
   opacity: 0.84;
   line-height: 1;
-  padding-bottom: 1px;
+  padding: 1px 0 2px;
 }
 
 .overlay-log.mode-food .overlay-food-icon-canvas{
@@ -490,6 +752,14 @@ body {
   padding-bottom: 5px;
 }
 
+.overlay-log.mode-food .overlay-food-pane-bottom.overlay-sleep-pane-bottom{
+  grid-template-rows: auto auto auto;
+  row-gap: 2px;
+  font-size: 0.90em;
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
+
 .overlay-log.mode-food .overlay-heal-pane-bottom .overlay-food-detail-name{
   font-size: 1.02em;
   line-height: 1.02;
@@ -498,8 +768,27 @@ body {
 .overlay-log.mode-food .overlay-heal-pane-bottom .overlay-food-detail-meta,
 .overlay-log.mode-food .overlay-heal-pane-bottom .overlay-food-detail-desc,
 .overlay-log.mode-food .overlay-heal-pane-bottom .overlay-food-warning{
-  font-size: 0.92em;
+  font-size: 0.88em;
   line-height: 1.14;
+}
+
+.overlay-log.mode-food .overlay-sleep-bottom-lead{
+  font-size: 0.98em;
+  line-height: 1.08;
+}
+
+.overlay-log.mode-food .overlay-sleep-bottom-note,
+.overlay-log.mode-food .overlay-sleep-bottom-guide{
+  font-size: 0.88em;
+  line-height: 1.14;
+}
+
+.overlay-log.mode-food .overlay-sleep-bottom-note{
+  opacity: 0.82;
+}
+
+.overlay-log.mode-food .overlay-sleep-bottom-guide{
+  opacity: 0.74;
 }
 
 .overlay-log.mode-food .overlay-food-detail-name{
@@ -571,10 +860,18 @@ body {
   min-height: 0;
 }
 
+.overlay-log.mode-stat .overlay-stat-page.is-skill-page{
+  gap: 3px;
+}
+
 .overlay-log.mode-stat .overlay-stat-main{
   min-height: 0;
   overflow: hidden;
   padding: 1px 2px;
+}
+
+.overlay-log.mode-stat .overlay-stat-page.is-skill-page .overlay-stat-main{
+  padding: 0 1px;
 }
 
 .overlay-log.mode-stat .overlay-stat-grid{
@@ -844,6 +1141,11 @@ body {
   overflow: hidden;
 }
 
+.overlay-log.mode-stat .overlay-stat-page.is-skill-page .overlay-stat-description{
+  min-height: 6.2em;
+  height: 6.2em;
+}
+
 .overlay-log.mode-stat .overlay-stat-description-label{
   opacity: 0.82;
   line-height: 1.05;
@@ -1053,6 +1355,7 @@ body {
 .overlay-bottom{
   position: absolute;
   pointer-events: none;
+  z-index: 3;
   color: rgba(14, 20, 15, 0.90);
   font-family: "PixelMplus12", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
   white-space: pre-line;

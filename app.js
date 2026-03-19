@@ -57,6 +57,28 @@
   const SLEEP_HUNGER_DELTA = 2;
   const SLEEP_STABILITY_GAIN_RATE = 0.10;
   const SLEEP_STABILITY_GAIN_CAP = 2;
+  const SLEEP_STAMINA_RECOVERY_PER_HOUR = 20;
+  const SLEEP_STABILITY_RECOVERY_PER_HOUR = 4;
+  const SLEEP_HUNGER_DELTA_PER_HOUR = 1;
+  const SLEEP_GROGGY_SLEEP_LOCK_MINUTES = 90;
+  const SLEEP_GROGGY_MIN_DURATION_MINUTES = 30;
+  const SLEEP_GROGGY_MAX_DURATION_MINUTES = 90;
+  const SLEEP_GROGGY_MIN_PENALTY_RATIO = 0.05;
+  const SLEEP_GROGGY_MAX_PENALTY_RATIO = 0.30;
+  const SLEEP_EARLY_WAKE_PENALTY_RATIO = 0.10;
+  const SLEEP_CURTAIN_PARTIAL_LEVEL = 0.42;
+  const SLEEP_CURTAIN_TRANSITION_MS = 420;
+  const SLEEP_CURTAIN_SETTLE_MS = 360;
+  const ADV_PHASE = Object.freeze({
+    SEARCH: "search",
+    RESULT: "result",
+  });
+  const ADV_SEARCHING_MS = 1600;
+  const ADV_REWARD_ITEM_IDS = Object.freeze([
+    "patch_tape_i",
+    "stabilizer_amp_i",
+    "purge_filter_i",
+  ]);
   const DEV_ALLOW_ACTIONS_DURING_SLEEP = true;
   const TRN_MODE_SCREEN = "trnmode";
   const TRN_SCREEN = "trn";
@@ -1076,7 +1098,7 @@
     }),
   });
   const DETAIL_STORAGE_KEY = "dotmon_detail_v1";
-  const DETAIL_STATE_VERSION = 2;
+  const DETAIL_STATE_VERSION = 6;
   const STAT_PAGE_COUNT = 4;
   const LAST_DELTA_NONE_TEXT = "なし";
   const FOOD_SCREEN_MODE = Object.freeze({
@@ -1086,6 +1108,10 @@
   const HEAL_SCREEN_MODE = Object.freeze({
     SELECT: "select",
     RESULT: "result",
+  });
+  const SLEEP_LIGHT_SELECTION = Object.freeze({
+    ON: "on",
+    OFF: "off",
   });
   const HEAL_TYPE = Object.freeze({
     PATCH: "patch",
@@ -1102,7 +1128,7 @@
     purge: 2,
   });
   const HEAL_EXECUTION_INSERT_MS = 220;
-  const HEAL_EXECUTION_FLASH_MS = 100;
+  const HEAL_EXECUTION_FLASH_MS = 280;
   const HEAL_EXECUTION_EFFECT_MS = 240;
   const HEAL_EXECUTION_HOLD_MS = 120;
   const HEAL_EXECUTION_RETURN_MS = 140;
@@ -1150,11 +1176,27 @@
       return acc;
     }, {})
   );
+  const ITEM_CATEGORY = Object.freeze({
+    FOOD: "food",
+    HEAL: "heal",
+    MATERIAL: "material",
+    SIGNAL_SUPPORT: "signal_support",
+    KEY: "key",
+  });
+  const ITEM_USE_CONTEXT = Object.freeze({
+    FOOD_MENU: "food_menu",
+    HEAL_MENU: "heal_menu",
+    FIELD: "field",
+    BATTLE: "battle",
+    NONE: "none",
+  });
+  const ITEM_COUNT_INFINITE = -1;
+  const ITEM_COUNT_MAX = 99;
   const FOOD_WEIGHT_MIN = 0;
   const FOOD_WEIGHT_MAX = 99.9;
   const FOOD_DEFAULT_WEIGHT = 5.0;
-  const FOOD_STOCK_INFINITE = -1;
-  const FOOD_STOCK_MAX = 99;
+  const FOOD_STOCK_INFINITE = ITEM_COUNT_INFINITE;
+  const FOOD_STOCK_MAX = ITEM_COUNT_MAX;
   const FOOD_LIST_VISIBLE_ROWS = 4;
   const FOOD_FAMILY_LABELS = Object.freeze({
     meat: "肉系",
@@ -1384,6 +1426,209 @@
       return acc;
     }, {})
   );
+  const ITEM_EXTRA_CATALOG = Object.freeze([
+    Object.freeze({
+      id: "patch_tape_i",
+      label: "リペアパッチ",
+      category: ITEM_CATEGORY.HEAL,
+      subType: "patch",
+      rank: 1,
+      stackable: true,
+      maxStack: ITEM_COUNT_MAX,
+      defaultStock: 0,
+      useContexts: Object.freeze([ITEM_USE_CONTEXT.HEAL_MENU]),
+      effectId: "heal:patch",
+      description: "損傷部の応急補修に使う治療用テープ。",
+    }),
+    Object.freeze({
+      id: "patch_tape_ii",
+      label: "改良リペアパッチ",
+      category: ITEM_CATEGORY.HEAL,
+      subType: "patch",
+      rank: 2,
+      stackable: true,
+      maxStack: ITEM_COUNT_MAX,
+      defaultStock: 0,
+      useContexts: Object.freeze([ITEM_USE_CONTEXT.HEAL_MENU]),
+      effectId: "heal:patch",
+      description: "補修力の高い中位パッチ。",
+    }),
+    Object.freeze({
+      id: "patch_tape_iii",
+      label: "高効率リペアパッチ",
+      category: ITEM_CATEGORY.HEAL,
+      subType: "patch",
+      rank: 3,
+      stackable: true,
+      maxStack: ITEM_COUNT_MAX,
+      defaultStock: 0,
+      useContexts: Object.freeze([ITEM_USE_CONTEXT.HEAL_MENU]),
+      effectId: "heal:patch",
+      description: "重度損傷向けの高位補修パッチ。",
+    }),
+    Object.freeze({
+      id: "stabilizer_amp_i",
+      label: "安定化ユニット",
+      category: ITEM_CATEGORY.HEAL,
+      subType: "stabilize",
+      rank: 1,
+      stackable: true,
+      maxStack: ITEM_COUNT_MAX,
+      defaultStock: 0,
+      useContexts: Object.freeze([ITEM_USE_CONTEXT.HEAL_MENU]),
+      effectId: "heal:stabilize",
+      description: "軽い同期乱れを抑える基礎アンプル。",
+    }),
+    Object.freeze({
+      id: "stabilizer_amp_ii",
+      label: "改良安定化ユニット",
+      category: ITEM_CATEGORY.HEAL,
+      subType: "stabilize",
+      rank: 2,
+      stackable: true,
+      maxStack: ITEM_COUNT_MAX,
+      defaultStock: 0,
+      useContexts: Object.freeze([ITEM_USE_CONTEXT.HEAL_MENU]),
+      effectId: "heal:stabilize",
+      description: "中域のズレへ対応する安定化薬剤。",
+    }),
+    Object.freeze({
+      id: "stabilizer_amp_iii",
+      label: "高効率安定化ユニット",
+      category: ITEM_CATEGORY.HEAL,
+      subType: "stabilize",
+      rank: 3,
+      stackable: true,
+      maxStack: ITEM_COUNT_MAX,
+      defaultStock: 0,
+      useContexts: Object.freeze([ITEM_USE_CONTEXT.HEAL_MENU]),
+      effectId: "heal:stabilize",
+      description: "深い同期崩れを収束させる高位アンプル。",
+    }),
+    Object.freeze({
+      id: "purge_filter_i",
+      label: "ノイズクリーナー",
+      category: ITEM_CATEGORY.HEAL,
+      subType: "purge",
+      rank: 1,
+      stackable: true,
+      maxStack: ITEM_COUNT_MAX,
+      defaultStock: 0,
+      useContexts: Object.freeze([ITEM_USE_CONTEXT.HEAL_MENU]),
+      effectId: "heal:purge",
+      description: "軽度汚染を除去する簡易フィルタ。",
+    }),
+    Object.freeze({
+      id: "purge_filter_ii",
+      label: "改良ノイズクリーナー",
+      category: ITEM_CATEGORY.HEAL,
+      subType: "purge",
+      rank: 2,
+      stackable: true,
+      maxStack: ITEM_COUNT_MAX,
+      defaultStock: 0,
+      useContexts: Object.freeze([ITEM_USE_CONTEXT.HEAL_MENU]),
+      effectId: "heal:purge",
+      description: "異常残留を押し流す中位浄化フィルタ。",
+    }),
+    Object.freeze({
+      id: "purge_filter_iii",
+      label: "高効率ノイズクリーナー",
+      category: ITEM_CATEGORY.HEAL,
+      subType: "purge",
+      rank: 3,
+      stackable: true,
+      maxStack: ITEM_COUNT_MAX,
+      defaultStock: 0,
+      useContexts: Object.freeze([ITEM_USE_CONTEXT.HEAL_MENU]),
+      effectId: "heal:purge",
+      description: "深度汚染の洗浄を想定した高位フィルタ。",
+    }),
+    Object.freeze({
+      id: "material_scrap",
+      label: "スクラップ片",
+      category: ITEM_CATEGORY.MATERIAL,
+      subType: "scrap",
+      rank: 1,
+      stackable: true,
+      maxStack: ITEM_COUNT_MAX,
+      defaultStock: 0,
+      useContexts: Object.freeze([ITEM_USE_CONTEXT.NONE]),
+      effectId: "",
+      description: "加工前の断片素材。各種クラフト用の基礎材。",
+    }),
+    Object.freeze({
+      id: "material_plate",
+      label: "補修プレート",
+      category: ITEM_CATEGORY.MATERIAL,
+      subType: "plate",
+      rank: 2,
+      stackable: true,
+      maxStack: ITEM_COUNT_MAX,
+      defaultStock: 0,
+      useContexts: Object.freeze([ITEM_USE_CONTEXT.NONE]),
+      effectId: "",
+      description: "補修や治療器材の素材になる整形プレート。",
+    }),
+    Object.freeze({
+      id: "signal_probe",
+      label: "信号プローブ",
+      category: ITEM_CATEGORY.SIGNAL_SUPPORT,
+      subType: "probe",
+      rank: 1,
+      stackable: true,
+      maxStack: ITEM_COUNT_MAX,
+      defaultStock: 0,
+      useContexts: Object.freeze([ITEM_USE_CONTEXT.FIELD, ITEM_USE_CONTEXT.BATTLE]),
+      effectId: "",
+      description: "観測や支援用に使う基礎信号プローブ。",
+    }),
+    Object.freeze({
+      id: "signal_modulator",
+      label: "信号モジュレータ",
+      category: ITEM_CATEGORY.SIGNAL_SUPPORT,
+      subType: "modulator",
+      rank: 2,
+      stackable: true,
+      maxStack: ITEM_COUNT_MAX,
+      defaultStock: 0,
+      useContexts: Object.freeze([ITEM_USE_CONTEXT.FIELD, ITEM_USE_CONTEXT.BATTLE]),
+      effectId: "",
+      description: "信号補助系アイテムの中核になる調整器材。",
+    }),
+  ]);
+  const ITEM_CATALOG = Object.freeze([
+    ...FOOD_CATALOG.map((food, index) => {
+      const id = String(food?.id || "").trim().toLowerCase();
+      const defaultStock = normalizeFoodStockCount(FOOD_INITIAL_STOCK_BY_ID[id], 0);
+      return Object.freeze({
+        ...food,
+        category: ITEM_CATEGORY.FOOD,
+        subType: String(food?.family || "").trim().toLowerCase(),
+        stackable: true,
+        maxStack: ITEM_COUNT_MAX,
+        defaultStock,
+        alwaysInfinite: defaultStock === ITEM_COUNT_INFINITE,
+        iconGroup: "food",
+        useContexts: Object.freeze([ITEM_USE_CONTEXT.FOOD_MENU]),
+        effectId: `food:${id}`,
+        sortOrder: index,
+      });
+    }),
+    ...ITEM_EXTRA_CATALOG.map((item, index) => Object.freeze({
+      ...item,
+      sortOrder: FOOD_CATALOG.length + index,
+    })),
+  ]);
+  const ITEM_BY_ID = Object.freeze(
+    ITEM_CATALOG.reduce((acc, item) => {
+      const id = String(item?.id || "").trim().toLowerCase();
+      if(id.length > 0){
+        acc[id] = item;
+      }
+      return acc;
+    }, {})
+  );
   const STAT_DESCRIPTION_TEXT = Object.freeze({
     hp: "現在の耐久値。0になると戦闘不能になる。",
     stamina: "戦術行動の余力。SIGNAL操作などで消費される。",
@@ -1531,11 +1776,16 @@
     foodMode: FOOD_SCREEN_MODE.SELECT,
     foodWarningMessage: "",
     foodResultPayload: null,
+    advSession: null,
+    sleepLightSelection: SLEEP_LIGHT_SELECTION.ON,
+    sleepTransition: null,
     healCursor: 0,
+    healItemCursorByType: { patch: 0, stabilize: 0, purge: 0 },
     healMode: HEAL_SCREEN_MODE.SELECT,
     healWarningMessage: "",
     healResultPayload: null,
     healExecutionSession: null,
+    overlayBackdropDataUrl: "",
     debugMenuOpen: false,
     debugMenuPane: "items",
     debugCategoryCursor: 0,
@@ -1672,9 +1922,59 @@
     overlayLog.style.lineHeight = "1.5";
     const scanThicknessPx = Math.max(1, Math.round(sy));
     const scanStepPx = Math.max(scanThicknessPx + 1, Math.round(sy * 3));
+    const backdropHeaderMaskPx = Math.max(0, Math.round(Math.max(0, rect.y - 8) * sy));
     overlayLog.style.setProperty("--overlay-scanline-thickness", `${scanThicknessPx}px`);
     overlayLog.style.setProperty("--overlay-scanline-step", `${scanStepPx}px`);
     overlayLog.style.setProperty("--overlay-scanline-alpha", "0.03");
+    overlayRoot.style.setProperty("--overlay-backdrop-header-mask", `${backdropHeaderMaskPx}px`);
+  }
+
+  function ensureOverlayBackdropElement(){
+    if(!overlayRoot) return null;
+    let el = document.getElementById("overlayBackdrop");
+    if(!el){
+      el = document.createElement("img");
+      el.id = "overlayBackdrop";
+      el.className = "overlay-backdrop hidden";
+      el.alt = "";
+      if(typeof overlayRoot.prepend === "function"){
+        overlayRoot.prepend(el);
+      }else{
+        overlayRoot.appendChild(el);
+      }
+    }
+    return el;
+  }
+
+  function captureOverlayBackdropSnapshot(){
+    if(!canvas) return "";
+    try{
+      const dataUrl = String(canvas.toDataURL("image/png") || "");
+      uiState.overlayBackdropDataUrl = dataUrl;
+      return dataUrl;
+    }catch(_err){
+      uiState.overlayBackdropDataUrl = "";
+      return "";
+    }
+  }
+
+  function syncOverlayBackdrop(mode = uiState.overlayMode){
+    const el = ensureOverlayBackdropElement();
+    if(!el) return;
+    const nextMode = String(mode || "").toLowerCase();
+    const shouldShow = (
+      (nextMode === "stat" || nextMode === "food") &&
+      typeof uiState.overlayBackdropDataUrl === "string" &&
+      uiState.overlayBackdropDataUrl.length > 0
+    );
+    if(!shouldShow){
+      el.classList.add("hidden");
+      return;
+    }
+    if(el.src !== uiState.overlayBackdropDataUrl){
+      el.src = uiState.overlayBackdropDataUrl;
+    }
+    el.classList.remove("hidden");
   }
 
   function setOverlayMode(mode){
@@ -1924,23 +2224,52 @@
     return setHealAbnormalLevel(detail, key, current + Math.floor(toNumber(delta, 0)));
   }
 
+  function normalizeDebugSleepOverride(next){
+    if(next === true) return true;
+    if(next === false) return false;
+    return null;
+  }
+
+  function cycleDebugSleepOverride(delta = 1){
+    const order = [null, false, true];
+    const current = normalizeDebugSleepOverride(uiState.debugSleepOverride);
+    const currentIndex = order.findIndex((value) => value === current);
+    const baseIndex = currentIndex >= 0 ? currentIndex : 0;
+    const step = delta < 0 ? -1 : 1;
+    const nextIndex = (baseIndex + step + order.length) % order.length;
+    return setDebugSleepFlag(order[nextIndex]);
+  }
+
   function setDebugSleepFlag(next){
     if(!isRecord(state.detailed)){
       state.detailed = createDefaultDetailedState(state.monster?.id || "mon001");
     }
-    const enabled = Boolean(next);
+    const enabled = normalizeDebugSleepOverride(next);
+    ensureSleepDetailState(state.detailed);
     uiState.debugSleepOverride = enabled;
-    state.detailed.isTuckedIn = enabled;
-    state.isSleeping = enabled;
-    if(!enabled && state.screen === "sleep"){
+    state.detailed.sleepForcedAwake = false;
+    if(typeof enabled === "boolean"){
+      state.detailed.isTuckedIn = enabled;
+      state.isSleeping = enabled;
+    }else{
+      updateDetailedMetricsRealtime(Date.now());
+    }
+    if(enabled === false && state.screen === "sleep"){
       state.screen = "menu";
       hideOverlayLog();
       setOverlayMode(null);
     }
+    return enabled;
   }
 
   function setDebugTimeMinute(nextMinute){
     state.timeMin = ((Math.floor(toNumber(nextMinute, 0)) % (24 * 60)) + (24 * 60)) % (24 * 60);
+    if(isRecord(state.detailed) && typeof uiState.debugSleepOverride !== "boolean"){
+      const detail = ensureSleepDetailState(state.detailed);
+      if(detail && !detail.isTuckedIn){
+        detail.sleepForcedAwake = false;
+      }
+    }
     if(uiClock) uiClock.textContent = gameHHMM();
     if(hudClock) hudClock.textContent = gameHHMM();
     updateDetailedMetricsRealtime(Date.now());
@@ -1954,11 +2283,7 @@
     const id = String(screenId || "").trim().toLowerCase();
     setDebugMenuOpen(false);
     if(id === "status"){
-      hideOverlayLog();
-      state.screen = "status";
-      resetStatCursors();
-      setStatPage(0);
-      setOverlayMode("stat");
+      openStatusScreen();
       return;
     }
     if(id === "food"){
@@ -2075,23 +2400,22 @@
     }
 
     if(id === "flags"){
-      const sleepOn = typeof uiState.debugSleepOverride === "boolean"
-        ? uiState.debugSleepOverride
-        : state.isSleeping;
+      const sleepOverride = normalizeDebugSleepOverride(uiState.debugSleepOverride);
       return [
         {
           label: "SLEEP",
           valueType: "chips",
           choices: [
-            { label: "OFF", active: !sleepOn },
-            { label: "ON", active: sleepOn },
+            { label: "AUTO", active: sleepOverride === null },
+            { label: "OFF", active: sleepOverride === false },
+            { label: "ON", active: sleepOverride === true },
           ],
-          description: "sleep 状態を強制 ON/OFF。",
-          controls: "←→/A/C TOGGLE",
-          onLeft: () => { setDebugSleepFlag(false); return true; },
-          onRight: () => { setDebugSleepFlag(true); return true; },
-          onA: () => { setDebugSleepFlag(!sleepOn); return true; },
-          onC: () => { setDebugSleepFlag(!sleepOn); return true; },
+          description: "sleep 状態を AUTO / 強制OFF / 強制ON で切り替える。",
+          controls: "←→/A/C MODE",
+          onLeft: () => { cycleDebugSleepOverride(-1); return true; },
+          onRight: () => { cycleDebugSleepOverride(1); return true; },
+          onA: () => { cycleDebugSleepOverride(1); return true; },
+          onC: () => { cycleDebugSleepOverride(-1); return true; },
         },
       ];
     }
@@ -2962,7 +3286,8 @@
     const staminaRatio = staminaMax > 0 ? staminaNow / staminaMax : 0;
 
     const base = 0.28 + (stabilityRatio * 0.34) + (staminaRatio * 0.26) + (hungerRatio * 0.12);
-    return clamp(base + toNumber(cfg.baseSuccessBias, 0), 0.08, 0.95);
+    const sleepJudgeMult = getSleepJudgeMultiplier(state.detailed);
+    return clamp((base + toNumber(cfg.baseSuccessBias, 0)) * sleepJudgeMult, 0.08, 0.95);
   }
 
   function drawDistortedRing(cx, cy, radius, amplitude, seed, lineWidth, strokeStyle){
@@ -3045,6 +3370,9 @@
   }
 
   function canStartTrnSession(mode){
+    if(isMonsterTuckedIn()){
+      return false;
+    }
     const cfg = getTrnModeConfig(mode);
     const required = Math.max(0, Math.floor(toNumber(cfg?.staminaCost, 0)));
     if(required <= 0) return true;
@@ -3121,6 +3449,10 @@
     };
   }
 
+  function triggerMenuResultReveal(nowMs = performance.now()){
+    triggerTrnEndReveal("SUCCESS", nowMs);
+  }
+
   function startTrnSession(nowMs = performance.now()){
     const mode = setTrnMode(uiState.trnMode);
     if(!canStartTrnSession(mode)){
@@ -3143,15 +3475,16 @@
     const stabilityRatio = stabilityMax > 0 ? stabilityNow / stabilityMax : 0;
     const bandBase = cfg.bandWMin + ((cfg.bandWMax - cfg.bandWMin) * stabilityRatio);
     const penaltyRatio = getTrnRecentPenaltyRatio(Date.now());
+    const sleepJudgeMult = getSleepJudgeMultiplier(state.detailed);
     const bandW = clamp(
-      bandBase * (1 - penaltyRatio),
-      cfg.bandWMin * 0.7,
+      bandBase * (1 - penaltyRatio) * sleepJudgeMult,
+      cfg.bandWMin * 0.5,
       cfg.bandWMax
     );
 
     const ad = clamp(toNumber(state.detailed?.adIntegrity, 100), 0, 100);
     const signal = clamp(toNumber(state.detailed?.signalQuality, 100), 0, 100);
-    const syncRate = resolveSyncRate(ad, signal);
+    const syncRate = resolveSleepAdjustedSyncRate(ad, signal, state.detailed);
     const critChance = clamp(
       toNumber(cfg.critChanceBase, 0.05) + ((syncRate / 100) * toNumber(cfg.critChanceBySync, 0.1)),
       0.03,
@@ -3179,7 +3512,7 @@
       bandW,
       critEnabled,
       critW,
-      nearMargin: Math.max(0, Math.floor(toNumber(cfg.nearMargin, TRN_BASE_NEAR_MARGIN))),
+      nearMargin: Math.max(0, Math.floor(toNumber(cfg.nearMargin, TRN_BASE_NEAR_MARGIN) * sleepJudgeMult)),
       internalP: getTrnInternalSuccessBase(mode),
       wasInBand: false,
       wasInCrit: false,
@@ -3708,6 +4041,7 @@
     }
     overlayLog.classList.remove("hidden");
     setOverlayMode(mode);
+    syncOverlayBackdrop(mode);
     return true;
   }
 
@@ -4038,6 +4372,9 @@
 
     const pageRoot = document.createElement("div");
     pageRoot.className = "overlay-stat-page";
+    if(isStatSkillPage(page)){
+      pageRoot.classList.add("is-skill-page");
+    }
     const pageMain = document.createElement("div");
     pageMain.className = "overlay-stat-main";
 
@@ -4063,6 +4400,7 @@
     if(overlayLogBody) overlayLogBody.textContent = "";
     if(overlayLogHint) overlayLogHint.textContent = "";
     setOverlayMode(null);
+    syncOverlayBackdrop(null);
   }
 
   function isMissingI18nValue(text, key){
@@ -4099,6 +4437,17 @@
   }
 
   function buildOverlayLogByScreen(screen){
+    if(screen === "adv"){
+      const session = getAdvSession();
+      if(!session){
+        return "SEARCHING...\n回収対象を探索中";
+      }
+      if(normalizeAdvPhase(session.phase) === ADV_PHASE.RESULT){
+        return String(session.resultText || "取得完了");
+      }
+      return resolveAdvSearchingText(performance.now(), session);
+    }
+
     let action = null;
     if(screen === "sleep") action = "sleep";
     if(screen === "heal") action = "heal";
@@ -4224,37 +4573,388 @@
     });
   }
 
-  function normalizeFoodStockCount(value, fallback = 0){
+  function normalizeItemCount(value, fallback = 0, maxCount = ITEM_COUNT_MAX){
+    const safeMax = Math.max(1, Math.floor(toNumber(maxCount, ITEM_COUNT_MAX)));
     const raw = Math.floor(toNumber(value, fallback));
-    if(raw === FOOD_STOCK_INFINITE){
-      return FOOD_STOCK_INFINITE;
+    if(raw === ITEM_COUNT_INFINITE){
+      return ITEM_COUNT_INFINITE;
     }
     if(raw < 0){
-      return Math.max(0, Math.floor(toNumber(fallback, 0)));
+      const fallbackRaw = Math.floor(toNumber(fallback, 0));
+      if(fallbackRaw === ITEM_COUNT_INFINITE){
+        return ITEM_COUNT_INFINITE;
+      }
+      return clamp(Math.max(0, fallbackRaw), 0, safeMax);
     }
-    return clamp(raw, 0, FOOD_STOCK_MAX);
+    return clamp(raw, 0, safeMax);
   }
 
-  function isFoodStockInfinite(count){
-    return Math.floor(toNumber(count, 0)) === FOOD_STOCK_INFINITE;
+  function isItemCountInfinite(count){
+    return Math.floor(toNumber(count, 0)) === ITEM_COUNT_INFINITE;
   }
 
-  function hasFoodStock(count){
-    return isFoodStockInfinite(count) || Math.floor(toNumber(count, 0)) > 0;
+  function hasItemStock(count, requiredCount = 1){
+    if(isItemCountInfinite(count)){
+      return true;
+    }
+    const required = Math.max(1, Math.floor(toNumber(requiredCount, 1)));
+    return Math.floor(toNumber(count, 0)) >= required;
   }
 
-  function formatFoodStockText(count){
-    if(isFoodStockInfinite(count)){
+  function formatItemCountText(count, maxCount = ITEM_COUNT_MAX){
+    if(isItemCountInfinite(count)){
       return "∞";
     }
-    const normalized = clamp(Math.floor(toNumber(count, 0)), 0, FOOD_STOCK_MAX);
+    const safeMax = Math.max(1, Math.floor(toNumber(maxCount, ITEM_COUNT_MAX)));
+    const normalized = clamp(Math.floor(toNumber(count, 0)), 0, safeMax);
     return String(normalized);
   }
 
+  function getItemById(itemId){
+    const id = String(itemId || "").trim().toLowerCase();
+    return id.length > 0 ? (ITEM_BY_ID[id] || null) : null;
+  }
+
+  function getItemMaxStack(itemOrId){
+    const item = isRecord(itemOrId) ? itemOrId : getItemById(itemOrId);
+    if(!item) return ITEM_COUNT_MAX;
+    if(item.stackable === false){
+      return 1;
+    }
+    return Math.max(1, Math.floor(toNumber(item.maxStack, ITEM_COUNT_MAX)));
+  }
+
+  function getItemDefaultCount(itemOrId){
+    const item = isRecord(itemOrId) ? itemOrId : getItemById(itemOrId);
+    if(!item) return 0;
+    if(Boolean(item.alwaysInfinite)){
+      return ITEM_COUNT_INFINITE;
+    }
+    return normalizeItemCount(item.defaultStock, 0, getItemMaxStack(item));
+  }
+
+  function normalizeItemUseContextList(input){
+    const src = Array.isArray(input) ? input : [input];
+    const out = [];
+    for(let i = 0; i < src.length; i++){
+      const id = String(src[i] || "").trim().toLowerCase();
+      if(id.length <= 0) continue;
+      if(!out.includes(id)){
+        out.push(id);
+      }
+    }
+    return out;
+  }
+
+  function itemSupportsUseContext(itemOrId, useContext){
+    const item = isRecord(itemOrId) ? itemOrId : getItemById(itemOrId);
+    if(!item) return false;
+    const contextId = String(useContext || "").trim().toLowerCase();
+    if(contextId.length <= 0) return true;
+    const list = normalizeItemUseContextList(item.useContexts);
+    return list.includes(contextId);
+  }
+
+  function createDefaultItemInventory(){
+    const items = {};
+    for(let i = 0; i < ITEM_CATALOG.length; i++){
+      const item = ITEM_CATALOG[i];
+      const id = String(item?.id || "").trim().toLowerCase();
+      if(id.length <= 0) continue;
+      items[id] = getItemDefaultCount(item);
+    }
+    return { items };
+  }
+
+  function normalizeItemInventory(input, fallback = null, legacyFoodInventory = null){
+    const base = (isRecord(fallback) && isRecord(fallback.items))
+      ? fallback
+      : createDefaultItemInventory();
+    const srcRoot = isRecord(input) ? input : {};
+    const srcItems = isRecord(srcRoot.items) ? srcRoot.items : srcRoot;
+    const legacyFood = isRecord(legacyFoodInventory) ? legacyFoodInventory : {};
+    const normalizedItems = {};
+    for(let i = 0; i < ITEM_CATALOG.length; i++){
+      const item = ITEM_CATALOG[i];
+      const id = String(item?.id || "").trim().toLowerCase();
+      if(id.length <= 0) continue;
+      if(Boolean(item.alwaysInfinite)){
+        normalizedItems[id] = ITEM_COUNT_INFINITE;
+        continue;
+      }
+      const fallbackCount = normalizeItemCount(
+        base.items?.[id],
+        getItemDefaultCount(item),
+        getItemMaxStack(item)
+      );
+      let sourceCount = srcItems[id];
+      if(
+        sourceCount == null &&
+        String(item.category || "").trim().toLowerCase() === ITEM_CATEGORY.FOOD &&
+        Object.prototype.hasOwnProperty.call(legacyFood, id)
+      ){
+        sourceCount = legacyFood[id];
+      }
+      normalizedItems[id] = normalizeItemCount(
+        sourceCount,
+        fallbackCount,
+        getItemMaxStack(item)
+      );
+    }
+    return { items: normalizedItems };
+  }
+
+  function ensureInventoryDetailState(detail){
+    if(!isRecord(detail)) return null;
+    detail.inventory = normalizeItemInventory(detail.inventory, detail.inventory, detail.foodInventory);
+    if(Object.prototype.hasOwnProperty.call(detail, "foodInventory")){
+      delete detail.foodInventory;
+    }
+    return detail.inventory;
+  }
+
+  function getInventoryItemCount(detail, itemId){
+    if(!isRecord(detail)) return 0;
+    const item = getItemById(itemId);
+    if(!item) return 0;
+    ensureInventoryDetailState(detail);
+    const id = String(item.id || "").trim().toLowerCase();
+    if(Boolean(item.alwaysInfinite)){
+      return ITEM_COUNT_INFINITE;
+    }
+    return normalizeItemCount(
+      detail.inventory?.items?.[id],
+      getItemDefaultCount(item),
+      getItemMaxStack(item)
+    );
+  }
+
+  function setInventoryItemCount(detail, itemId, count){
+    if(!isRecord(detail)) return 0;
+    const item = getItemById(itemId);
+    if(!item) return 0;
+    ensureInventoryDetailState(detail);
+    const id = String(item.id || "").trim().toLowerCase();
+    if(Boolean(item.alwaysInfinite)){
+      detail.inventory.items[id] = ITEM_COUNT_INFINITE;
+      return ITEM_COUNT_INFINITE;
+    }
+    const next = normalizeItemCount(count, getItemDefaultCount(item), getItemMaxStack(item));
+    detail.inventory.items[id] = next;
+    return next;
+  }
+
+  function hasInventoryItemCount(detail, itemId, requiredCount = 1){
+    return hasItemStock(getInventoryItemCount(detail, itemId), requiredCount);
+  }
+
+  function addInventoryItem(detail, itemId, count = 1){
+    if(!isRecord(detail)){
+      return { success: false, changed: false, item: null, prevCount: 0, nextCount: 0, appliedCount: 0 };
+    }
+    const item = getItemById(itemId);
+    if(!item){
+      return { success: false, changed: false, item: null, prevCount: 0, nextCount: 0, appliedCount: 0 };
+    }
+    const amount = Math.max(0, Math.floor(toNumber(count, 0)));
+    const prevCount = getInventoryItemCount(detail, item.id);
+    if(amount <= 0){
+      return { success: true, changed: false, item, prevCount, nextCount: prevCount, appliedCount: 0 };
+    }
+    if(Boolean(item.alwaysInfinite)){
+      return { success: true, changed: false, item, prevCount, nextCount: ITEM_COUNT_INFINITE, appliedCount: 0 };
+    }
+    const nextCount = clamp(prevCount + amount, 0, getItemMaxStack(item));
+    const appliedCount = Math.max(0, nextCount - prevCount);
+    setInventoryItemCount(detail, item.id, nextCount);
+    return {
+      success: true,
+      changed: appliedCount > 0,
+      item,
+      prevCount,
+      nextCount,
+      appliedCount,
+    };
+  }
+
+  function consumeInventoryItem(detail, itemId, count = 1){
+    if(!isRecord(detail)){
+      return { success: false, changed: false, item: null, prevCount: 0, nextCount: 0, consumedCount: 0 };
+    }
+    const item = getItemById(itemId);
+    if(!item){
+      return { success: false, changed: false, item: null, prevCount: 0, nextCount: 0, consumedCount: 0 };
+    }
+    const amount = Math.max(1, Math.floor(toNumber(count, 1)));
+    const prevCount = getInventoryItemCount(detail, item.id);
+    if(!hasItemStock(prevCount, amount)){
+      return { success: false, changed: false, item, prevCount, nextCount: prevCount, consumedCount: 0 };
+    }
+    if(Boolean(item.alwaysInfinite) || isItemCountInfinite(prevCount)){
+      return {
+        success: true,
+        changed: false,
+        item,
+        prevCount: ITEM_COUNT_INFINITE,
+        nextCount: ITEM_COUNT_INFINITE,
+        consumedCount: amount,
+      };
+    }
+    const nextCount = clamp(prevCount - amount, 0, getItemMaxStack(item));
+    const consumedCount = Math.max(0, prevCount - nextCount);
+    setInventoryItemCount(detail, item.id, nextCount);
+    return {
+      success: consumedCount >= amount,
+      changed: consumedCount > 0,
+      item,
+      prevCount,
+      nextCount,
+      consumedCount,
+    };
+  }
+
+  function canUseInventoryItemInContext(detail, itemId, useContext, requiredCount = 1){
+    const item = getItemById(itemId);
+    if(!item){
+      return { ok: false, reason: "missing_item", item: null, count: 0 };
+    }
+    const count = getInventoryItemCount(detail, item.id);
+    if(!itemSupportsUseContext(item, useContext)){
+      return { ok: false, reason: "invalid_context", item, count };
+    }
+    if(!hasItemStock(count, requiredCount)){
+      return { ok: false, reason: "out_of_stock", item, count };
+    }
+    return { ok: true, reason: "ok", item, count };
+  }
+
+  function listInventoryItems(detail, options = {}){
+    const safeDetail = ensureInventoryDetailState(detail || state.detailed);
+    if(!isRecord(safeDetail)){
+      return [];
+    }
+    const includeZero = Boolean(options.includeZero);
+    const categoryFilter = normalizeItemUseContextList(options.category);
+    const useContextFilter = normalizeItemUseContextList(options.useContext);
+    const out = [];
+    for(let i = 0; i < ITEM_CATALOG.length; i++){
+      const item = ITEM_CATALOG[i];
+      const categoryId = String(item?.category || "").trim().toLowerCase();
+      if(categoryFilter.length > 0 && !categoryFilter.includes(categoryId)){
+        continue;
+      }
+      if(useContextFilter.length > 0){
+        let supported = false;
+        for(let j = 0; j < useContextFilter.length; j++){
+          if(itemSupportsUseContext(item, useContextFilter[j])){
+            supported = true;
+            break;
+          }
+        }
+        if(!supported){
+          continue;
+        }
+      }
+      const count = getInventoryItemCount(safeDetail, item.id);
+      if(!includeZero && !hasItemStock(count)){
+        continue;
+      }
+      out.push({ item, count });
+    }
+    return out;
+  }
+
+  function normalizeInventoryRewardEntries(input){
+    const src = Array.isArray(input) ? input : [];
+    const out = [];
+    for(let i = 0; i < src.length; i++){
+      const entry = src[i];
+      const item = getItemById(entry?.itemId ?? entry?.id);
+      if(!item){
+        continue;
+      }
+      const count = Math.max(1, Math.floor(toNumber(entry?.count, 1)));
+      out.push({
+        itemId: item.id,
+        count,
+      });
+    }
+    return out;
+  }
+
+  function buildInventoryRewardLines(grants){
+    const src = Array.isArray(grants) ? grants : [];
+    const out = [];
+    for(let i = 0; i < src.length; i++){
+      const grant = src[i];
+      const item = getItemById(grant?.itemId);
+      if(!item) continue;
+      const appliedCount = Math.max(0, Math.floor(toNumber(grant?.appliedCount, 0)));
+      if(appliedCount <= 0) continue;
+      out.push(`${String(item.label || item.id).trim()} x${appliedCount}`);
+    }
+    return out;
+  }
+
+  function grantInventoryRewards(detail, rewards){
+    const safeDetail = ensureInventoryDetailState(detail || state.detailed);
+    if(!isRecord(safeDetail)){
+      return { changed: false, grants: [], lines: [] };
+    }
+    const entries = normalizeInventoryRewardEntries(rewards);
+    const grants = [];
+    let changed = false;
+    for(let i = 0; i < entries.length; i++){
+      const entry = entries[i];
+      const result = addInventoryItem(safeDetail, entry.itemId, entry.count);
+      grants.push({
+        itemId: entry.itemId,
+        requestedCount: entry.count,
+        appliedCount: result.appliedCount,
+        prevCount: result.prevCount,
+        nextCount: result.nextCount,
+      });
+      if(result.changed){
+        changed = true;
+      }
+    }
+    return {
+      changed,
+      grants,
+      lines: buildInventoryRewardLines(grants),
+    };
+  }
+
+  function grantDetailedInventoryRewards(rewards){
+    if(!isRecord(state.detailed)){
+      state.detailed = createDefaultDetailedState(state.monster?.id || "mon001");
+    }
+    const result = grantInventoryRewards(state.detailed, rewards);
+    if(result.changed){
+      saveDetailedState();
+    }
+    return result;
+  }
+
+  function normalizeFoodStockCount(value, fallback = 0){
+    return normalizeItemCount(value, fallback, FOOD_STOCK_MAX);
+  }
+
+  function isFoodStockInfinite(count){
+    return isItemCountInfinite(count);
+  }
+
+  function hasFoodStock(count){
+    return hasItemStock(count);
+  }
+
+  function formatFoodStockText(count){
+    return formatItemCountText(count, FOOD_STOCK_MAX);
+  }
+
   function isFoodAlwaysInfinite(foodId){
-    const id = String(foodId || "").trim().toLowerCase();
-    if(id.length <= 0) return false;
-    return normalizeFoodStockCount(FOOD_INITIAL_STOCK_BY_ID[id], 0) === FOOD_STOCK_INFINITE;
+    const item = getItemById(foodId);
+    return Boolean(item?.alwaysInfinite);
   }
 
   function createDefaultFoodInventory(){
@@ -4263,34 +4963,26 @@
       const item = FOOD_CATALOG[i];
       const id = String(item?.id || "").trim().toLowerCase();
       if(id.length <= 0) continue;
-      const initial = normalizeFoodStockCount(FOOD_INITIAL_STOCK_BY_ID[id], 0);
-      inventory[id] = initial;
+      inventory[id] = getItemDefaultCount(id);
     }
     return inventory;
   }
 
   function normalizeFoodInventory(input, fallback = null){
     const base = isRecord(fallback) ? fallback : createDefaultFoodInventory();
-    const src = isRecord(input) ? input : {};
     const normalized = {};
+    const normalizedInventory = normalizeItemInventory({ items: input }, { items: base });
     for(let i = 0; i < FOOD_CATALOG.length; i++){
-      const item = FOOD_CATALOG[i];
-      const id = String(item?.id || "").trim().toLowerCase();
+      const id = String(FOOD_CATALOG[i]?.id || "").trim().toLowerCase();
       if(id.length <= 0) continue;
-      if(isFoodAlwaysInfinite(id)){
-        normalized[id] = FOOD_STOCK_INFINITE;
-        continue;
-      }
-      const fallbackCount = normalizeFoodStockCount(base[id], 0);
-      const count = normalizeFoodStockCount(src[id], fallbackCount);
-      normalized[id] = count;
+      normalized[id] = normalizeItemCount(normalizedInventory.items?.[id], 0, FOOD_STOCK_MAX);
     }
     return normalized;
   }
 
   function ensureFoodDetailState(detail){
     if(!isRecord(detail)) return null;
-    detail.foodInventory = normalizeFoodInventory(detail.foodInventory);
+    ensureInventoryDetailState(detail);
     detail.weight = clamp(
       roundTo1(toNumber(detail.weight, FOOD_DEFAULT_WEIGHT)),
       FOOD_WEIGHT_MIN,
@@ -4302,12 +4994,7 @@
   function getFoodInventoryCount(detail, foodId){
     if(!isRecord(detail)) return 0;
     ensureFoodDetailState(detail);
-    const id = String(foodId || "").trim().toLowerCase();
-    if(id.length <= 0) return 0;
-    if(isFoodAlwaysInfinite(id)){
-      return FOOD_STOCK_INFINITE;
-    }
-    return normalizeFoodStockCount(detail.foodInventory?.[id], 0);
+    return getInventoryItemCount(detail, foodId);
   }
 
   function getFoodFamilyLabel(familyId){
@@ -4403,24 +5090,30 @@
   function normalizeBttlSharedSetIds(input, learnedSkillIds, stagePlan, options = {}){
     const learned = Array.isArray(learnedSkillIds) ? learnedSkillIds : [];
     const src = Array.isArray(input) ? input.slice(0, BTTL_SKILL_SLOT_COUNT) : [];
-    const out = [];
+    const out = Array.from({ length: BTTL_SKILL_SLOT_COUNT }, () => "");
     const fallbackWhenEmpty = options?.fallbackWhenEmpty !== false;
-    for(let i = 0; i < src.length; i++){
+    const used = new Set();
+    for(let i = 0; i < BTTL_SKILL_SLOT_COUNT; i++){
       const id = String(src[i] || "").trim().toLowerCase();
       if(id.length <= 0) continue;
       if(!learned.includes(id)) continue;
-      if(out.includes(id)) continue;
-      out.push(id);
+      if(used.has(id)) continue;
+      out[i] = id;
+      used.add(id);
     }
-    if(fallbackWhenEmpty && out.length <= 0){
+    if(fallbackWhenEmpty && !out.some((id) => String(id || "").trim().length > 0)){
       const fallback = buildDefaultBttlSharedSetIds(learned, stagePlan);
+      let writeIndex = 0;
       for(let i = 0; i < fallback.length; i++){
-        if(out.length >= BTTL_SKILL_SLOT_COUNT) break;
-        out.push(fallback[i]);
+        const id = String(fallback[i] || "").trim().toLowerCase();
+        if(id.length <= 0 || used.has(id)) continue;
+        while(writeIndex < BTTL_SKILL_SLOT_COUNT && String(out[writeIndex] || "").trim().length > 0){
+          writeIndex += 1;
+        }
+        if(writeIndex >= BTTL_SKILL_SLOT_COUNT) break;
+        out[writeIndex] = id;
+        used.add(id);
       }
-    }
-    while(out.length < BTTL_SKILL_SLOT_COUNT){
-      out.push("");
     }
     return out.slice(0, BTTL_SKILL_SLOT_COUNT);
   }
@@ -4565,6 +5258,73 @@
     return detail;
   }
 
+  function createDefaultSleepProgressState(){
+    return {
+      startedAt: 0,
+      lastProcessedAt: 0,
+      staminaCarry: 0,
+      stabilityCarry: 0,
+      hungerCarry: 0,
+      totalDelta: {
+        stamina: 0,
+        stability: 0,
+        hunger: 0,
+      },
+    };
+  }
+
+  function normalizeSleepProgressState(input, fallback = null){
+    const base = isRecord(fallback) ? fallback : createDefaultSleepProgressState();
+    const src = isRecord(input) ? input : {};
+    return {
+      startedAt: Math.max(0, Math.floor(toNumber(src.startedAt, base.startedAt))),
+      lastProcessedAt: Math.max(0, Math.floor(toNumber(src.lastProcessedAt, base.lastProcessedAt))),
+      staminaCarry: Math.max(0, toNumber(src.staminaCarry, base.staminaCarry)),
+      stabilityCarry: Math.max(0, toNumber(src.stabilityCarry, base.stabilityCarry)),
+      hungerCarry: Math.max(0, toNumber(src.hungerCarry, base.hungerCarry)),
+      totalDelta: {
+        stamina: Math.floor(toNumber(src.totalDelta?.stamina, base.totalDelta.stamina)),
+        stability: Math.floor(toNumber(src.totalDelta?.stability, base.totalDelta.stability)),
+        hunger: Math.floor(toNumber(src.totalDelta?.hunger, base.totalDelta.hunger)),
+      },
+    };
+  }
+
+  function normalizeSleepMinuteStamp(value, fallback = 0){
+    return Math.max(0, Math.floor(toNumber(value, fallback)));
+  }
+
+  function ensureSleepDetailState(detail){
+    if(!isRecord(detail)) return null;
+    detail.sleepProgress = normalizeSleepProgressState(detail.sleepProgress);
+    detail.sleepForcedAwake = Boolean(detail.sleepForcedAwake);
+    detail.sleepGroggyUntilAbs = normalizeSleepMinuteStamp(detail.sleepGroggyUntilAbs, 0);
+    detail.sleepGroggyPenaltyRatio = clamp(toNumber(detail.sleepGroggyPenaltyRatio, 0), 0, SLEEP_GROGGY_MAX_PENALTY_RATIO);
+    detail.sleepLockUntilAbs = normalizeSleepMinuteStamp(detail.sleepLockUntilAbs, 0);
+    detail.sleepEarlyWakeActive = Boolean(detail.sleepEarlyWakeActive);
+    return detail;
+  }
+
+  function resetSleepProgressState(detail){
+    if(!isRecord(detail)) return createDefaultSleepProgressState();
+    detail.sleepProgress = createDefaultSleepProgressState();
+    return detail.sleepProgress;
+  }
+
+  function clearSleepWakePenaltyState(detail){
+    if(!isRecord(detail)) return null;
+    detail.sleepGroggyUntilAbs = 0;
+    detail.sleepGroggyPenaltyRatio = 0;
+    detail.sleepLockUntilAbs = 0;
+    detail.sleepEarlyWakeActive = false;
+    return detail;
+  }
+
+  function isMonsterTuckedIn(detailOverride = null){
+    const detail = detailOverride || state.detailed;
+    return Boolean(detail?.isTuckedIn);
+  }
+
   function resetHealCycle(detail){
     if(!isRecord(detail)) return createDefaultHealCycleState();
     detail.healCycle = createDefaultHealCycleState();
@@ -4615,6 +5375,11 @@
       lastUpdateAt: now,
       chronotype: pickChronotypeByMonsterId(monsterId),
       isTuckedIn: false,
+      sleepForcedAwake: false,
+      sleepGroggyUntilAbs: 0,
+      sleepGroggyPenaltyRatio: 0,
+      sleepLockUntilAbs: 0,
+      sleepEarlyWakeActive: false,
       battleCount: 0,
       battleWins: 0,
       battleLosses: 0,
@@ -4630,8 +5395,9 @@
       rangeStayLong: 0,
       trainingCount: 0,
       trainingTypeCounts: createDefaultTrainingTypeCounts(),
-      foodInventory: createDefaultFoodInventory(),
+      inventory: createDefaultItemInventory(),
       weight: FOOD_DEFAULT_WEIGHT,
+      sleepProgress: createDefaultSleepProgressState(),
       abnormalState: createDefaultHealAbnormalState(),
       healCycle: createDefaultHealCycleState(),
       skillUniqueId: String(stagePlan.uniqueSkillId || ""),
@@ -4690,12 +5456,17 @@
       basePlan,
       { fallbackWhenEmpty: false }
     );
-    const foodInventory = normalizeFoodInventory(src.foodInventory, base.foodInventory);
+    const inventory = normalizeItemInventory(
+      src.inventory,
+      base.inventory,
+      src.foodInventory
+    );
     const weight = clamp(
       roundTo1(toNumber(src.weight, base.weight)),
       FOOD_WEIGHT_MIN,
       FOOD_WEIGHT_MAX
     );
+    const sleepProgress = normalizeSleepProgressState(src.sleepProgress, base.sleepProgress);
     const abnormalState = normalizeHealAbnormalState(src.abnormalState, base.abnormalState);
     const healCycle = normalizeHealCycleState(src.healCycle, base.healCycle);
 
@@ -4712,6 +5483,15 @@
       lastUpdateAt: Math.max(0, Math.floor(toNumber(src.lastUpdateAt, base.lastUpdateAt))),
       chronotype,
       isTuckedIn: Boolean(src.isTuckedIn),
+      sleepForcedAwake: Boolean(src.sleepForcedAwake),
+      sleepGroggyUntilAbs: normalizeSleepMinuteStamp(src.sleepGroggyUntilAbs, base.sleepGroggyUntilAbs),
+      sleepGroggyPenaltyRatio: clamp(
+        toNumber(src.sleepGroggyPenaltyRatio, base.sleepGroggyPenaltyRatio),
+        0,
+        SLEEP_GROGGY_MAX_PENALTY_RATIO
+      ),
+      sleepLockUntilAbs: normalizeSleepMinuteStamp(src.sleepLockUntilAbs, base.sleepLockUntilAbs),
+      sleepEarlyWakeActive: Boolean(src.sleepEarlyWakeActive),
       battleCount,
       battleWins,
       battleLosses,
@@ -4727,8 +5507,9 @@
       rangeStayLong,
       trainingCount,
       trainingTypeCounts,
-      foodInventory,
+      inventory,
       weight,
+      sleepProgress,
       abnormalState,
       healCycle,
       skillUniqueId,
@@ -4743,6 +5524,7 @@
     const normalized = normalizeDetailedState(parsed, fallback);
     normalized.signalQuality = Math.min(normalized.signalQuality, normalized.adIntegrity);
     ensureFoodDetailState(normalized);
+    ensureSleepDetailState(normalized);
     ensureHealDetailState(normalized);
     ensureBttlSkillDetailState(normalized, state.monster);
     state.detailed = normalized;
@@ -4771,7 +5553,11 @@
     }
   }
 
-  function getLocalMinuteNow(){
+  function getCurrentClockMinute(){
+    const minute = Math.floor(toNumber(state.timeMin, NaN));
+    if(Number.isFinite(minute)){
+      return ((minute % (24 * 60)) + (24 * 60)) % (24 * 60);
+    }
     const d = new Date();
     return (d.getHours() * 60) + d.getMinutes();
   }
@@ -4790,37 +5576,395 @@
     return isMinuteWithinWindow(minute, window.startMin, window.endMin);
   }
 
-  function updateAutoSleepState(){
+  function isSleepWindowActive(detailOverride = null){
+    const detail = isRecord(detailOverride) ? detailOverride : state.detailed;
+    const chronotype = isRecord(detail) ? detail.chronotype : null;
+    return isInAutoSleepWindow(chronotype, getCurrentClockMinute());
+  }
+
+  function getCurrentGameMinuteAbsolute(){
+    const dayIndex = Math.max(0, Math.floor(toNumber(state.day, 1)) - 1);
+    return (dayIndex * (24 * 60)) + getCurrentClockMinute();
+  }
+
+  function getSleepWindowConfig(detailOverride = null){
+    const detail = isRecord(detailOverride) ? detailOverride : state.detailed;
+    const key = normalizeChronotype(detail?.chronotype, "morning");
+    return CHRONOTYPE_WINDOWS[key] || CHRONOTYPE_WINDOWS.morning;
+  }
+
+  function getSleepWindowRemainingMinutes(detailOverride = null){
+    const detail = ensureSleepDetailState(detailOverride || state.detailed);
+    if(!detail || !isSleepWindowActive(detail)){
+      return 0;
+    }
+    const currentMinute = getCurrentClockMinute();
+    const window = getSleepWindowConfig(detail);
+    return ((window.endMin - currentMinute + (24 * 60)) % (24 * 60));
+  }
+
+  function refreshSleepWakePenaltyState(detail, nowAbs = getCurrentGameMinuteAbsolute()){
+    if(!isRecord(detail)) return null;
+    ensureSleepDetailState(detail);
+    const now = Math.max(0, Math.floor(toNumber(nowAbs, getCurrentGameMinuteAbsolute())));
+    if(toNumber(detail.sleepGroggyUntilAbs, 0) <= now){
+      detail.sleepGroggyUntilAbs = 0;
+      detail.sleepGroggyPenaltyRatio = 0;
+    }
+    if(toNumber(detail.sleepLockUntilAbs, 0) <= now){
+      detail.sleepLockUntilAbs = 0;
+    }
+    return detail;
+  }
+
+  function getSleepWakePenaltyState(detailOverride = null, nowAbs = getCurrentGameMinuteAbsolute()){
+    const detail = ensureSleepDetailState(detailOverride || state.detailed);
+    if(!detail){
+      return {
+        mode: "none",
+        penaltyRatio: 0,
+        groggyActive: false,
+        groggyRemainMinutes: 0,
+        earlyWakeActive: false,
+        sleepLocked: false,
+        sleepLockRemainMinutes: 0,
+      };
+    }
+    refreshSleepWakePenaltyState(detail, nowAbs);
+    const now = Math.max(0, Math.floor(toNumber(nowAbs, getCurrentGameMinuteAbsolute())));
+    const groggyRemainMinutes = Math.max(0, normalizeSleepMinuteStamp(detail.sleepGroggyUntilAbs, 0) - now);
+    const sleepLockRemainMinutes = Math.max(0, normalizeSleepMinuteStamp(detail.sleepLockUntilAbs, 0) - now);
+    const earlyWakeActive = Boolean(detail.sleepEarlyWakeActive);
+    if(earlyWakeActive){
+      return {
+        mode: "early",
+        penaltyRatio: SLEEP_EARLY_WAKE_PENALTY_RATIO,
+        groggyActive: false,
+        groggyRemainMinutes: 0,
+        earlyWakeActive,
+        sleepLocked: sleepLockRemainMinutes > 0,
+        sleepLockRemainMinutes,
+      };
+    }
+    const groggyActive = groggyRemainMinutes > 0;
+    return {
+      mode: groggyActive ? "groggy" : "none",
+      penaltyRatio: groggyActive
+        ? clamp(toNumber(detail.sleepGroggyPenaltyRatio, 0), 0, SLEEP_GROGGY_MAX_PENALTY_RATIO)
+        : 0,
+      groggyActive,
+      groggyRemainMinutes,
+      earlyWakeActive,
+      sleepLocked: sleepLockRemainMinutes > 0,
+      sleepLockRemainMinutes,
+    };
+  }
+
+  function getSleepPerformancePenaltyRatio(detailOverride = null, nowAbs = getCurrentGameMinuteAbsolute()){
+    return getSleepWakePenaltyState(detailOverride, nowAbs).penaltyRatio;
+  }
+
+  function getSleepJudgeMultiplier(detailOverride = null, nowAbs = getCurrentGameMinuteAbsolute()){
+    return clamp(1 - getSleepPerformancePenaltyRatio(detailOverride, nowAbs), 0.55, 1);
+  }
+
+  function resolveSleepAdjustedSyncRate(adIntegrity, signalQuality, detailOverride = null){
+    const baseSync = resolveSyncRate(adIntegrity, signalQuality);
+    return clamp(
+      Math.round(baseSync * getSleepJudgeMultiplier(detailOverride, getCurrentGameMinuteAbsolute())),
+      0,
+      100
+    );
+  }
+
+  function getSleepGroggyProfile(detailOverride = null){
+    const detail = ensureSleepDetailState(detailOverride || state.detailed);
+    const stabilityMax = toPositiveInt(state.stats?.stabilityMax, 10);
+    const stabilityNow = clamp(toNumber(state.stats?.stability, stabilityMax), 0, stabilityMax);
+    const stabilityRatio = stabilityMax > 0 ? (stabilityNow / stabilityMax) : 0;
+    const durationMinutes = clamp(
+      Math.round(
+        SLEEP_GROGGY_MAX_DURATION_MINUTES -
+        ((SLEEP_GROGGY_MAX_DURATION_MINUTES - SLEEP_GROGGY_MIN_DURATION_MINUTES) * stabilityRatio)
+      ),
+      SLEEP_GROGGY_MIN_DURATION_MINUTES,
+      SLEEP_GROGGY_MAX_DURATION_MINUTES
+    );
+    const penaltyRatio = clamp(
+      SLEEP_GROGGY_MAX_PENALTY_RATIO -
+      ((SLEEP_GROGGY_MAX_PENALTY_RATIO - SLEEP_GROGGY_MIN_PENALTY_RATIO) * stabilityRatio),
+      SLEEP_GROGGY_MIN_PENALTY_RATIO,
+      SLEEP_GROGGY_MAX_PENALTY_RATIO
+    );
+    return {
+      durationMinutes,
+      penaltyRatio,
+      stabilityRatio,
+      detail,
+    };
+  }
+
+  function applySleepManualWakePenaltyState(detail, nowAbs = getCurrentGameMinuteAbsolute()){
+    if(!isRecord(detail)) return null;
+    ensureSleepDetailState(detail);
+    clearSleepWakePenaltyState(detail);
+    const now = Math.max(0, Math.floor(toNumber(nowAbs, getCurrentGameMinuteAbsolute())));
+    const remainingWindowMinutes = getSleepWindowRemainingMinutes(detail);
+    if(remainingWindowMinutes > 0 && remainingWindowMinutes < SLEEP_GROGGY_SLEEP_LOCK_MINUTES){
+      detail.sleepEarlyWakeActive = true;
+      detail.sleepLockUntilAbs = now + remainingWindowMinutes;
+      return {
+        mode: "early",
+        penaltyRatio: SLEEP_EARLY_WAKE_PENALTY_RATIO,
+        remainingMinutes: remainingWindowMinutes,
+        sleepLockMinutes: remainingWindowMinutes,
+      };
+    }
+    const profile = getSleepGroggyProfile(detail);
+    detail.sleepGroggyUntilAbs = now + profile.durationMinutes;
+    detail.sleepGroggyPenaltyRatio = profile.penaltyRatio;
+    detail.sleepLockUntilAbs = now + SLEEP_GROGGY_SLEEP_LOCK_MINUTES;
+    return {
+      mode: "groggy",
+      penaltyRatio: profile.penaltyRatio,
+      remainingMinutes: profile.durationMinutes,
+      sleepLockMinutes: SLEEP_GROGGY_SLEEP_LOCK_MINUTES,
+    };
+  }
+
+  function applySleepPositiveRate(current, max, carry, ratePerHour, elapsedHours){
+    const safeCurrent = Math.max(0, Math.floor(toNumber(current, 0)));
+    const safeMax = Math.max(safeCurrent, Math.floor(toNumber(max, safeCurrent)));
+    const total = Math.max(0, toNumber(carry, 0)) + (Math.max(0, toNumber(ratePerHour, 0)) * Math.max(0, toNumber(elapsedHours, 0)));
+    const desired = Math.max(0, Math.floor(total + 0.0001));
+    const applied = clamp(desired, 0, Math.max(0, safeMax - safeCurrent));
+    return {
+      current: safeCurrent,
+      next: safeCurrent + applied,
+      applied,
+      carry: Math.max(0, total - applied),
+    };
+  }
+
+  function applySleepNegativeRate(current, min, carry, ratePerHour, elapsedHours){
+    const safeCurrent = Math.max(Math.floor(toNumber(current, 0)), Math.floor(toNumber(min, 0)));
+    const safeMin = Math.min(safeCurrent, Math.floor(toNumber(min, 0)));
+    const total = Math.max(0, toNumber(carry, 0)) + (Math.max(0, toNumber(ratePerHour, 0)) * Math.max(0, toNumber(elapsedHours, 0)));
+    const desired = Math.max(0, Math.floor(total + 0.0001));
+    const applied = clamp(desired, 0, Math.max(0, safeCurrent - safeMin));
+    return {
+      current: safeCurrent,
+      next: safeCurrent - applied,
+      applied,
+      carry: Math.max(0, total - applied),
+    };
+  }
+
+  function processSleepRecovery(detail, nowMs = Date.now()){
+    if(!isRecord(detail)) return createDefaultSleepProgressState();
+    ensureSleepDetailState(detail);
+    if(!detail.isTuckedIn){
+      return detail.sleepProgress;
+    }
+    const progress = detail.sleepProgress;
+    const now = Math.max(0, Math.floor(toNumber(nowMs, Date.now())));
+    const lastProcessedAt = Math.max(0, Math.floor(toNumber(progress.lastProcessedAt, now)));
+    const elapsedMs = Math.max(0, now - Math.max(0, lastProcessedAt));
+    if(elapsedMs <= 0){
+      progress.lastProcessedAt = now;
+      return progress;
+    }
+    const elapsedHours = elapsedMs / 3_600_000;
+
+    const staminaMax = getRuntimeMax("stamina", 100);
+    const staminaNow = clamp(getRuntimeStat("stamina", staminaMax), 0, staminaMax);
+    const staminaResult = applySleepPositiveRate(
+      staminaNow,
+      staminaMax,
+      progress.staminaCarry,
+      SLEEP_STAMINA_RECOVERY_PER_HOUR,
+      elapsedHours
+    );
+    progress.staminaCarry = staminaResult.carry;
+    if(staminaResult.applied > 0){
+      setRuntimeStat("stamina", staminaResult.next);
+      progress.totalDelta.stamina += staminaResult.applied;
+    }
+
+    const stabilityMax = toPositiveInt(state.stats.stabilityMax, 10);
+    const stabilityNow = clamp(toNumber(state.stats.stability, stabilityMax), 0, stabilityMax);
+    const stabilityResult = applySleepPositiveRate(
+      stabilityNow,
+      stabilityMax,
+      progress.stabilityCarry,
+      SLEEP_STABILITY_RECOVERY_PER_HOUR,
+      elapsedHours
+    );
+    progress.stabilityCarry = stabilityResult.carry;
+    if(stabilityResult.applied > 0){
+      state.stats.stability = stabilityResult.next;
+      progress.totalDelta.stability += stabilityResult.applied;
+    }
+
+    const hungerMax = toPositiveInt(state.stats.hungerMax, 10);
+    const hungerNow = clamp(toNumber(state.stats.hunger, 0), 0, hungerMax);
+    if(HUNGER_IS_FULLNESS){
+      const hungerResult = applySleepNegativeRate(
+        hungerNow,
+        0,
+        progress.hungerCarry,
+        SLEEP_HUNGER_DELTA_PER_HOUR,
+        elapsedHours
+      );
+      progress.hungerCarry = hungerResult.carry;
+      if(hungerResult.applied > 0){
+        state.stats.hunger = hungerResult.next;
+        progress.totalDelta.hunger -= hungerResult.applied;
+      }
+    }else{
+      const hungerResult = applySleepPositiveRate(
+        hungerNow,
+        hungerMax,
+        progress.hungerCarry,
+        SLEEP_HUNGER_DELTA_PER_HOUR,
+        elapsedHours
+      );
+      progress.hungerCarry = hungerResult.carry;
+      if(hungerResult.applied > 0){
+        state.stats.hunger = hungerResult.next;
+        progress.totalDelta.hunger += hungerResult.applied;
+      }
+    }
+
+    progress.lastProcessedAt = now;
+    return progress;
+  }
+
+  function buildSleepWakeModifierText(detailOverride = null, nowAbs = getCurrentGameMinuteAbsolute()){
+    const wakeState = getSleepWakePenaltyState(detailOverride || state.detailed, nowAbs);
+    if(wakeState.earlyWakeActive){
+      return `早起き -${Math.round(SLEEP_EARLY_WAKE_PENALTY_RATIO * 100)}%`;
+    }
+    if(wakeState.groggyActive){
+      return `寝起き ${wakeState.groggyRemainMinutes}M -${Math.round(wakeState.penaltyRatio * 100)}%`;
+    }
+    return "";
+  }
+
+  function buildSleepWakeLogLine(reason, delta, detailOverride = null){
+    const safeDelta = sanitizeDelta(delta);
+    const prefix = reason === "manual" ? "任意起床" : "自動起床";
+    const modifierText = reason === "manual"
+      ? buildSleepWakeModifierText(detailOverride || state.detailed)
+      : "";
+    const statLine = buildLogStatLine(safeDelta);
+    if(modifierText.length > 0 && statLine.length > 0){
+      return `${prefix} / ${modifierText} / ${statLine}`;
+    }
+    if(modifierText.length > 0){
+      return `${prefix} / ${modifierText}`;
+    }
+    return statLine.length > 0
+      ? `${prefix} / ${statLine}`
+      : `${prefix} / ${LOG_NO_CHANGE_TEXT_BY_ACTION.sleep}`;
+  }
+
+  function recordSleepWakeLog(reason, delta, detailOverride = null){
+    const safeDelta = sanitizeDelta(delta);
+    updateLogParams("sleep", safeDelta);
+    state.lastDeltaLine = buildSleepWakeLogLine(reason, safeDelta, detailOverride || state.detailed);
+    return safeDelta;
+  }
+
+  function startSleepSession(nowMs = Date.now()){
+    if(!isRecord(state.detailed)){
+      state.detailed = createDefaultDetailedState(state.monster?.id || "mon001");
+    }
+    const detail = ensureSleepDetailState(ensureHealDetailState(state.detailed));
+    const now = Math.max(0, Math.floor(toNumber(nowMs, Date.now())));
+    resetHealCycle(detail);
+    clearSleepWakePenaltyState(detail);
+    detail.isTuckedIn = true;
+    detail.sleepForcedAwake = false;
+    detail.sleepProgress = createDefaultSleepProgressState();
+    detail.sleepProgress.startedAt = now;
+    detail.sleepProgress.lastProcessedAt = now;
+    saveDetailedState();
+    return detail.sleepProgress;
+  }
+
+  function stopSleepSession(reason = "manual", nowMs = Date.now()){
+    const detail = ensureSleepDetailState(state.detailed);
+    if(!isRecord(detail)){
+      return { changed: false, reason, delta: {} };
+    }
+    const nowAbs = getCurrentGameMinuteAbsolute();
+    processSleepRecovery(detail, nowMs);
+    const delta = sanitizeDelta(detail.sleepProgress?.totalDelta || {});
+    detail.isTuckedIn = false;
+    if(reason === "manual"){
+      detail.sleepForcedAwake = true;
+      applySleepManualWakePenaltyState(detail, nowAbs);
+    }else{
+      detail.sleepForcedAwake = false;
+    }
+    resetSleepProgressState(detail);
+    recordSleepWakeLog(reason, delta, detail);
+    saveDetailedState();
+    return {
+      changed: Object.keys(delta).length > 0,
+      reason,
+      delta,
+    };
+  }
+
+  function updateAutoSleepState(nowMs = Date.now()){
     const detail = state.detailed;
     if(!isRecord(detail)){
       state.isSleeping = false;
       return;
     }
+    ensureSleepDetailState(detail);
+    refreshSleepWakePenaltyState(detail, getCurrentGameMinuteAbsolute());
     if(typeof uiState.debugSleepOverride === "boolean"){
       state.isSleeping = uiState.debugSleepOverride;
       detail.isTuckedIn = uiState.debugSleepOverride;
+      detail.sleepForcedAwake = false;
+      if(detail.isTuckedIn && toNumber(detail.sleepProgress?.lastProcessedAt, 0) <= 0){
+        startSleepSession(nowMs);
+      }
       return;
     }
-    const shouldSleep = isInAutoSleepWindow(detail.chronotype, getLocalMinuteNow());
-    if(!shouldSleep && detail.isTuckedIn){
-      detail.isTuckedIn = false;
+    const shouldSleep = isSleepWindowActive(detail);
+    if(!shouldSleep){
+      detail.sleepForcedAwake = false;
     }
-    state.isSleeping = shouldSleep;
+    if(detail.isTuckedIn){
+      processSleepRecovery(detail, nowMs);
+    }
+    if(!shouldSleep && detail.isTuckedIn){
+      stopSleepSession("auto", nowMs);
+      if(state.screen === "sleep"){
+        state.screen = "menu";
+        hideOverlayLog();
+        setOverlayMode(null);
+      }
+    }
+    state.isSleeping = shouldSleep && !detail.sleepForcedAwake;
   }
 
   function sleepSupportLevel(){
-    if(!state.isSleeping) return 0;
-    return state.detailed?.isTuckedIn ? 1 : 0.5;
+    return isMonsterTuckedIn() ? 1 : 0;
   }
 
   function updateDetailedMetricsRealtime(nowMs = Date.now()){
     const detail = state.detailed;
     if(!isRecord(detail)){
-      updateAutoSleepState();
+      updateAutoSleepState(nowMs);
       return;
     }
 
-    updateAutoSleepState();
+    updateAutoSleepState(nowMs);
     const prevAd = clamp(toNumber(detail.adIntegrity, 100), 0, 100);
     const prevSignal = clamp(toNumber(detail.signalQuality, 100), 0, 100);
     const prevForTrend = clamp(toNumber(detail.lastSignalQualityForTrend, prevSignal), 0, 100);
@@ -4977,18 +6121,10 @@
     if(!isRecord(detail)){
       return [];
     }
-    const inventory = isRecord(detail.foodInventory) ? detail.foodInventory : {};
-    const out = [];
-    for(let i = 0; i < FOOD_CATALOG.length; i++){
-      const item = FOOD_CATALOG[i];
-      const id = String(item?.id || "").trim().toLowerCase();
-      if(id.length <= 0) continue;
-      const stock = normalizeFoodStockCount(inventory[id], 0);
-      if(hasFoodStock(stock)){
-        out.push(item);
-      }
-    }
-    return out;
+    return listInventoryItems(detail, {
+      category: ITEM_CATEGORY.FOOD,
+      useContext: ITEM_USE_CONTEXT.FOOD_MENU,
+    }).map((entry) => entry.item);
   }
 
   function setFoodScreenMode(mode){
@@ -5057,10 +6193,373 @@
     return isRecord(uiState.foodResultPayload) ? uiState.foodResultPayload : null;
   }
 
+  function openSleepScreen(){
+    if(!isRecord(state.detailed)){
+      state.detailed = createDefaultDetailedState(state.monster?.id || "mon001");
+    }
+    const detail = ensureSleepDetailState(state.detailed);
+    captureOverlayBackdropSnapshot();
+    clearStatSkillEditingSlot();
+    clearSleepTransition();
+    uiState.sleepLightSelection = detail?.isTuckedIn
+      ? SLEEP_LIGHT_SELECTION.OFF
+      : SLEEP_LIGHT_SELECTION.ON;
+    state.screen = "sleep";
+    setOverlayMode("food");
+  }
+
+  function closeSleepScreenToMenu(){
+    clearSleepTransition();
+    menuDeactivate();
+    state.screen = "menu";
+    hideOverlayLog();
+    setOverlayMode(null);
+  }
+
+  function normalizeSleepLightSelection(value, fallback = SLEEP_LIGHT_SELECTION.ON){
+    const raw = String(value || "").trim().toLowerCase();
+    if(raw === SLEEP_LIGHT_SELECTION.OFF) return SLEEP_LIGHT_SELECTION.OFF;
+    if(raw === SLEEP_LIGHT_SELECTION.ON) return SLEEP_LIGHT_SELECTION.ON;
+    return fallback;
+  }
+
+  function getSleepLightSelection(){
+    return normalizeSleepLightSelection(uiState.sleepLightSelection, SLEEP_LIGHT_SELECTION.ON);
+  }
+
+  function setSleepLightSelection(value){
+    uiState.sleepLightSelection = normalizeSleepLightSelection(value, getSleepLightSelection());
+    return uiState.sleepLightSelection;
+  }
+
+  function moveSleepLightSelection(delta){
+    const list = [SLEEP_LIGHT_SELECTION.ON, SLEEP_LIGHT_SELECTION.OFF];
+    const current = getSleepLightSelection();
+    const index = Math.max(0, list.indexOf(current));
+    const nextIndex = (index + (delta < 0 ? -1 : 1) + list.length) % list.length;
+    const next = list[nextIndex];
+    if(next === current) return false;
+    setSleepLightSelection(next);
+    return true;
+  }
+
+  function canExecuteSleepAction(detailOverride = null){
+    const detail = ensureSleepDetailState(detailOverride || state.detailed);
+    return Boolean(detail?.isTuckedIn) || isSleepWindowActive(detail);
+  }
+
+  function isSleepLightOffSelected(){
+    return getSleepLightSelection() === SLEEP_LIGHT_SELECTION.OFF;
+  }
+
+  function clearSleepTransition(){
+    uiState.sleepTransition = null;
+  }
+
+  function getSleepTransitionRecord(){
+    const transition = isRecord(uiState.sleepTransition) ? uiState.sleepTransition : null;
+    if(!transition) return null;
+    const mode = String(transition.mode || "");
+    return (mode === "enter" || mode === "exit") ? transition : null;
+  }
+
+  function cloneSleepDisplayDetail(detailOverride = null){
+    const detail = ensureSleepDetailState(detailOverride || state.detailed);
+    try{
+      return JSON.parse(JSON.stringify(detail));
+    }catch(_err){
+      return { ...(detail || {}) };
+    }
+  }
+
+  function getSleepOverlayDisplayDetail(detailOverride = null){
+    const transition = getSleepTransitionRecord();
+    if(isRecord(transition?.displayDetail)){
+      return ensureSleepDetailState(transition.displayDetail);
+    }
+    return ensureSleepDetailState(detailOverride || state.detailed);
+  }
+
+  function captureSleepStatusMetrics(){
+    const staminaMax = Math.max(1, getRuntimeMax("stamina", 100));
+    const staminaNow = clamp(getRuntimeStat("stamina", staminaMax), 0, staminaMax);
+    const stabilityMax = Math.max(1, toPositiveInt(state.stats.stabilityMax, 10));
+    const stabilityNow = clamp(toNumber(state.stats.stability, stabilityMax), 0, stabilityMax);
+    const hungerMax = Math.max(1, toPositiveInt(state.stats.hungerMax, 10));
+    const hungerNow = clamp(toNumber(state.stats.hunger, 0), 0, hungerMax);
+    const fullnessNow = HUNGER_IS_FULLNESS ? hungerNow : Math.max(0, hungerMax - hungerNow);
+    return [
+      { id: "stamina", label: "STAMINA", ratio: clamp(staminaNow / staminaMax, 0, 1), phase: 0.0 },
+      { id: "stability", label: "STABILITY", ratio: clamp(stabilityNow / stabilityMax, 0, 1), phase: 0.9 },
+      { id: "fullness", label: "FULLNESS", ratio: clamp(fullnessNow / hungerMax, 0, 1), phase: 1.8 },
+    ];
+  }
+
+  function getSleepOverlayStatusMetrics(){
+    const transition = getSleepTransitionRecord();
+    if(Array.isArray(transition?.displayMetrics)){
+      return transition.displayMetrics;
+    }
+    return captureSleepStatusMetrics();
+  }
+
+  function beginSleepTransition(mode = "enter", nowMs = performance.now()){
+    const safeMode = String(mode || "") === "exit" ? "exit" : "enter";
+    uiState.sleepTransition = {
+      mode: safeMode,
+      startedAtMs: Math.max(0, toNumber(nowMs, performance.now())),
+      durationMs: SLEEP_CURTAIN_TRANSITION_MS,
+      holdMs: SLEEP_CURTAIN_SETTLE_MS,
+      settledAtMs: 0,
+      applied: false,
+      displayDetail: cloneSleepDisplayDetail(state.detailed),
+      displayMetrics: captureSleepStatusMetrics(),
+    };
+    return uiState.sleepTransition;
+  }
+
+  function getSleepTransitionProgress(nowMs = performance.now()){
+    const transition = getSleepTransitionRecord();
+    if(!transition){
+      return 0;
+    }
+    const start = Math.max(0, toNumber(transition.startedAtMs, 0));
+    const duration = Math.max(1, toNumber(transition.durationMs, SLEEP_CURTAIN_TRANSITION_MS));
+    return clamp((Math.max(0, toNumber(nowMs, performance.now())) - start) / duration, 0, 1);
+  }
+
+  function isSleepTransitionActive(nowMs = performance.now()){
+    const transition = getSleepTransitionRecord();
+    if(!transition){
+      return false;
+    }
+    if(getSleepTransitionProgress(nowMs) < 1){
+      return true;
+    }
+    const settledAtMs = Math.max(0, toNumber(transition.settledAtMs, 0));
+    if(settledAtMs <= 0){
+      return true;
+    }
+    const holdMs = Math.max(0, toNumber(transition.holdMs, SLEEP_CURTAIN_SETTLE_MS));
+    return (Math.max(0, toNumber(nowMs, performance.now())) - settledAtMs) < holdMs;
+  }
+
+  function updateSleepTransition(nowMs = performance.now()){
+    const transition = getSleepTransitionRecord();
+    if(!transition) return false;
+    if(getSleepTransitionProgress(nowMs) < 1){
+      return false;
+    }
+    if(!Boolean(transition.applied)){
+      const result = applySleepLightSelection(Date.now(), { skipTransition: true, preserveTransition: true });
+      if(!result.success){
+        clearSleepTransition();
+        showOverlaySleep(nowMs);
+        return false;
+      }
+      transition.applied = true;
+      transition.settledAtMs = Math.max(
+        Math.max(0, toNumber(nowMs, performance.now())),
+        Math.max(0, toNumber(transition.startedAtMs, 0)) + Math.max(1, toNumber(transition.durationMs, SLEEP_CURTAIN_TRANSITION_MS))
+      );
+      return false;
+    }
+    const settledAtMs = Math.max(0, toNumber(transition.settledAtMs, 0));
+    const holdMs = Math.max(0, toNumber(transition.holdMs, SLEEP_CURTAIN_SETTLE_MS));
+    if((Math.max(0, toNumber(nowMs, performance.now())) - settledAtMs) < holdMs){
+      return false;
+    }
+    clearSleepTransition();
+    closeSleepScreenToMenu();
+    return true;
+  }
+
+  function applySleepLightSelection(nowMs = Date.now(), opts = {}){
+    if(!isRecord(state.detailed)){
+      state.detailed = createDefaultDetailedState(state.monster?.id || "mon001");
+    }
+    const detail = ensureSleepDetailState(state.detailed);
+    const wakePenalty = getSleepWakePenaltyState(detail);
+    const nextSelection = getSleepLightSelection();
+    const now = Math.max(0, Math.floor(toNumber(nowMs, Date.now())));
+    if(isSleepTransitionActive(performance.now()) && !Boolean(opts.skipTransition)){
+      return { success: false, reason: "transition" };
+    }
+
+    if(nextSelection === SLEEP_LIGHT_SELECTION.OFF){
+      if(!isSleepWindowActive(detail)){
+        return { success: false, reason: "inactive" };
+      }
+      if(!detail.isTuckedIn && wakePenalty.sleepLocked){
+        return {
+          success: false,
+          reason: wakePenalty.earlyWakeActive ? "early_wake" : "groggy_lock",
+        };
+      }
+      if(!detail.isTuckedIn && !Boolean(opts.skipTransition)){
+        beginSleepTransition("enter", performance.now());
+        return { success: true, mode: "off", pending: true };
+      }
+      detail.sleepForcedAwake = false;
+      if(!detail.isTuckedIn){
+        startSleepSession(now);
+      }else{
+        saveDetailedState();
+      }
+      updateAutoSleepState(now);
+      if(!Boolean(opts.preserveTransition)){
+        clearSleepTransition();
+      }
+      return { success: true, mode: "off" };
+    }
+
+    if(detail.isTuckedIn && !Boolean(opts.skipTransition)){
+      beginSleepTransition("exit", performance.now());
+      return { success: true, mode: "on", pending: true };
+    }
+
+    if(detail.isTuckedIn){
+      stopSleepSession("manual", now);
+    }else{
+      detail.sleepForcedAwake = true;
+      saveDetailedState();
+    }
+    updateAutoSleepState(now);
+    if(!Boolean(opts.preserveTransition)){
+      clearSleepTransition();
+    }
+    return { success: true, mode: "on" };
+  }
+
+  function applySleepLightSelectionFromUi(selection, nowMs = Date.now()){
+    if(isSleepTransitionActive(performance.now())){
+      return { success: false, reason: "transition" };
+    }
+    setSleepLightSelection(selection);
+    const result = applySleepLightSelection(nowMs);
+    if(!result.success){
+      showOverlaySleep();
+      markCursorMoved();
+      return result;
+    }
+    if(result.pending){
+      showOverlaySleep();
+      markCursorMoved();
+      return result;
+    }
+    closeSleepScreenToMenu();
+    markCursorMoved();
+    return result;
+  }
+
+  function normalizeAdvPhase(value, fallback = ADV_PHASE.SEARCH){
+    const raw = String(value || "").trim().toLowerCase();
+    if(raw === ADV_PHASE.RESULT) return ADV_PHASE.RESULT;
+    if(raw === ADV_PHASE.SEARCH) return ADV_PHASE.SEARCH;
+    return fallback;
+  }
+
+  function pickAdvRewardItemId(){
+    const pool = ADV_REWARD_ITEM_IDS
+      .map((id) => getItemById(id))
+      .filter((item) => isRecord(item));
+    if(pool.length <= 0){
+      return "patch_tape_i";
+    }
+    const index = Math.floor(Math.random() * pool.length);
+    return String(pool[index]?.id || "patch_tape_i");
+  }
+
+  function createAdvSession(nowMs = performance.now()){
+    const startedAtMs = Math.max(0, toNumber(nowMs, performance.now()));
+    return {
+      phase: ADV_PHASE.SEARCH,
+      startedAtMs,
+      resolveAtMs: startedAtMs + ADV_SEARCHING_MS,
+      rewardItemId: pickAdvRewardItemId(),
+      rewardResult: null,
+      resultText: "",
+    };
+  }
+
+  function getAdvSession(){
+    return isRecord(uiState.advSession) ? uiState.advSession : null;
+  }
+
+  function openAdvScreen(nowMs = performance.now()){
+    if(!isRecord(state.detailed)){
+      state.detailed = createDefaultDetailedState(state.monster?.id || "mon001");
+    }
+    hideOverlayLog();
+    setOverlayMode(null);
+    uiState.advSession = createAdvSession(nowMs);
+    state.screen = "adv";
+  }
+
+  function closeAdvScreenToMenu(){
+    uiState.advSession = null;
+    menuDeactivate();
+    state.screen = "menu";
+    hideOverlayLog();
+    setOverlayMode(null);
+  }
+
+  function resolveAdvRewardResultText(rewardResult){
+    const grant = Array.isArray(rewardResult?.grants) ? rewardResult.grants[0] : null;
+    const item = getItemById(grant?.itemId);
+    const appliedCount = Math.max(0, Math.floor(toNumber(grant?.appliedCount, 0)));
+    if(item && appliedCount > 0){
+      return `${String(item.label || item.id).trim()}を取得した\n+${appliedCount}`;
+    }
+    if(item){
+      return `${String(item.label || item.id).trim()}を確保した\n+0`;
+    }
+    return "何も見つからなかった";
+  }
+
+  function resolveAdvSearchingText(nowMs = performance.now(), sessionOverride = null){
+    const session = isRecord(sessionOverride) ? sessionOverride : getAdvSession();
+    const now = Math.max(0, toNumber(nowMs, performance.now()));
+    const elapsedMs = Math.max(0, now - Math.max(0, toNumber(session?.startedAtMs, now)));
+    const dotCount = (Math.floor(elapsedMs / 240) % 4);
+    const dots = ".".repeat(dotCount);
+    return `SEARCHING${dots}\n信号をたどっている\n回収対象を探索中`;
+  }
+
+  function finalizeAdvRewardSession(sessionOverride = null){
+    const session = isRecord(sessionOverride) ? sessionOverride : getAdvSession();
+    if(!session || normalizeAdvPhase(session.phase) === ADV_PHASE.RESULT){
+      return session;
+    }
+    const rewardResult = grantDetailedInventoryRewards([
+      { itemId: String(session.rewardItemId || "patch_tape_i"), count: 1 },
+    ]);
+    session.rewardResult = rewardResult;
+    session.phase = ADV_PHASE.RESULT;
+    session.resultText = resolveAdvRewardResultText(rewardResult);
+    return session;
+  }
+
+  function updateAdv(nowMs = performance.now()){
+    if(state.screen !== "adv") return;
+    const session = getAdvSession();
+    if(!session){
+      uiState.advSession = createAdvSession(nowMs);
+      return;
+    }
+    if(
+      normalizeAdvPhase(session.phase) === ADV_PHASE.SEARCH &&
+      Math.max(0, toNumber(nowMs, performance.now())) >= Math.max(0, toNumber(session.resolveAtMs, 0))
+    ){
+      finalizeAdvRewardSession(session);
+    }
+  }
+
   function openFoodScreen(){
     if(!isRecord(state.detailed)){
       state.detailed = createDefaultDetailedState(state.monster?.id || "mon001");
     }
+    captureOverlayBackdropSnapshot();
     ensureFoodDetailState(state.detailed);
     clearStatSkillEditingSlot();
     uiState.foodWarningMessage = "";
@@ -5071,6 +6570,24 @@
     setOverlayMode("food");
   }
 
+  function closeFoodResultToSelect(){
+    uiState.foodWarningMessage = "";
+    setFoodResultPayload(null);
+    setFoodScreenMode(FOOD_SCREEN_MODE.SELECT);
+    state.screen = "food";
+    setOverlayMode("food");
+    showOverlayFood();
+  }
+
+  function openStatusScreen(){
+    captureOverlayBackdropSnapshot();
+    hideOverlayLog();
+    state.screen = "status";
+    resetStatCursors();
+    setStatPage(0);
+    setOverlayMode("stat");
+  }
+
   function closeFoodScreenToMenu(){
     setFoodScreenMode(FOOD_SCREEN_MODE.SELECT);
     uiState.foodWarningMessage = "";
@@ -5078,6 +6595,519 @@
     menuDeactivate();
     state.screen = "menu";
     hideOverlayLog();
+  }
+
+  function buildSleepForecastEntries(detailOverride = null){
+    const detail = getSleepOverlayDisplayDetail(detailOverride || state.detailed);
+    if(!isSleepLightOffSelected() || !canExecuteSleepAction(detail)){
+      return [
+        { label: "STAMINA", symbol: "--" },
+        { label: "STABILITY", symbol: "--" },
+        { label: "FULLNESS", symbol: "--" },
+      ];
+    }
+    const staminaMax = getRuntimeMax("stamina", 100);
+    const staminaNow = clamp(getRuntimeStat("stamina", staminaMax), 0, staminaMax);
+    const stabilityMax = toPositiveInt(state.stats.stabilityMax, 10);
+    const stabilityNow = clamp(toNumber(state.stats.stability, stabilityMax), 0, stabilityMax);
+    const hungerMax = toPositiveInt(state.stats.hungerMax, 10);
+    const hungerNow = clamp(toNumber(state.stats.hunger, 0), 0, hungerMax);
+    const staminaMissing = Math.max(0, staminaMax - staminaNow);
+    const stabilityMissing = Math.max(0, stabilityMax - stabilityNow);
+    const hungerValue = HUNGER_IS_FULLNESS ? hungerNow : Math.max(0, hungerMax - hungerNow);
+    const staminaHint = staminaMax > 0 ? clamp((staminaMissing / staminaMax) * 3, 0, 3) : 0;
+    const stabilityHint = stabilityMax > 0 ? clamp((stabilityMissing / stabilityMax) * 2.4, 0, 3) : 0;
+    const hungerHint = hungerValue > 0 ? 1 : 0;
+    return [
+      { label: "STAMINA", symbol: getUiDeltaSymbol(staminaHint <= 0 ? 0 : Math.max(1, staminaHint)) },
+      { label: "STABILITY", symbol: getUiDeltaSymbol(stabilityHint <= 0 ? 0 : Math.max(1, stabilityHint)) },
+      { label: "FULLNESS", symbol: getUiDeltaSymbol(hungerHint > 0 ? -1 : 0) },
+    ];
+  }
+
+  function resolveSleepLeadText(detailOverride = null){
+    const detail = getSleepOverlayDisplayDetail(detailOverride || state.detailed);
+    const wakePenalty = getSleepWakePenaltyState(detail);
+    if(detail?.isTuckedIn){
+      return isSleepLightOffSelected()
+        ? "暗転を維持する。回復は続く。"
+        : "電気をつけて起こす。回復は止まる。";
+    }
+    if(!isSleepLightOffSelected()){
+      return state.isSleeping
+        ? "電気をつけて起こしておく。"
+        : "電気はつけたまま。起きていられる。";
+    }
+    if(!isSleepWindowActive(detail)){
+      return "今は活動時間。睡眠開始はできない。";
+    }
+    if(isSleepLightOffSelected() && wakePenalty.sleepLocked){
+      return wakePenalty.earlyWakeActive
+        ? "早起き状態。次の睡眠時間帯までは眠れない。"
+        : "寝起き中。しばらくは再入眠できない。";
+    }
+    return "短時間休止。スタミナ回復。充足は少し減る。";
+  }
+
+  function resolveSleepFlavorText(detailOverride = null){
+    const detail = getSleepOverlayDisplayDetail(detailOverride || state.detailed);
+    const wakePenalty = getSleepWakePenaltyState(detail);
+    const stabilityMax = toPositiveInt(state.stats.stabilityMax, 10);
+    const stabilityNow = clamp(toNumber(state.stats.stability, stabilityMax), 0, stabilityMax);
+    const damageMax = toPositiveInt(state.stats.damageMax, 10);
+    const damageNow = clamp(toNumber(state.stats.damage, 0), 0, damageMax);
+    const stabilityRatio = stabilityMax > 0 ? (stabilityNow / stabilityMax) : 0;
+    const damageRatio = damageMax > 0 ? (damageNow / damageMax) : 0;
+    if(detail?.isTuckedIn){
+      return isSleepLightOffSelected()
+        ? "短時間睡眠では寝起き状態になることがある。"
+        : "起床すると休止回復はそこで打ち切られる。";
+    }
+    if(!isSleepLightOffSelected()){
+      return state.isSleeping
+        ? "就寝時間帯だが、まだ明かりは落としていない。"
+        : "";
+    }
+    if(!isSleepWindowActive(detail)){
+      return "";
+    }
+    if(isSleepLightOffSelected() && wakePenalty.sleepLocked){
+      return wakePenalty.earlyWakeActive
+        ? `活動帯まで${wakePenalty.sleepLockRemainMinutes}分。早起き状態 -10%。`
+        : `あと${wakePenalty.sleepLockRemainMinutes}分は再入眠できない。`;
+    }
+    if(stabilityRatio < 0.35 || damageRatio > 0.45){
+      return "眠りが浅いかもしれない。";
+    }
+    if(stabilityRatio >= 0.72 && damageRatio < 0.24){
+      return "深く休めそうだ。";
+    }
+    return "静かに休ませる。";
+  }
+
+  function buildSleepLightOptions(){
+    return [
+      { id: SLEEP_LIGHT_SELECTION.ON, label: "ON", active: getSleepLightSelection() === SLEEP_LIGHT_SELECTION.ON },
+      { id: SLEEP_LIGHT_SELECTION.OFF, label: "OFF", active: getSleepLightSelection() === SLEEP_LIGHT_SELECTION.OFF },
+    ];
+  }
+
+  function buildSleepLightRowElement(){
+    const row = document.createElement("div");
+    row.className = "overlay-sleep-light-row";
+
+    const label = document.createElement("div");
+    label.className = "overlay-sleep-light-label";
+    label.textContent = "LIGHT";
+
+    const options = document.createElement("div");
+    options.className = "overlay-sleep-light-options";
+    const items = buildSleepLightOptions();
+    for(let i = 0; i < items.length; i++){
+      const chip = document.createElement("div");
+      chip.className = `overlay-sleep-light-chip${items[i].active ? " is-active" : ""}`;
+      chip.textContent = items[i].label;
+      chip.tabIndex = 0;
+      chip.addEventListener("pointerdown", (event) => {
+        event.preventDefault();
+      });
+      chip.addEventListener("click", (event) => {
+        event.preventDefault();
+        if(isSleepTransitionActive(performance.now())){
+          return;
+        }
+        applySleepLightSelectionFromUi(items[i].id, Date.now());
+      });
+      options.appendChild(chip);
+    }
+
+    row.appendChild(label);
+    row.appendChild(options);
+    return row;
+  }
+
+  function formatClockMinuteLabel(minuteRaw){
+    const minute = ((Math.floor(toNumber(minuteRaw, 0)) % (24 * 60)) + (24 * 60)) % (24 * 60);
+    const hh = String(Math.floor(minute / 60)).padStart(2, "0");
+    const mm = String(minute % 60).padStart(2, "0");
+    return `${hh}:${mm}`;
+  }
+
+  function formatSleepDurationLabel(totalMinutesRaw){
+    const totalMinutes = Math.max(0, Math.floor(toNumber(totalMinutesRaw, 0)));
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    return `${hours}H${String(minutes).padStart(2, "0")}M`;
+  }
+
+  function getSleepClockForecast(detailOverride = null){
+    const detail = getSleepOverlayDisplayDetail(detailOverride || state.detailed);
+    const currentMinute = getCurrentClockMinute();
+    const key = normalizeChronotype(detail?.chronotype, "morning");
+    const window = CHRONOTYPE_WINDOWS[key] || CHRONOTYPE_WINDOWS.morning;
+    const available = Boolean(detail?.isTuckedIn) || isSleepWindowActive(detail);
+    const durationMinutes = available
+      ? ((window.endMin - currentMinute + (24 * 60)) % (24 * 60))
+      : 0;
+    const wakeMinute = available
+      ? ((currentMinute + durationMinutes) % (24 * 60))
+      : window.endMin;
+    return {
+      currentMinute,
+      wakeMinute,
+      durationMinutes,
+      available,
+      chronotype: key,
+      window,
+      currentLabel: formatClockMinuteLabel(currentMinute),
+      wakeLabel: available ? formatClockMinuteLabel(wakeMinute) : "--:--",
+      durationLabel: available ? formatSleepDurationLabel(durationMinutes) : "--",
+    };
+  }
+
+  function getSleepClockAngleByMinute(minuteAbs){
+    const dialMinute = ((toNumber(minuteAbs, 0) % (12 * 60)) + (12 * 60)) % (12 * 60);
+    return ((dialMinute / (12 * 60)) * Math.PI * 2) - (Math.PI / 2);
+  }
+
+  function drawSleepClockPixel(ctx2d, x, y, size = 2, color = "rgba(14,20,15,0.82)"){
+    if(!ctx2d) return;
+    const px = Math.round(toNumber(x, 0) - (size / 2));
+    const py = Math.round(toNumber(y, 0) - (size / 2));
+    ctx2d.fillStyle = color;
+    ctx2d.fillRect(px, py, Math.max(1, Math.floor(size)), Math.max(1, Math.floor(size)));
+  }
+
+  function drawSleepClockLine(ctx2d, x0, y0, x1, y1, opts = {}){
+    if(!ctx2d) return;
+    const color = String(opts.color || "rgba(14,20,15,0.82)");
+    const size = Math.max(1, Math.floor(toNumber(opts.size, 2)));
+    const dx = toNumber(x1, 0) - toNumber(x0, 0);
+    const dy = toNumber(y1, 0) - toNumber(y0, 0);
+    const steps = Math.max(1, Math.ceil(Math.max(Math.abs(dx), Math.abs(dy))));
+    for(let i = 0; i <= steps; i++){
+      const ratio = i / steps;
+      drawSleepClockPixel(
+        ctx2d,
+        toNumber(x0, 0) + (dx * ratio),
+        toNumber(y0, 0) + (dy * ratio),
+        size,
+        color
+      );
+    }
+  }
+
+  function drawSleepClockArc(ctx2d, cx, cy, startMinute, durationMinutes, radius, opts = {}){
+    if(!ctx2d) return;
+    const color = String(opts.color || "rgba(14,20,15,0.36)");
+    const size = Math.max(1, Math.floor(toNumber(opts.size, 2)));
+    const stepMinutes = Math.max(2, Math.floor(toNumber(opts.stepMinutes, 4)));
+    const total = Math.max(0, Math.floor(toNumber(durationMinutes, 0)));
+    if(total <= 0) return;
+    for(let offset = 0; offset <= total; offset += stepMinutes){
+      const angle = getSleepClockAngleByMinute(startMinute + offset);
+      drawSleepClockPixel(
+        ctx2d,
+        cx + (Math.cos(angle) * radius),
+        cy + (Math.sin(angle) * radius),
+        size,
+        color
+      );
+    }
+  }
+
+  function createSleepClockCanvasElement(detailOverride = null, nowMs = performance.now()){
+    const detail = getSleepOverlayDisplayDetail(detailOverride || state.detailed);
+    const forecast = getSleepClockForecast(detail);
+    const canvas = document.createElement("canvas");
+    canvas.className = "overlay-sleep-clock-canvas";
+    canvas.width = 220;
+    canvas.height = 220;
+    const ctx2d = canvas.getContext("2d", { alpha: true });
+    if(!ctx2d){
+      return canvas;
+    }
+
+    const w = canvas.width;
+    const h = canvas.height;
+    const cx = Math.floor(w / 2);
+    const cy = 108;
+    const faceRadius = 88;
+    const forecastRadius = 98;
+    const rawBlinkWave = ((Math.sin(toNumber(nowMs, performance.now()) * 0.00225) - 0.15) + 1) * 0.5;
+    const blinkWave = clamp(rawBlinkWave, 0, 1);
+    const blinkPulse = blinkWave * blinkWave * (3 - (2 * blinkWave));
+    const minuteAngle = ((forecast.currentMinute % 60) / 60) * Math.PI * 2 - (Math.PI / 2);
+    const hourAngle = getSleepClockAngleByMinute(forecast.currentMinute);
+    const forecastAlpha = forecast.available
+      ? ((isSleepLightOffSelected() || detail?.isTuckedIn)
+        ? (0.18 + (blinkPulse * 0.54))
+        : (0.08 + (blinkPulse * 0.42)))
+      : 0.10;
+    const wakeAlpha = forecast.available
+      ? (0.20 + (blinkPulse * 0.64))
+      : 0.18;
+    const forecastTone = `rgba(14,20,15,${forecastAlpha.toFixed(3)})`;
+    const wakeTone = `rgba(14,20,15,${wakeAlpha.toFixed(3)})`;
+    const forecastPixelSize = 4;
+    const wakePixelSize = 6;
+
+    ctx2d.clearRect(0, 0, w, h);
+
+    for(let i = 0; i < 60; i++){
+      const angle = ((i / 60) * Math.PI * 2) - (Math.PI / 2);
+      const outer = faceRadius + 8;
+      const inner = i % 5 === 0 ? faceRadius - 2 : faceRadius + 2;
+      drawSleepClockLine(
+        ctx2d,
+        cx + (Math.cos(angle) * inner),
+        cy + (Math.sin(angle) * inner),
+        cx + (Math.cos(angle) * outer),
+        cy + (Math.sin(angle) * outer),
+        {
+          size: i % 5 === 0 ? 2 : 1,
+          color: i % 5 === 0 ? "rgba(14,20,15,0.76)" : "rgba(14,20,15,0.30)",
+        }
+      );
+    }
+
+    if(forecast.available){
+      drawSleepClockArc(ctx2d, cx, cy, forecast.currentMinute, forecast.durationMinutes, forecastRadius, {
+        color: forecastTone,
+        size: forecastPixelSize,
+        stepMinutes: 4,
+      });
+      const wakeAngle = getSleepClockAngleByMinute(forecast.currentMinute + forecast.durationMinutes);
+      drawSleepClockPixel(
+        ctx2d,
+        cx + (Math.cos(wakeAngle) * forecastRadius),
+        cy + (Math.sin(wakeAngle) * forecastRadius),
+        wakePixelSize,
+        wakeTone
+      );
+    }
+
+    for(let hour = 1; hour <= 12; hour++){
+      const angle = ((hour / 12) * Math.PI * 2) - (Math.PI / 2);
+      const label = String(hour);
+      const measure = uiTextMeasure(label, { scale: 2 });
+      const textW = Number(measure?.width || 0);
+      const tx = Math.round(cx + (Math.cos(angle) * (faceRadius - 24)) - (textW / 2));
+      const ty = Math.round(cy + (Math.sin(angle) * (faceRadius - 20)) - 7);
+      uiTextDraw(ctx2d, label, tx, ty, {
+        scale: 2,
+        color: "rgba(14,20,15,0.82)",
+      });
+    }
+
+    drawSleepClockLine(
+      ctx2d,
+      cx - (Math.cos(hourAngle) * 7),
+      cy - (Math.sin(hourAngle) * 7),
+      cx + (Math.cos(hourAngle) * 46),
+      cy + (Math.sin(hourAngle) * 46),
+      { size: 4, color: "rgba(14,20,15,0.88)" }
+    );
+    drawSleepClockLine(
+      ctx2d,
+      cx - (Math.cos(minuteAngle) * 9),
+      cy - (Math.sin(minuteAngle) * 9),
+      cx + (Math.cos(minuteAngle) * 70),
+      cy + (Math.sin(minuteAngle) * 70),
+      { size: 3, color: "rgba(14,20,15,0.72)" }
+    );
+    drawSleepClockPixel(ctx2d, cx, cy, 8, "rgba(14,20,15,0.90)");
+
+    return canvas;
+  }
+
+  function getSleepCurtainLevel(detailOverride = null, nowMs = performance.now()){
+    const detail = ensureSleepDetailState(detailOverride || state.detailed);
+    const transition = getSleepTransitionRecord();
+    if(transition){
+      const eased = 1 - Math.pow(1 - getSleepTransitionProgress(nowMs), 3);
+      if(String(transition.mode || "") === "exit"){
+        return clamp(1 - (eased * (1 - SLEEP_CURTAIN_PARTIAL_LEVEL)), SLEEP_CURTAIN_PARTIAL_LEVEL, 1);
+      }
+      return clamp(SLEEP_CURTAIN_PARTIAL_LEVEL + (eased * (1 - SLEEP_CURTAIN_PARTIAL_LEVEL)), SLEEP_CURTAIN_PARTIAL_LEVEL, 1);
+    }
+    if(detail?.isTuckedIn){
+      return 1;
+    }
+    return isSleepWindowActive(detail) ? SLEEP_CURTAIN_PARTIAL_LEVEL : 0;
+  }
+
+  function createSleepCurtainCanvasElement(detailOverride = null, nowMs = performance.now()){
+    const detail = ensureSleepDetailState(detailOverride || state.detailed);
+    const level = getSleepCurtainLevel(detail, nowMs);
+    const canvas = document.createElement("canvas");
+    canvas.className = "overlay-sleep-curtain-canvas";
+    canvas.width = 220;
+    canvas.height = 220;
+    const ctx2d = canvas.getContext("2d", { alpha: true });
+    if(!ctx2d || level <= 0){
+      return canvas;
+    }
+
+    const w = canvas.width;
+    const h = canvas.height;
+    const midX = Math.floor(w / 2);
+    const closeRatio = clamp((level - SLEEP_CURTAIN_PARTIAL_LEVEL) / Math.max(0.001, 1 - SLEEP_CURTAIN_PARTIAL_LEVEL), 0, 1);
+    const openness = 1 - closeRatio;
+    const apexY = 0;
+    const shoulderY = Math.round(30 + (12 * openness));
+    const openingShoulderHalf = Math.round(88 * openness);
+    const openingBottomHalf = Math.round(134 * openness);
+    const drapeAlpha = 0.28 + (level * 0.22);
+    const fullCloseAlpha = clamp((level - 0.78) / 0.22, 0, 1) * 0.16;
+    const edgeAlpha = Math.min(0.70, drapeAlpha + 0.10);
+
+    ctx2d.clearRect(0, 0, w, h);
+
+    ctx2d.fillStyle = `rgba(7,9,7,${drapeAlpha.toFixed(3)})`;
+    if(openness <= 0.002){
+      ctx2d.fillRect(0, 0, w, h);
+    }else{
+      ctx2d.beginPath();
+      ctx2d.rect(0, 0, w, h);
+      ctx2d.moveTo(midX, apexY);
+      ctx2d.lineTo(midX - openingShoulderHalf, shoulderY);
+      ctx2d.lineTo(midX - openingBottomHalf, h);
+      ctx2d.lineTo(midX + openingBottomHalf, h);
+      ctx2d.lineTo(midX + openingShoulderHalf, shoulderY);
+      ctx2d.closePath();
+      ctx2d.fill("evenodd");
+
+      ctx2d.strokeStyle = `rgba(12,16,12,${edgeAlpha.toFixed(3)})`;
+      ctx2d.lineWidth = 2;
+      ctx2d.beginPath();
+      ctx2d.moveTo(midX, apexY);
+      ctx2d.lineTo(midX - openingShoulderHalf, shoulderY);
+      ctx2d.lineTo(midX - openingBottomHalf, h);
+      ctx2d.moveTo(midX, apexY);
+      ctx2d.lineTo(midX + openingShoulderHalf, shoulderY);
+      ctx2d.lineTo(midX + openingBottomHalf, h);
+      ctx2d.stroke();
+    }
+
+    if(fullCloseAlpha > 0){
+      ctx2d.fillStyle = `rgba(8,10,8,${fullCloseAlpha.toFixed(3)})`;
+      ctx2d.fillRect(0, 0, w, h);
+    }
+    return canvas;
+  }
+
+  function buildSleepStatusPaneElement(nowMs = performance.now()){
+    const statusRows = getSleepOverlayStatusMetrics();
+    const now = toNumber(nowMs, performance.now());
+    const pane = document.createElement("div");
+    pane.className = "overlay-sleep-subpane overlay-sleep-status-pane";
+    for(let i = 0; i < statusRows.length; i++){
+      const rowData = statusRows[i];
+      const row = document.createElement("div");
+      row.className = "overlay-sleep-status-row";
+
+      const label = document.createElement("div");
+      label.className = "overlay-sleep-status-label";
+      label.textContent = rowData.label;
+
+      const gauge = document.createElement("div");
+      gauge.className = "overlay-sleep-status-gauge";
+
+      const fill = document.createElement("div");
+      fill.className = "overlay-sleep-status-fill";
+      const ratio = clamp(toNumber(rowData.ratio, 0), 0, 1);
+      const shimmer = 0.74 + (Math.sin((now * 0.00145) + toNumber(rowData.phase, 0)) * 0.08);
+      fill.style.width = `${(ratio * 100).toFixed(1)}%`;
+      fill.style.opacity = `${clamp(shimmer, 0.58, 0.90).toFixed(3)}`;
+      gauge.appendChild(fill);
+
+      row.appendChild(label);
+      row.appendChild(gauge);
+      pane.appendChild(row);
+    }
+    return pane;
+  }
+
+  function buildSleepCenterPaneElement(detailOverride = null, nowMs = performance.now()){
+    const pane = document.createElement("div");
+    pane.className = "overlay-sleep-subpane overlay-sleep-center-pane";
+
+    const slot = document.createElement("div");
+    slot.className = "overlay-sleep-center-slot";
+
+    slot.appendChild(createSleepClockCanvasElement(detailOverride || state.detailed, nowMs));
+    slot.appendChild(createSleepCurtainCanvasElement(detailOverride || state.detailed, nowMs));
+    pane.appendChild(slot);
+    return pane;
+  }
+
+  function buildSleepForecastPaneElement(detailOverride = null){
+    const detail = getSleepOverlayDisplayDetail(detailOverride || state.detailed);
+    const pane = document.createElement("div");
+    pane.className = "overlay-sleep-subpane overlay-sleep-forecast-pane";
+
+    const rows = buildSleepForecastEntries(detail);
+    for(let i = 0; i < rows.length; i++){
+      const row = document.createElement("div");
+      row.className = "overlay-sleep-forecast-row";
+
+      const label = document.createElement("div");
+      label.className = "overlay-sleep-forecast-label";
+      label.textContent = rows[i].label;
+
+      const value = document.createElement("div");
+      value.className = "overlay-sleep-forecast-value";
+      value.textContent = rows[i].symbol;
+
+      row.appendChild(label);
+      row.appendChild(value);
+      pane.appendChild(row);
+    }
+    return pane;
+  }
+
+  function buildSleepOverlayElement(nowMs = performance.now()){
+    const detail = getSleepOverlayDisplayDetail(state.detailed);
+    const page = document.createElement("div");
+    page.className = "overlay-sleep-page";
+
+    const topLayout = document.createElement("div");
+    topLayout.className = "overlay-sleep-top-layout";
+    topLayout.appendChild(buildSleepStatusPaneElement(nowMs));
+    topLayout.appendChild(buildSleepCenterPaneElement(detail, nowMs));
+    topLayout.appendChild(buildSleepForecastPaneElement(detail));
+
+    const bottomPane = document.createElement("div");
+    bottomPane.className = "overlay-food-pane overlay-food-pane-bottom overlay-sleep-pane-bottom";
+
+    bottomPane.appendChild(buildSleepLightRowElement());
+
+    const lead = document.createElement("div");
+    lead.className = "overlay-sleep-bottom-lead";
+    lead.textContent = resolveSleepLeadText(detail);
+
+    const note = document.createElement("div");
+    note.className = "overlay-sleep-bottom-note";
+    note.textContent = resolveSleepFlavorText(detail) || "\u00A0";
+
+    bottomPane.appendChild(lead);
+    bottomPane.appendChild(note);
+
+    page.appendChild(topLayout);
+    page.appendChild(bottomPane);
+    return page;
+  }
+
+  function showOverlaySleep(nowMs = performance.now()){
+    if(!showOverlayShell("food", OVERLAY_STAT_RECT)) return;
+    const currentFontPx = toNumber(parseFloat(String(overlayLog.style.fontSize || "")), 15);
+    overlayLog.style.fontSize = `${Math.max(15, Math.round(currentFontPx))}px`;
+    overlayLog.style.lineHeight = "1.35";
+    overlayLogTitle.textContent = "";
+    overlayLogBody.textContent = "";
+    overlayLogHint.textContent = "";
+    overlayLogBody.appendChild(buildSleepOverlayElement(nowMs));
   }
 
   function getFoodListWindowStart(total, cursor, visibleRows){
@@ -5327,6 +7357,147 @@
     return HEAL_ACTION_CATALOG[getHealCursor()] || null;
   }
 
+  function createDefaultHealItemCursorState(){
+    return {
+      patch: 0,
+      stabilize: 0,
+      purge: 0,
+    };
+  }
+
+  function normalizeHealItemCursorState(input){
+    const src = isRecord(input) ? input : {};
+    const out = createDefaultHealItemCursorState();
+    const keys = Object.keys(out);
+    for(let i = 0; i < keys.length; i++){
+      const key = keys[i];
+      out[key] = Math.max(0, Math.floor(toNumber(src[key], out[key])));
+    }
+    return out;
+  }
+
+  function ensureHealItemCursorState(){
+    uiState.healItemCursorByType = normalizeHealItemCursorState(uiState.healItemCursorByType);
+    return uiState.healItemCursorByType;
+  }
+
+  function getHealItemEntriesForAction(actionId, detailOverride = null, options = {}){
+    const id = normalizeHealActionId(actionId, "");
+    if(id.length <= 0) return [];
+    const detail = ensureHealDetailState(detailOverride || state.detailed);
+    if(!isRecord(detail)){
+      return [];
+    }
+    return listInventoryItems(detail, {
+      category: ITEM_CATEGORY.HEAL,
+      useContext: ITEM_USE_CONTEXT.HEAL_MENU,
+      includeZero: options.includeZero !== false,
+    }).filter((entry) => String(entry?.item?.subType || "").trim().toLowerCase() === id);
+  }
+
+  function getHealItemCursor(actionId, detailOverride = null){
+    const id = normalizeHealActionId(actionId, "");
+    const cursors = ensureHealItemCursorState();
+    const entries = getHealItemEntriesForAction(id, detailOverride, { includeZero: true });
+    if(entries.length <= 0){
+      cursors[id] = 0;
+      return 0;
+    }
+    const raw = Math.floor(toNumber(cursors[id], 0));
+    const normalized = ((raw % entries.length) + entries.length) % entries.length;
+    cursors[id] = normalized;
+    return normalized;
+  }
+
+  function setHealItemCursor(actionId, index, detailOverride = null){
+    const id = normalizeHealActionId(actionId, "");
+    const cursors = ensureHealItemCursorState();
+    const entries = getHealItemEntriesForAction(id, detailOverride, { includeZero: true });
+    if(entries.length <= 0){
+      cursors[id] = 0;
+      return 0;
+    }
+    const raw = Math.floor(toNumber(index, 0));
+    const normalized = ((raw % entries.length) + entries.length) % entries.length;
+    cursors[id] = normalized;
+    return normalized;
+  }
+
+  function moveHealItemCursor(actionId, delta, detailOverride = null){
+    const step = Math.floor(toNumber(delta, 0));
+    if(step === 0) return false;
+    const before = getHealItemCursor(actionId, detailOverride);
+    const after = setHealItemCursor(actionId, before + step, detailOverride);
+    if(before === after) return false;
+    uiState.healWarningMessage = "";
+    return true;
+  }
+
+  function getHealItemByValue(value){
+    if(isRecord(value?.item)){
+      return getItemById(value.item.id);
+    }
+    if(isRecord(value)){
+      return getItemById(value.id);
+    }
+    return getItemById(value);
+  }
+
+  function getSelectedHealItemEntry(actionId, detailOverride = null, itemOverride = null){
+    const id = normalizeHealActionId(actionId, "");
+    const detail = ensureHealDetailState(detailOverride || state.detailed);
+    if(!isRecord(detail)){
+      return null;
+    }
+    const item = getHealItemByValue(itemOverride);
+    if(
+      item &&
+      String(item.category || "").trim().toLowerCase() === ITEM_CATEGORY.HEAL &&
+      String(item.subType || "").trim().toLowerCase() === id
+    ){
+      return {
+        item,
+        count: getInventoryItemCount(detail, item.id),
+      };
+    }
+    const entries = getHealItemEntriesForAction(id, detail, { includeZero: true });
+    if(entries.length <= 0){
+      return null;
+    }
+    return entries[getHealItemCursor(id, detail)] || null;
+  }
+
+  function getSelectedHealItem(actionId, detailOverride = null, itemOverride = null){
+    return getSelectedHealItemEntry(actionId, detailOverride, itemOverride)?.item || null;
+  }
+
+  function getHealItemEffectRank(item){
+    return clamp(Math.floor(toNumber(item?.rank, 0)), 0, 3);
+  }
+
+  function formatItemRankLabel(rank){
+    const normalized = Math.max(0, Math.floor(toNumber(rank, 0)));
+    if(normalized <= 0) return "--";
+    if(normalized === 1) return "I";
+    if(normalized === 2) return "II";
+    return "III";
+  }
+
+  function formatHealItemStockText(count){
+    if(isItemCountInfinite(count)){
+      return "∞";
+    }
+    return String(Math.max(0, Math.floor(toNumber(count, 0)))).padStart(2, "0");
+  }
+
+  function getHealItemMetaText(actionId, detailOverride = null, itemOverride = null){
+    const entry = getSelectedHealItemEntry(actionId, detailOverride, itemOverride);
+    if(!entry?.item){
+      return "-- --";
+    }
+    return `${formatItemRankLabel(entry.item.rank)} ${formatHealItemStockText(entry.count)}`;
+  }
+
   function setHealResultPayload(payload){
     if(!isRecord(payload)){
       uiState.healResultPayload = null;
@@ -5359,18 +7530,63 @@
     return getHealExecutionSession() != null;
   }
 
-  function startHealExecutionSession(actionId, nowMs = performance.now()){
+  function startHealExecutionSession(actionId, itemId = null, nowMs = performance.now()){
     const action = getHealActionById(actionId);
     if(!action){
       return null;
     }
+    const detail = ensureHealDetailState(state.detailed);
+    const item = getSelectedHealItem(action.id, detail, itemId);
     uiState.healExecutionSession = {
       actionId: normalizeHealActionId(action.id, ""),
+      itemId: String(item?.id || "").trim().toLowerCase(),
       startedAt: toNumber(nowMs, performance.now()),
       applied: false,
       result: null,
+      previewSnapshot: captureHealPreviewSnapshot(action.id, detail, item),
     };
     return uiState.healExecutionSession;
+  }
+
+  function captureHealPreviewSnapshot(actionId, detail, itemOverride = null){
+    const id = normalizeHealActionId(actionId, "");
+    const safeDetail = ensureHealDetailState(detail || state.detailed);
+    const selectedItem = getSelectedHealItem(id, safeDetail, itemOverride);
+    const hpMax = getRuntimeMax("hp", 100);
+    const hpNow = clamp(getRuntimeStat("hp", hpMax), 0, hpMax);
+    const damageMax = toPositiveInt(state.stats.damageMax, 10);
+    const damageNow = clamp(toNumber(state.stats.damage, 0), 0, damageMax);
+    const stabilityMax = toPositiveInt(state.stats.stabilityMax, 10);
+    const stabilityNow = clamp(toNumber(state.stats.stability, stabilityMax), 0, stabilityMax);
+    const staminaMax = getRuntimeMax("stamina", 100);
+    const staminaNow = clamp(getRuntimeStat("stamina", staminaMax), 0, staminaMax);
+    let preview = null;
+    if(id === HEAL_TYPE.PATCH){
+      preview = previewPatchHeal(safeDetail, selectedItem);
+    }else if(id === HEAL_TYPE.STABILIZE){
+      preview = previewStabilizeHeal(safeDetail, selectedItem);
+    }else if(id === HEAL_TYPE.PURGE){
+      preview = previewPurgeHeal(safeDetail, selectedItem);
+    }
+    return {
+      actionId: id,
+      itemId: String(selectedItem?.id || "").trim().toLowerCase(),
+      hpMax,
+      hpNow,
+      damageMax,
+      damageNow,
+      stabilityMax,
+      stabilityNow,
+      staminaMax,
+      staminaNow,
+      levels: {
+        noise: getHealAbnormalLevel(safeDetail, "noise"),
+        desync: getHealAbnormalLevel(safeDetail, "desync"),
+        contamination: getHealAbnormalLevel(safeDetail, "contamination"),
+        decay: getHealAbnormalLevel(safeDetail, "decay"),
+      },
+      preview,
+    };
   }
 
   function getHealExecutionFrame(session, nowMs = performance.now()){
@@ -5396,6 +7612,9 @@
     const flashStrength = (elapsed >= insertEnd && elapsed < flashEnd)
       ? clamp(1 - ((elapsed - insertEnd) / Math.max(1, HEAL_EXECUTION_FLASH_MS)), 0, 1)
       : 0;
+    const flashProgress = (elapsed >= insertEnd && elapsed < flashEnd)
+      ? clamp((elapsed - insertEnd) / Math.max(1, HEAL_EXECUTION_FLASH_MS), 0, 1)
+      : (elapsed >= flashEnd ? 1 : 0);
     const effectProgress = (elapsed >= flashEnd && elapsed < effectEnd)
       ? clamp((elapsed - flashEnd) / Math.max(1, HEAL_EXECUTION_EFFECT_MS), 0, 1)
       : (elapsed >= effectEnd ? 1 : 0);
@@ -5412,6 +7631,7 @@
       holdEnd,
       dockProgress,
       flashStrength,
+      flashProgress,
       effectProgress,
       effectPulse,
       done: elapsed >= totalMs,
@@ -5431,7 +7651,7 @@
     }
 
     if(frame.shouldApply){
-      const result = applyHealActionById(session.actionId);
+      const result = applyHealActionById(session.actionId, session.itemId);
       session.applied = true;
       session.result = result;
       if(!result?.success){
@@ -5446,6 +7666,7 @@
       clearHealExecutionSession();
       if(result?.success){
         uiState.healWarningMessage = "";
+        triggerMenuResultReveal(nowMs);
         setHealResultPayload(result.payload);
         setHealScreenMode(HEAL_SCREEN_MODE.RESULT);
       }
@@ -5458,6 +7679,7 @@
     if(!isRecord(state.detailed)){
       state.detailed = createDefaultDetailedState(state.monster?.id || "mon001");
     }
+    captureOverlayBackdropSnapshot();
     ensureHealDetailState(state.detailed);
     clearStatSkillEditingSlot();
     uiState.healWarningMessage = "";
@@ -5465,8 +7687,19 @@
     setHealResultPayload(null);
     setHealScreenMode(HEAL_SCREEN_MODE.SELECT);
     setHealCursor(getHealCursor());
+    ensureHealItemCursorState();
     state.screen = "heal";
     setOverlayMode("food");
+  }
+
+  function closeHealResultToSelect(){
+    uiState.healWarningMessage = "";
+    clearHealExecutionSession();
+    setHealResultPayload(null);
+    setHealScreenMode(HEAL_SCREEN_MODE.SELECT);
+    state.screen = "heal";
+    setOverlayMode("food");
+    showOverlayHeal();
   }
 
   function closeHealScreenToMenu(){
@@ -5580,33 +7813,64 @@
     return false;
   }
 
-  function getHealActionAvailability(action, detail){
+  function getHealActionAvailability(action, detail, itemOverride = null){
     const cost = getHealActionStaminaCost(action?.id);
     const staminaMax = getRuntimeMax("stamina", 100);
     const staminaNow = clamp(getRuntimeStat("stamina", staminaMax), 0, staminaMax);
-    if(state.isSleeping){
+    const selectedEntry = getSelectedHealItemEntry(action?.id, detail, itemOverride);
+    const selectedItem = selectedEntry?.item || null;
+    const itemCount = selectedEntry?.count ?? 0;
+    const hasTarget = hasHealTargetForAction(action?.id, detail);
+    const preview = (selectedItem && hasTarget) ? getHealActionPreview(action?.id, detail, selectedItem) : null;
+    const hasEffect = hasTarget ? hasHealPreviewBenefit(preview) : false;
+    if(isMonsterTuckedIn(detail)){
       return {
         canUse: false,
-        hasTarget: false,
-        hasEffect: false,
-        preview: null,
+        hasTarget,
+        hasEffect,
+        preview,
         reason: "睡眠中は治療できない。",
         staminaCost: cost,
+        item: selectedItem,
+        itemCount,
+      };
+    }
+    if(!selectedItem){
+      return {
+        canUse: false,
+        hasTarget,
+        hasEffect,
+        preview,
+        reason: "対応アイテムがない。",
+        staminaCost: cost,
+        item: null,
+        itemCount: 0,
+      };
+    }
+    if(!hasItemStock(itemCount, 1)){
+      return {
+        canUse: false,
+        hasTarget,
+        hasEffect,
+        preview,
+        reason: `${String(selectedItem.label || action?.label || "ITEM")} の在庫がない。`,
+        staminaCost: cost,
+        item: selectedItem,
+        itemCount,
       };
     }
     if(staminaNow < cost){
       return {
         canUse: false,
-        hasTarget: false,
-        hasEffect: false,
-        preview: null,
+        hasTarget,
+        hasEffect,
+        preview,
         reason: `スタミナ ${cost} 必要。`,
         staminaCost: cost,
+        item: selectedItem,
+        itemCount,
       };
     }
-    const hasTarget = hasHealTargetForAction(action?.id, detail);
-    const preview = hasTarget ? getHealActionPreview(action?.id, detail) : null;
-    const hasEffect = hasTarget ? hasHealPreviewBenefit(preview) : false;
     return {
       canUse: true,
       hasTarget,
@@ -5616,16 +7880,46 @@
         ? "治療の必要なし。"
         : (hasEffect ? "実行可能。" : "このサイクルではこれ以上治療できない。"),
       staminaCost: cost,
+      item: selectedItem,
+      itemCount,
     };
   }
 
   function formatHealForecastValue(current, next){
     const currentValue = Math.max(0, Math.floor(toNumber(current, 0)));
     const nextValue = Math.max(0, Math.floor(toNumber(next, currentValue)));
-    return currentValue === nextValue ? String(currentValue) : `${currentValue}>${nextValue}`;
+    return currentValue === nextValue ? String(currentValue) : `${currentValue} -> ${nextValue}`;
   }
 
-  function createHealGaugePreviewRowElement(label, current, next, max){
+  function setHealForecastValueContent(targetEl, current, next){
+    if(!targetEl) return;
+    const currentValue = Math.max(0, Math.floor(toNumber(current, 0)));
+    const nextValue = Math.max(0, Math.floor(toNumber(next, currentValue)));
+    targetEl.textContent = "";
+    if(currentValue === nextValue){
+      targetEl.textContent = String(currentValue);
+      return;
+    }
+    const currentEl = document.createElement("span");
+    currentEl.className = "overlay-heal-preview-value-current";
+    currentEl.textContent = String(currentValue);
+    const arrowEl = document.createElement("span");
+    arrowEl.className = "overlay-heal-preview-value-arrow";
+    arrowEl.textContent = "->";
+    const nextEl = document.createElement("span");
+    nextEl.className = "overlay-heal-preview-value-next";
+    nextEl.textContent = String(nextValue);
+    targetEl.appendChild(currentEl);
+    targetEl.appendChild(arrowEl);
+    targetEl.appendChild(nextEl);
+  }
+
+  function getHealPreviewDeltaOpacity(nowMs = performance.now()){
+    const pulse = 0.5 + (Math.sin(toNumber(nowMs, performance.now()) * 0.0052) * 0.5);
+    return (0.24 + (pulse * 0.64)).toFixed(3);
+  }
+
+  function createHealGaugePreviewRowElement(label, current, next, max, options = {}){
     const currentValue = clamp(Math.floor(toNumber(current, 0)), 0, Math.max(1, Math.floor(toNumber(max, 1))));
     const nextValue = clamp(Math.floor(toNumber(next, currentValue)), 0, Math.max(1, Math.floor(toNumber(max, 1))));
     const maxValue = Math.max(1, Math.floor(toNumber(max, 1)));
@@ -5633,9 +7927,13 @@
     const high = Math.max(currentValue, nextValue);
     const lowRatio = clamp(low / maxValue, 0, 1);
     const deltaRatio = clamp((high - low) / maxValue, 0, 1);
+    const deltaOpacity = String(options.deltaOpacity || "0.72");
 
     const row = document.createElement("div");
     row.className = "overlay-heal-preview-row";
+    if(String(options.variant || "") === "cost"){
+      row.classList.add("is-cost");
+    }
 
     const labelEl = document.createElement("div");
     labelEl.className = "overlay-heal-preview-label";
@@ -5643,6 +7941,9 @@
 
     const track = document.createElement("div");
     track.className = "overlay-heal-preview-track";
+    if(String(options.variant || "") === "cost"){
+      track.classList.add("is-cost");
+    }
 
     const solid = document.createElement("div");
     solid.className = "overlay-heal-preview-fill";
@@ -5652,14 +7953,18 @@
     if(high > low){
       const delta = document.createElement("div");
       delta.className = "overlay-heal-preview-fill overlay-heal-preview-fill-delta";
+      if(String(options.variant || "") === "cost"){
+        delta.classList.add("is-cost");
+      }
       delta.style.left = `${(lowRatio * 100).toFixed(2)}%`;
       delta.style.width = `${Math.max(deltaRatio * 100, 1.2).toFixed(2)}%`;
+      delta.style.opacity = deltaOpacity;
       track.appendChild(delta);
     }
 
     const valueEl = document.createElement("div");
     valueEl.className = "overlay-heal-preview-value";
-    valueEl.textContent = formatHealForecastValue(currentValue, nextValue);
+    setHealForecastValueContent(valueEl, currentValue, nextValue);
 
     row.appendChild(labelEl);
     row.appendChild(track);
@@ -5667,12 +7972,13 @@
     return row;
   }
 
-  function createHealLevelPreviewRowElement(label, current, next, maxLevel = 3){
+  function createHealLevelPreviewRowElement(label, current, next, maxLevel = 3, options = {}){
     const currentValue = clamp(Math.floor(toNumber(current, 0)), 0, Math.max(1, Math.floor(toNumber(maxLevel, 3))));
     const nextValue = clamp(Math.floor(toNumber(next, currentValue)), 0, Math.max(1, Math.floor(toNumber(maxLevel, 3))));
     const total = Math.max(1, Math.floor(toNumber(maxLevel, 3)));
     const low = Math.min(currentValue, nextValue);
     const high = Math.max(currentValue, nextValue);
+    const deltaOpacity = String(options.deltaOpacity || "0.72");
 
     const row = document.createElement("div");
     row.className = "overlay-heal-preview-row";
@@ -5690,13 +7996,14 @@
         cell.classList.add("is-current");
       }else if(i < high){
         cell.classList.add("is-delta");
+        cell.style.opacity = deltaOpacity;
       }
       levels.appendChild(cell);
     }
 
     const valueEl = document.createElement("div");
     valueEl.className = "overlay-heal-preview-value";
-    valueEl.textContent = formatHealForecastValue(currentValue, nextValue);
+    setHealForecastValueContent(valueEl, currentValue, nextValue);
 
     row.appendChild(labelEl);
     row.appendChild(levels);
@@ -5729,39 +8036,51 @@
   function buildHealPreviewRows(action, detail){
     const selectedAction = getHealActionById(action?.id);
     const actionId = normalizeHealActionId(selectedAction?.id, "");
+    const selectedItem = getSelectedHealItem(actionId, detail);
     const rows = [];
-    const hpMax = getRuntimeMax("hp", 100);
-    const hpNow = clamp(getRuntimeStat("hp", hpMax), 0, hpMax);
-    const damageMax = toPositiveInt(state.stats.damageMax, 10);
-    const damageNow = clamp(toNumber(state.stats.damage, 0), 0, damageMax);
-    const stabilityMax = toPositiveInt(state.stats.stabilityMax, 10);
-    const stabilityNow = clamp(toNumber(state.stats.stability, stabilityMax), 0, stabilityMax);
-    const staminaMax = getRuntimeMax("stamina", 100);
-    const staminaNow = clamp(getRuntimeStat("stamina", staminaMax), 0, staminaMax);
+    const deltaOpacity = getHealPreviewDeltaOpacity();
+    const executionSession = getHealExecutionSession();
+    const snapshot = (
+      isRecord(executionSession?.previewSnapshot) &&
+      normalizeHealActionId(executionSession?.actionId, "") === actionId
+    ) ? executionSession.previewSnapshot : null;
+    const hpMax = snapshot ? snapshot.hpMax : getRuntimeMax("hp", 100);
+    const hpNow = snapshot ? snapshot.hpNow : clamp(getRuntimeStat("hp", hpMax), 0, hpMax);
+    const damageMax = snapshot ? snapshot.damageMax : toPositiveInt(state.stats.damageMax, 10);
+    const damageNow = snapshot ? snapshot.damageNow : clamp(toNumber(state.stats.damage, 0), 0, damageMax);
+    const stabilityMax = snapshot ? snapshot.stabilityMax : toPositiveInt(state.stats.stabilityMax, 10);
+    const stabilityNow = snapshot ? snapshot.stabilityNow : clamp(toNumber(state.stats.stability, stabilityMax), 0, stabilityMax);
+    const staminaMax = snapshot ? snapshot.staminaMax : getRuntimeMax("stamina", 100);
+    const staminaNow = snapshot ? snapshot.staminaNow : clamp(getRuntimeStat("stamina", staminaMax), 0, staminaMax);
     const staminaCost = getHealActionStaminaCost(actionId);
+    const staminaNext = clamp(staminaNow - staminaCost, 0, staminaMax);
 
     if(actionId === HEAL_TYPE.PATCH){
-      const preview = previewPatchHeal(detail);
-      rows.push(createHealGaugePreviewRowElement("DMG", damageNow, preview?.damage?.next ?? damageNow, damageMax));
-      rows.push(createHealGaugePreviewRowElement("HP", hpNow, preview?.hp?.next ?? hpNow, hpMax));
-      rows.push(createHealCostPreviewRowElement("COST", staminaCost));
+      const preview = snapshot?.preview || previewPatchHeal(detail, selectedItem);
+      rows.push(createHealGaugePreviewRowElement("DMG", damageNow, preview?.damage?.next ?? damageNow, damageMax, { deltaOpacity }));
+      rows.push(createHealGaugePreviewRowElement("HP", hpNow, preview?.hp?.next ?? hpNow, hpMax, { deltaOpacity }));
+      rows.push(createHealGaugePreviewRowElement("STA", staminaNow, staminaNext, staminaMax, { deltaOpacity, variant: "cost" }));
       return rows;
     }
 
     if(actionId === HEAL_TYPE.STABILIZE){
-      const preview = previewStabilizeHeal(detail);
-      rows.push(createHealLevelPreviewRowElement("DESYNC", getHealAbnormalLevel(detail, "desync"), preview?.desync?.next ?? getHealAbnormalLevel(detail, "desync"), 3));
-      rows.push(createHealGaugePreviewRowElement("STB", stabilityNow, preview?.stability?.next ?? stabilityNow, stabilityMax));
-      rows.push(createHealCostPreviewRowElement("COST", staminaCost));
+      const preview = snapshot?.preview || previewStabilizeHeal(detail, selectedItem);
+      const desyncNow = snapshot ? snapshot.levels.desync : getHealAbnormalLevel(detail, "desync");
+      rows.push(createHealLevelPreviewRowElement("DESYNC", desyncNow, preview?.desync?.next ?? desyncNow, 3, { deltaOpacity }));
+      rows.push(createHealGaugePreviewRowElement("STB", stabilityNow, preview?.stability?.next ?? stabilityNow, stabilityMax, { deltaOpacity }));
+      rows.push(createHealGaugePreviewRowElement("STA", staminaNow, staminaNext, staminaMax, { deltaOpacity, variant: "cost" }));
       return rows;
     }
 
     if(actionId === HEAL_TYPE.PURGE){
-      const preview = previewPurgeHeal(detail);
-      rows.push(createHealLevelPreviewRowElement("NOISE", getHealAbnormalLevel(detail, "noise"), preview?.noise?.next ?? getHealAbnormalLevel(detail, "noise"), 3));
-      rows.push(createHealLevelPreviewRowElement("CONTAM", getHealAbnormalLevel(detail, "contamination"), preview?.contamination?.next ?? getHealAbnormalLevel(detail, "contamination"), 3));
-      rows.push(createHealLevelPreviewRowElement("DECAY", getHealAbnormalLevel(detail, "decay"), preview?.decay?.next ?? getHealAbnormalLevel(detail, "decay"), 3));
-      rows.push(createHealCostPreviewRowElement("COST", staminaCost));
+      const preview = snapshot?.preview || previewPurgeHeal(detail, selectedItem);
+      const noiseNow = snapshot ? snapshot.levels.noise : getHealAbnormalLevel(detail, "noise");
+      const contaminationNow = snapshot ? snapshot.levels.contamination : getHealAbnormalLevel(detail, "contamination");
+      const decayNow = snapshot ? snapshot.levels.decay : getHealAbnormalLevel(detail, "decay");
+      rows.push(createHealLevelPreviewRowElement("NOISE", noiseNow, preview?.noise?.next ?? noiseNow, 3, { deltaOpacity }));
+      rows.push(createHealLevelPreviewRowElement("CONTAM", contaminationNow, preview?.contamination?.next ?? contaminationNow, 3, { deltaOpacity }));
+      rows.push(createHealLevelPreviewRowElement("DECAY", decayNow, preview?.decay?.next ?? decayNow, 3, { deltaOpacity }));
+      rows.push(createHealGaugePreviewRowElement("STA", staminaNow, staminaNext, staminaMax, { deltaOpacity, variant: "cost" }));
       return rows;
     }
 
@@ -5960,12 +8279,17 @@
       labelEl.className = "overlay-heal-wave-name";
       labelEl.textContent = String(action?.label || "--");
 
+      const metaEl = document.createElement("span");
+      metaEl.className = "overlay-heal-wave-meta";
+      metaEl.textContent = getHealItemMetaText(action?.id, detail);
+
       const waveWrap = document.createElement("div");
       waveWrap.className = "overlay-heal-wave-track";
       waveWrap.appendChild(createHealWaveCanvasElement(action?.id, isSelected, detail, nowMs));
 
       head.appendChild(cursorEl);
       head.appendChild(labelEl);
+      head.appendChild(metaEl);
       row.appendChild(head);
       row.appendChild(waveWrap);
       pane.appendChild(row);
@@ -6490,6 +8814,157 @@
     ctx.restore();
   }
 
+  function drawHealDockSpark(ctx, centerX, centerY, strength = 0){
+    const flashStrength = clamp(toNumber(strength, 0), 0, 1);
+    if(!ctx || flashStrength <= 0.001){
+      return;
+    }
+    const cx = Math.round(centerX);
+    const cy = Math.round(centerY);
+    const mainLen = Math.max(20, Math.round(26 + (flashStrength * 28)));
+    const sideLen = Math.max(8, Math.round(10 + (flashStrength * 12)));
+    const core = Math.max(4, Math.round(4 + (flashStrength * 5)));
+
+    ctx.save();
+    ctx.strokeStyle = `rgba(14,20,15,${(0.62 + (flashStrength * 0.22)).toFixed(3)})`;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(cx - mainLen, cy);
+    ctx.lineTo(cx + mainLen, cy);
+    ctx.moveTo(cx, cy - mainLen);
+    ctx.lineTo(cx, cy + mainLen);
+    ctx.stroke();
+
+    ctx.strokeStyle = `rgba(200,214,194,${(0.56 + (flashStrength * 0.34)).toFixed(3)})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(cx - mainLen, cy);
+    ctx.lineTo(cx + mainLen, cy);
+    ctx.moveTo(cx, cy - mainLen);
+    ctx.lineTo(cx, cy + mainLen);
+    ctx.stroke();
+
+    ctx.strokeStyle = `rgba(14,20,15,${(0.34 + (flashStrength * 0.20)).toFixed(3)})`;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(cx - sideLen, cy - sideLen);
+    ctx.lineTo(cx + sideLen, cy + sideLen);
+    ctx.moveTo(cx + sideLen, cy - sideLen);
+    ctx.lineTo(cx - sideLen, cy + sideLen);
+    ctx.stroke();
+
+    ctx.strokeStyle = `rgba(200,214,194,${(0.30 + (flashStrength * 0.26)).toFixed(3)})`;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(cx - sideLen, cy - sideLen);
+    ctx.lineTo(cx + sideLen, cy + sideLen);
+    ctx.moveTo(cx + sideLen, cy - sideLen);
+    ctx.lineTo(cx - sideLen, cy + sideLen);
+    ctx.stroke();
+
+    ctx.fillStyle = `rgba(14,20,15,${(0.70 + (flashStrength * 0.18)).toFixed(3)})`;
+    ctx.fillRect(cx - (core + 1), cy - (core + 1), ((core + 1) * 2) + 1, ((core + 1) * 2) + 1);
+    ctx.fillStyle = `rgba(200,214,194,${(0.78 + (flashStrength * 0.20)).toFixed(3)})`;
+    ctx.fillRect(cx - core, cy - core, (core * 2) + 1, (core * 2) + 1);
+    ctx.restore();
+  }
+
+  function drawHealDockBackdropSpark(ctx, areaW, areaH, centerX, centerY, strength = 0){
+    const flashStrength = clamp(toNumber(strength, 0), 0, 1);
+    if(!ctx || flashStrength <= 0.001){
+      return;
+    }
+    const w = Math.max(1, Math.round(toNumber(areaW, 1)));
+    const h = Math.max(1, Math.round(toNumber(areaH, 1)));
+    const cx = Math.round(centerX);
+    const cy = Math.round(centerY);
+    const horizHalf = Math.max(52, Math.floor((w * 0.5) - 3));
+    const vertHalf = Math.max(70, Math.floor((h * 0.5) - 3));
+    const diagHalf = Math.max(32, Math.round(Math.min(w, h) * 0.34));
+    const core = Math.max(7, Math.round(7 + (flashStrength * 9)));
+
+    ctx.save();
+    const horizontalAlpha = 0.42 + (flashStrength * 0.34);
+    const verticalAlpha = 0.42 + (flashStrength * 0.34);
+    const diagAlpha = 0.18 + (flashStrength * 0.18);
+    ctx.fillStyle = `rgba(14,20,15,${(0.34 + (flashStrength * 0.24)).toFixed(3)})`;
+    ctx.fillRect(1, cy - 3, Math.max(1, w - 2), 7);
+    ctx.fillRect(cx - 3, 1, 7, Math.max(1, h - 2));
+    ctx.fillStyle = `rgba(200,214,194,${horizontalAlpha.toFixed(3)})`;
+    ctx.fillRect(2, cy - 2, Math.max(1, w - 4), 5);
+    ctx.fillStyle = `rgba(200,214,194,${verticalAlpha.toFixed(3)})`;
+    ctx.fillRect(cx - 2, 2, 5, Math.max(1, h - 4));
+
+    ctx.fillStyle = `rgba(14,20,15,${(0.18 + (flashStrength * 0.14)).toFixed(3)})`;
+    for(let i = -diagHalf; i <= diagHalf; i += 2){
+      const px = cx + i;
+      const pyA = cy + i;
+      const pyB = cy - i;
+      if(px >= 1 && px < (w - 1) && pyA >= 1 && pyA < (h - 1)){
+        ctx.fillRect(px - 1, pyA, 3, 1);
+      }
+      if(px >= 1 && px < (w - 1) && pyB >= 1 && pyB < (h - 1)){
+        ctx.fillRect(px - 1, pyB, 3, 1);
+      }
+    }
+
+    ctx.fillStyle = `rgba(200,214,194,${diagAlpha.toFixed(3)})`;
+    for(let i = -diagHalf; i <= diagHalf; i += 2){
+      const px = cx + i;
+      const pyA = cy + i;
+      const pyB = cy - i;
+      if(px >= 2 && px < (w - 2) && pyA >= 2 && pyA < (h - 2)){
+        ctx.fillRect(px, pyA, 1, 1);
+      }
+      if(px >= 2 && px < (w - 2) && pyB >= 2 && pyB < (h - 2)){
+        ctx.fillRect(px, pyB, 1, 1);
+      }
+    }
+
+    const glowR = Math.max(28, Math.round(36 + (flashStrength * 28)));
+    const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, glowR);
+    gradient.addColorStop(0, `rgba(200,214,194,${(0.34 + (flashStrength * 0.28)).toFixed(3)})`);
+    gradient.addColorStop(0.55, `rgba(200,214,194,${(0.10 + (flashStrength * 0.12)).toFixed(3)})`);
+    gradient.addColorStop(1, "rgba(200,214,194,0)");
+    ctx.fillStyle = gradient;
+    ctx.fillRect(cx - glowR, cy - glowR, glowR * 2, glowR * 2);
+
+    ctx.fillStyle = `rgba(200,214,194,${(0.50 + (flashStrength * 0.24)).toFixed(3)})`;
+    ctx.fillRect(cx - core, cy - core, (core * 2) + 1, (core * 2) + 1);
+    ctx.restore();
+  }
+
+  function drawHealOutlineGlow(ctx, glowCanvas, x, y, size, strength = 0){
+    const glowStrength = clamp(toNumber(strength, 0), 0, 1);
+    if(!ctx || !glowCanvas || glowStrength <= 0.001){
+      return;
+    }
+    const px = Math.round(x);
+    const py = Math.round(y);
+    const s = Math.round(size);
+    const outerOffsets = [
+      [-4, 0], [4, 0], [0, -4], [0, 4],
+      [-3, -3], [3, -3], [-3, 3], [3, 3],
+    ];
+    const innerOffsets = [
+      [-2, 0], [2, 0], [0, -2], [0, 2],
+      [-2, -2], [2, -2], [-2, 2], [2, 2],
+    ];
+
+    ctx.save();
+    ctx.globalAlpha = 0.04 + (glowStrength * 0.12);
+    for(let i = 0; i < outerOffsets.length; i++){
+      const offset = outerOffsets[i];
+      ctx.drawImage(glowCanvas, px + offset[0], py + offset[1], s, s);
+    }
+    ctx.globalAlpha = 0.08 + (glowStrength * 0.18);
+    for(let i = 0; i < innerOffsets.length; i++){
+      const offset = innerOffsets[i];
+      ctx.drawImage(glowCanvas, px + offset[0], py + offset[1], s, s);
+    }
+    ctx.restore();
+  }
+
   function createHealAdCanvasElement(action){
     const canvas = document.createElement("canvas");
     canvas.className = "overlay-heal-ad-canvas";
@@ -6518,9 +8993,10 @@
     let spriteX = spriteBaseX;
     let spriteY = spriteBaseY;
     const centerX = Math.round(canvas.width * 0.5);
-    const socketTop = spriteBaseY + spriteSize + 9;
+    const socketTop = spriteBaseY + spriteSize + 3;
     const socketW = 136;
-    const socketH = 38;
+    const socketH = 48;
+    let flashSpriteCanvas = null;
     const insertOffsetY = executionFrame
       ? Math.round(HEAL_EXECUTION_FULL_INSERT_Y * executionFrame.dockProgress)
       : 0;
@@ -6557,10 +9033,49 @@
       }
     }
 
+    if(executionFrame && executionFrame.flashStrength > 0.001){
+      flashSpriteCanvas = document.createElement("canvas");
+      flashSpriteCanvas.width = spriteSize;
+      flashSpriteCanvas.height = spriteSize;
+      const flashCtx = flashSpriteCanvas.getContext("2d", { alpha: true });
+      if(flashCtx){
+        flashCtx.imageSmoothingEnabled = false;
+        flashCtx.clearRect(0, 0, spriteSize, spriteSize);
+        flashCtx.drawImage(spriteCanvas, 0, 0);
+        flashCtx.globalCompositeOperation = "source-atop";
+        flashCtx.fillStyle = "rgba(200,214,194,0.98)";
+        flashCtx.fillRect(0, 0, spriteSize, spriteSize);
+        flashCtx.globalCompositeOperation = "source-over";
+      }else{
+        flashSpriteCanvas = null;
+      }
+
+      const flashProgress = clamp(toNumber(executionFrame.flashProgress, 0), 0, 1);
+      const outlineGlowStrength = clamp(1 - (flashProgress / 0.72), 0, 1);
+      const flashSpriteY = Math.round(spriteBaseY + insertOffsetY);
+      const flashAlpha = executionFrame.flashStrength;
+      ctx.save();
+      ctx.globalAlpha = 0.03 + (flashAlpha * 0.08);
+      ctx.fillStyle = "rgba(200,214,194,0.94)";
+      ctx.fillRect(Math.round(spriteBaseX - 12), Math.round(flashSpriteY - 12), spriteSize + 24, spriteSize + 24);
+      ctx.globalAlpha = 0.05 + (flashAlpha * 0.10);
+      ctx.fillRect(Math.round(spriteBaseX - 4), Math.round(flashSpriteY - 4), spriteSize + 8, spriteSize + 8);
+      ctx.restore();
+      ctx.save();
+      ctx.fillStyle = "rgba(200,214,194,0.98)";
+      ctx.fillRect(Math.round(spriteBaseX - 1), Math.round(flashSpriteY - 1), spriteSize + 2, spriteSize + 2);
+      ctx.restore();
+      if(flashSpriteCanvas && outlineGlowStrength > 0.001){
+        drawHealOutlineGlow(ctx, flashSpriteCanvas, spriteBaseX, flashSpriteY, spriteSize, outlineGlowStrength);
+      }
+    }
+
     if(actionId === HEAL_TYPE.STABILIZE && hasEffect){
       drawHealStabilizeGlitch(ctx, spriteCanvas, spriteBaseX, spriteBaseY, spriteSize, severity, nowMs);
-      spriteX = spriteBaseX + Math.round(Math.sin(nowMs * 0.009) * (1 + (severity * 4)));
-      spriteY = spriteBaseY + Math.round(Math.cos(nowMs * 0.007) * (severity * 2));
+      if(!executionFrame){
+        spriteX = spriteBaseX + Math.round(Math.sin(nowMs * 0.009) * (1 + (severity * 4)));
+        spriteY = spriteBaseY + Math.round(Math.cos(nowMs * 0.007) * (severity * 2));
+      }
     }
 
     if(actionId === HEAL_TYPE.PURGE && hasEffect){
@@ -6577,9 +9092,17 @@
         const dx = Math.round(Math.sin((nowMs * 0.01) + i) * (3 + (severity * 3)));
         const dy = Math.round(Math.cos((nowMs * 0.008) + (i * 0.7)) * (2 + (severity * 2)));
         const speckSize = speckBaseSize + Math.round(pulse * 3) - (i % 2);
-        drawHealDirtyCluster(ctx, specks[i][0] + dx, specks[i][1] + dy, speckSize, "rgba(14,20,15,0.30)");
+        const safeMinX = 6;
+        const safeMaxX = Math.max(safeMinX, canvas.width - speckSize - 6);
+        const safeMinY = 6;
+        const safeMaxY = Math.max(safeMinY, socketTop - speckSize - 8);
+        const speckX = Math.round(clamp(specks[i][0] + dx, safeMinX, safeMaxX));
+        const speckY = Math.round(clamp(specks[i][1] + dy, safeMinY, safeMaxY));
+        drawHealDirtyCluster(ctx, speckX, speckY, speckSize, "rgba(14,20,15,0.30)");
       }
-      spriteY = spriteBaseY + Math.round(Math.sin(nowMs * 0.011) * (1 + (severity * 2)));
+      if(!executionFrame){
+        spriteY = spriteBaseY + Math.round(Math.sin(nowMs * 0.011) * (1 + (severity * 2)));
+      }
     }
 
     if(actionId === HEAL_TYPE.PATCH && hasEffect){
@@ -6592,7 +9115,9 @@
         const fy = spriteBaseY + 16 + (i * 17) + Math.round(Math.sin((nowMs * 0.01) + i) * (2 + (severity * 2)));
         drawHealDirtyCluster(ctx, fx, fy, fragmentSize - (i % 2), "rgba(14,20,15,0.38)");
       }
-      spriteY = spriteBaseY + Math.round((pulse01 - 0.5) * (3 + (severity * 4)));
+      if(!executionFrame){
+        spriteY = spriteBaseY + Math.round((pulse01 - 0.5) * (3 + (severity * 4)));
+      }
     }
 
     spriteY += insertOffsetY;
@@ -6616,10 +9141,26 @@
     if(executionFrame){
       if(executionFrame.flashStrength > 0.001){
         ctx.save();
-        ctx.globalAlpha = 0.18 + (executionFrame.flashStrength * 0.34);
+        const flashAlpha = executionFrame.flashStrength;
+        ctx.globalAlpha = 0.04 + (flashAlpha * 0.10);
+        ctx.fillStyle = "rgba(200,214,194,0.96)";
+        ctx.fillRect(Math.round(spriteX - 10), Math.round(spriteY - 10), spriteSize + 20, spriteSize + 20);
+        ctx.globalAlpha = 0.08 + (flashAlpha * 0.14);
+        ctx.fillRect(Math.round(spriteX - 4), Math.round(spriteY - 4), spriteSize + 8, spriteSize + 8);
+        ctx.restore();
+
+        if(flashSpriteCanvas){
+          ctx.save();
+          ctx.globalAlpha = 0.12 + (flashAlpha * 0.26);
+          ctx.drawImage(flashSpriteCanvas, Math.round(spriteX), Math.round(spriteY), spriteSize, spriteSize);
+          ctx.restore();
+        }
+
+        ctx.save();
+        ctx.globalAlpha = 0.12 + (flashAlpha * 0.18);
         ctx.fillStyle = "rgba(200,214,194,0.96)";
         ctx.fillRect(Math.round(spriteX + 4), Math.round(spriteY + 4), spriteSize - 8, spriteSize - 8);
-        ctx.globalAlpha = 0.28 + (executionFrame.flashStrength * 0.42);
+        ctx.globalAlpha = 0.18 + (flashAlpha * 0.24);
         ctx.fillRect(Math.round(spriteX + 12), Math.round(spriteY + 12), spriteSize - 24, spriteSize - 24);
         ctx.restore();
       }
@@ -6646,17 +9187,6 @@
           ctx.fillRect(px, py, 2 + (i % 2), 2 + ((i + 1) % 2));
         }
       }
-    }
-
-    const linkStartY = spriteY + spriteSize + 4;
-    const linkEndY = socketTop + 2;
-    if(linkEndY - linkStartY > 2 && (!executionFrame || executionFrame.dockProgress < 0.92)){
-      ctx.strokeStyle = "rgba(14,20,15,0.38)";
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(centerX, linkStartY);
-      ctx.lineTo(centerX, linkEndY);
-      ctx.stroke();
     }
 
     drawHealSocket(ctx, centerX, socketTop, {
@@ -6691,7 +9221,10 @@
 
   function buildHealSelectOverlayElement(){
     const selectedAction = getSelectedHealAction();
-    const availability = getHealActionAvailability(selectedAction, ensureHealDetailState(state.detailed));
+    const detail = ensureHealDetailState(state.detailed);
+    const selectedItemEntry = getSelectedHealItemEntry(selectedAction?.id, detail);
+    const selectedItem = selectedItemEntry?.item || null;
+    const availability = getHealActionAvailability(selectedAction, detail, selectedItem);
     const executionSession = getHealExecutionSession();
     const actionId = normalizeHealActionId(selectedAction?.id, "");
     const isExecuting = isRecord(executionSession) && normalizeHealActionId(executionSession.actionId, "") === actionId;
@@ -6709,17 +9242,21 @@
     if(selectedAction){
       const name = document.createElement("div");
       name.className = "overlay-food-detail-name";
-      name.textContent = String(selectedAction.label || "HEAL");
+      name.textContent = String(selectedItem?.label || selectedAction.label || "HEAL");
 
       const meta = document.createElement("div");
       meta.className = "overlay-food-detail-meta";
-      meta.textContent = `COST  STA ${formatUiDeltaValue(-Math.abs(toNumber(availability?.staminaCost, 0)))}`;
+      meta.textContent = `${String(selectedAction.label || "HEAL")}  RANK ${formatItemRankLabel(selectedItem?.rank)}  STOCK ${formatHealItemStockText(selectedItemEntry?.count ?? 0)}  COST STA ${formatUiDeltaValue(-Math.abs(toNumber(availability?.staminaCost, 0)))}`;
 
       const desc = document.createElement("div");
       desc.className = "overlay-food-detail-desc";
       desc.textContent = isExecuting
-        ? `${String(selectedAction.label || "HEAL")} 実行`
-        : getHealBottomNoteText(selectedAction, availability);
+        ? `${String(selectedItem?.label || selectedAction.label || "HEAL")} 実行`
+        : (
+          (!availability?.canUse || !availability?.hasTarget || availability?.hasEffect === false)
+            ? getHealBottomNoteText(selectedAction, availability)
+            : String(selectedItem?.description || selectedAction?.description || "").trim()
+        );
 
       bottomPane.appendChild(name);
       bottomPane.appendChild(meta);
@@ -6805,7 +9342,8 @@
     };
   }
 
-  function previewPatchHeal(detail){
+  function previewPatchHeal(detail, itemOverride = null){
+    const rank = getHealItemEffectRank(getSelectedHealItem(HEAL_TYPE.PATCH, detail, itemOverride));
     const repeat = getHealSameTypePenalty(detail, HEAL_TYPE.PATCH);
     const ambient = getHealAmbientPenalty(detail);
     const damageMax = toPositiveInt(state.stats.damageMax, 10);
@@ -6817,17 +9355,18 @@
         detail,
         "damage",
         damageNow,
-        computeHealEffectAmount(2, 1, { repeat, noise: ambient.noise, decay: ambient.decay })
+        computeHealEffectAmount(Math.max(0, rank), rank > 0 ? 1 : 0, { repeat, noise: ambient.noise, decay: ambient.decay })
       ),
       hp: previewHealGain(
         hpNow,
         hpMax,
-        computeHealEffectAmount(1, 0, { repeat, noise: ambient.noise, decay: ambient.decay })
+        computeHealEffectAmount(Math.max(0, rank - 1), 0, { repeat, noise: ambient.noise, decay: ambient.decay })
       ),
     };
   }
 
-  function previewStabilizeHeal(detail){
+  function previewStabilizeHeal(detail, itemOverride = null){
+    const rank = getHealItemEffectRank(getSelectedHealItem(HEAL_TYPE.STABILIZE, detail, itemOverride));
     const repeat = getHealSameTypePenalty(detail, HEAL_TYPE.STABILIZE);
     const ambient = getHealAmbientPenalty(detail);
     const stabilityMax = toPositiveInt(state.stats.stabilityMax, 10);
@@ -6837,18 +9376,19 @@
       stability: previewHealGain(
         stabilityNow,
         stabilityMax,
-        computeHealEffectAmount(2, 1, { repeat, noise: ambient.noise, decay: ambient.decay })
+        computeHealEffectAmount(Math.max(0, rank), rank > 0 ? 1 : 0, { repeat, noise: ambient.noise, decay: ambient.decay })
       ),
       desync: previewHealFloorLimitedReduction(
         detail,
         "desync",
         desyncNow,
-        computeHealEffectAmount(2, 1, { repeat, noise: ambient.noise, decay: ambient.decay })
+        computeHealEffectAmount(Math.max(0, rank), rank > 0 ? 1 : 0, { repeat, noise: ambient.noise, decay: ambient.decay })
       ),
     };
   }
 
-  function previewPurgeHeal(detail){
+  function previewPurgeHeal(detail, itemOverride = null){
+    const rank = getHealItemEffectRank(getSelectedHealItem(HEAL_TYPE.PURGE, detail, itemOverride));
     const repeat = getHealSameTypePenalty(detail, HEAL_TYPE.PURGE);
     const ambient = getHealAmbientPenalty(detail);
     return {
@@ -6856,39 +9396,39 @@
         detail,
         "noise",
         getHealAbnormalLevel(detail, "noise"),
-        computeHealEffectAmount(2, 1, { repeat, noise: ambient.noise, decay: ambient.decay })
+        computeHealEffectAmount(Math.max(0, rank), rank > 0 ? 1 : 0, { repeat, noise: ambient.noise, decay: ambient.decay })
       ),
       contamination: previewHealFloorLimitedReduction(
         detail,
         "contamination",
         getHealAbnormalLevel(detail, "contamination"),
-        computeHealEffectAmount(2, 1, { repeat, noise: ambient.noise, decay: ambient.decay })
+        computeHealEffectAmount(Math.max(0, rank), rank > 0 ? 1 : 0, { repeat, noise: ambient.noise, decay: ambient.decay })
       ),
       desync: previewHealFloorLimitedReduction(
         detail,
         "desync",
         getHealAbnormalLevel(detail, "desync"),
-        computeHealEffectAmount(1, 0, { repeat, noise: ambient.noise, decay: ambient.decay })
+        computeHealEffectAmount(Math.max(0, rank - 1), 0, { repeat, noise: ambient.noise, decay: ambient.decay })
       ),
       decay: previewHealFloorLimitedReduction(
         detail,
         "decay",
         getHealAbnormalLevel(detail, "decay"),
-        computeHealEffectAmount(1, 0, { repeat, noise: ambient.noise, decay: ambient.decay })
+        computeHealEffectAmount(Math.max(0, rank - 1), 0, { repeat, noise: ambient.noise, decay: ambient.decay })
       ),
     };
   }
 
-  function getHealActionPreview(actionId, detail){
+  function getHealActionPreview(actionId, detail, itemOverride = null){
     const id = normalizeHealActionId(actionId, "");
     if(id === HEAL_TYPE.PATCH){
-      return previewPatchHeal(detail);
+      return previewPatchHeal(detail, itemOverride);
     }
     if(id === HEAL_TYPE.STABILIZE){
-      return previewStabilizeHeal(detail);
+      return previewStabilizeHeal(detail, itemOverride);
     }
     if(id === HEAL_TYPE.PURGE){
-      return previewPurgeHeal(detail);
+      return previewPurgeHeal(detail, itemOverride);
     }
     return null;
   }
@@ -6941,12 +9481,13 @@
     }
   }
 
-  function applyHealActionById(actionId){
+  function applyHealActionById(actionId, itemId = null){
     if(!isRecord(state.detailed)){
       state.detailed = createDefaultDetailedState(state.monster?.id || "mon001");
     }
     const detail = ensureHealDetailState(state.detailed);
     const action = getHealActionById(actionId);
+    const selectedItem = getSelectedHealItem(actionId, detail, itemId);
     if(!action){
       return {
         success: false,
@@ -6957,7 +9498,7 @@
       };
     }
 
-    const availability = getHealActionAvailability(action, detail);
+    const availability = getHealActionAvailability(action, detail, selectedItem);
     if(!availability.canUse){
       return {
         success: false,
@@ -6970,7 +9511,7 @@
 
     const preview = isRecord(availability.preview)
       ? availability.preview
-      : getHealActionPreview(action.id, detail);
+      : getHealActionPreview(action.id, detail, selectedItem);
 
     if(!hasHealPreviewBenefit(preview)){
       updateLogParams("heal", {});
@@ -6983,6 +9524,18 @@
         payload: createHealResultPayload(action, {}, {
           lead: String(availability?.reason || "変化なし。"),
         }),
+      };
+    }
+
+    const consumeResult = consumeInventoryItem(detail, selectedItem?.id, 1);
+    if(!consumeResult.success){
+      return {
+        success: false,
+        reason: "out_of_stock",
+        warning: `${String(selectedItem?.label || action?.label || "ITEM")} の在庫がない。`,
+        action,
+        item: selectedItem,
+        delta: {},
       };
     }
 
@@ -7059,6 +9612,7 @@
       success: true,
       reason: "ok",
       action,
+      item: selectedItem,
       delta: sanitizedDelta,
       payload: createHealResultPayload(action, sanitizedDelta),
     };
@@ -7069,6 +9623,9 @@
       state.detailed = createDefaultDetailedState(state.monster?.id || "mon001");
     }
     const detail = ensureHealDetailState(ensureFoodDetailState(state.detailed));
+    if(isMonsterTuckedIn(detail)){
+      return { success: false, reason: "sleeping", warning: "就寝中はフードを使えない。", food: null, delta: {} };
+    }
     const food = getFoodById(foodId);
     if(!food){
       return { success: false, reason: "missing_food", food: null, delta: {} };
@@ -7077,8 +9634,9 @@
     if(!hasFoodStock(currentStock)){
       return { success: false, reason: "out_of_stock", food, delta: {} };
     }
-    if(!isFoodStockInfinite(currentStock)){
-      detail.foodInventory[food.id] = clamp(currentStock - 1, 0, FOOD_STOCK_MAX);
+    const consumeResult = consumeInventoryItem(detail, food.id, 1);
+    if(!consumeResult.success){
+      return { success: false, reason: "out_of_stock", food, delta: {} };
     }
 
     const effects = isRecord(food.effects) ? food.effects : {};
@@ -9366,6 +11924,17 @@
     const bottomY = (H - 82) + BOTTOM_MENU_Y_OFFSET;
     drawMenuRow(x, topY, w, rowH, 0, state.menu.alpha, showCursor);
     drawMenuRow(x, bottomY, w, rowH, 1, state.menu.alpha, showCursor);
+  }
+
+  function getMenuSleepDimRect(){
+    const x = 24;
+    const w = W - 48;
+    const rowH = 28;
+    const topY = 64;
+    const bottomY = (H - 82) + BOTTOM_MENU_Y_OFFSET;
+    const y = topY + rowH + 4;
+    const h = Math.max(8, bottomY - y - 2);
+    return { x, y, w, h };
   }
 
   // ===== idle anim =====
@@ -12806,8 +15375,9 @@
     const p = getBttlHeavyReactPoint(field);
     const minR = 8;
     const maxR = 28;
-    const bandW = BTTL_HEAVY_REACT_BAND_W;
-    const critW = BTTL_HEAVY_REACT_CRIT_W;
+    const sleepJudgeMult = getSleepJudgeMultiplier(state.detailed);
+    const bandW = Math.max(4, Math.round(BTTL_HEAVY_REACT_BAND_W * sleepJudgeMult));
+    const critW = Math.max(2, Math.min(bandW, Math.round(BTTL_HEAVY_REACT_CRIT_W * sleepJudgeMult)));
     const centerR = minR + ((maxR - minR) * (0.32 + (Math.random() * 0.48)));
     return {
       projectileId: toNumber(projectile?.id, 0),
@@ -12820,7 +15390,7 @@
       bandW,
       critEnabled: true,
       critW,
-      nearMargin: BTTL_HEAVY_REACT_NEAR_MARGIN,
+      nearMargin: Math.max(1, Math.round(BTTL_HEAVY_REACT_NEAR_MARGIN * sleepJudgeMult)),
       loopMs: BTTL_HEAVY_REACT_LOOP_MS,
       focusX: p.x,
       focusY: p.y,
@@ -13914,14 +16484,15 @@
     const stabilityRatio = stabilityMax > 0 ? stabilityNow / stabilityMax : 0;
     const bandMin = Math.max(6, Math.floor(toNumber(cfg.bandWMin, 16) * 0.52));
     const bandMax = Math.max(bandMin + 2, Math.floor(toNumber(cfg.bandWMax, 30) * 0.54));
+    const sleepJudgeMult = getSleepJudgeMultiplier(state.detailed);
     const bandW = clamp(
-      bandMin + ((bandMax - bandMin) * stabilityRatio),
-      bandMin,
+      (bandMin + ((bandMax - bandMin) * stabilityRatio)) * sleepJudgeMult,
+      Math.max(4, bandMin * 0.55),
       bandMax
     );
     const ad = clamp(toNumber(state.detailed?.adIntegrity, 100), 0, 100);
     const signal = clamp(toNumber(state.detailed?.signalQuality, 100), 0, 100);
-    const syncRate = resolveSyncRate(ad, signal);
+    const syncRate = resolveSleepAdjustedSyncRate(ad, signal, state.detailed);
     const critChance = clamp(
       toNumber(cfg.critChanceBase, 0.05) + ((syncRate / 100) * toNumber(cfg.critChanceBySync, 0.1)),
       0.04,
@@ -13947,7 +16518,7 @@
       bandW,
       critEnabled,
       critW,
-      nearMargin: Math.max(1, Math.floor(toNumber(cfg.nearMargin, TRN_BASE_NEAR_MARGIN) * 0.8)),
+      nearMargin: Math.max(1, Math.floor(toNumber(cfg.nearMargin, TRN_BASE_NEAR_MARGIN) * 0.8 * sleepJudgeMult)),
       internalP: getTrnInternalSuccessBase(mode),
       wasInBand: false,
       wasInCrit: false,
@@ -14060,14 +16631,15 @@
     const stabilityRatio = stabilityMax > 0 ? stabilityNow / stabilityMax : 0;
     const bandMin = Math.max(6, Math.floor(toNumber(cfg.bandWMin, 16) * 0.58));
     const bandMax = Math.max(bandMin + 2, Math.floor(toNumber(cfg.bandWMax, 30) * 0.58));
+    const sleepJudgeMult = getSleepJudgeMultiplier(state.detailed);
     const bandW = clamp(
-      bandMin + ((bandMax - bandMin) * stabilityRatio),
-      bandMin,
+      (bandMin + ((bandMax - bandMin) * stabilityRatio)) * sleepJudgeMult,
+      Math.max(4, bandMin * 0.55),
       bandMax
     );
     const ad = clamp(toNumber(state.detailed?.adIntegrity, 100), 0, 100);
     const signal = clamp(toNumber(state.detailed?.signalQuality, 100), 0, 100);
-    const syncRate = resolveSyncRate(ad, signal);
+    const syncRate = resolveSleepAdjustedSyncRate(ad, signal, state.detailed);
     const critChance = clamp(
       toNumber(cfg.critChanceBase, 0.05) + ((syncRate / 100) * toNumber(cfg.critChanceBySync, 0.1)),
       0.03,
@@ -14093,7 +16665,7 @@
       bandW,
       critEnabled,
       critW,
-      nearMargin: Math.max(1, Math.floor(toNumber(cfg.nearMargin, TRN_BASE_NEAR_MARGIN) * 0.8)),
+      nearMargin: Math.max(1, Math.floor(toNumber(cfg.nearMargin, TRN_BASE_NEAR_MARGIN) * 0.8 * sleepJudgeMult)),
       internalP: getTrnInternalSuccessBase(mode),
       wasInBand: false,
       wasInCrit: false,
@@ -14218,7 +16790,7 @@
     const staNow = clamp(Math.floor(getRuntimeStat("stamina", staminaMax)), 0, staminaMax);
     const ad = clamp(toNumber(state.detailed?.adIntegrity, 100), 0, 100);
     const sig = clamp(toNumber(state.detailed?.signalQuality, 100), 0, 100);
-    const sync = resolveSyncRate(ad, sig);
+    const sync = resolveSleepAdjustedSyncRate(ad, sig, state.detailed);
     const allySkillLoadout = resolveBttlAllySkillLoadout();
     const enemySkillLoadout = resolveBttlEnemySkillLoadout();
     const allyHp = Math.max(0, hpNow);
@@ -16384,17 +18956,20 @@
 
   // ===== actions =====
   function applyAction(id){
-    if(!DEV_ALLOW_ACTIONS_DURING_SLEEP && state.isSleeping && id !== "stat" && id !== "sleep"){
-      state.screen = "menu";
-      return;
-    }
     menuDeactivate();
 
     if(id === "food"){
       openFoodScreen();
       return;
     }
-    if(id === "wc"){ state.screen = "toilet"; return; }
+    if(id === "wc"){
+      if(isMonsterTuckedIn()){
+        state.screen = "menu";
+        return;
+      }
+      state.screen = "toilet";
+      return;
+    }
     if(id === "trn"){
       hideOverlayLog();
       setOverlayMode(null);
@@ -16405,22 +18980,23 @@
       return;
     }
     if(id === "bttl"){
-      startBttlBattle();
-      return;
-    }
-    if(id === "adv"){ state.screen = "adv"; return; }
-    if(id === "sleep"){
-      if(!state.isSleeping){
+      if(isMonsterTuckedIn()){
         state.screen = "menu";
         return;
       }
-      applySleep();
-      if(isRecord(state.detailed)){
-        state.detailed.isTuckedIn = true;
+      startBttlBattle();
+      return;
+    }
+    if(id === "adv"){
+      if(isMonsterTuckedIn()){
+        state.screen = "menu";
+        return;
       }
-      state.screen = "sleep";
-      setOverlayMode("log");
-      saveDetailedState();
+      openAdvScreen(performance.now());
+      return;
+    }
+    if(id === "sleep"){
+      openSleepScreen();
       return;
     }
     if(id === "heal"){
@@ -16428,11 +19004,7 @@
       return;
     }
     if(id === "stat"){
-      hideOverlayLog();
-      state.screen = "status";
-      resetStatCursors();
-      setStatPage(0);
-      setOverlayMode("stat");
+      openStatusScreen();
       return;
     }
     if(id === "edit"){
@@ -16451,6 +19023,29 @@
       return;
     }
     if(state.screen === TRN_SCREEN){
+      return;
+    }
+    if(state.screen === "sleep"){
+      if(isSleepTransitionActive(performance.now())){
+        return;
+      }
+      if(moveSleepLightSelection(-1)){
+        showOverlaySleep();
+        markCursorMoved();
+      }
+      return;
+    }
+    if(state.screen === "heal"){
+      if(isHealExecutionActive()){
+        return;
+      }
+      if(getHealScreenMode() === HEAL_SCREEN_MODE.SELECT){
+        const selectedAction = getSelectedHealAction();
+        if(moveHealItemCursor(selectedAction?.id, -1, ensureHealDetailState(state.detailed))){
+          showOverlayHeal();
+          markCursorMoved();
+        }
+      }
       return;
     }
     if(state.screen === "status"){
@@ -16498,6 +19093,29 @@
       return;
     }
     if(state.screen === TRN_SCREEN){
+      return;
+    }
+    if(state.screen === "sleep"){
+      if(isSleepTransitionActive(performance.now())){
+        return;
+      }
+      if(moveSleepLightSelection(1)){
+        showOverlaySleep();
+        markCursorMoved();
+      }
+      return;
+    }
+    if(state.screen === "heal"){
+      if(isHealExecutionActive()){
+        return;
+      }
+      if(getHealScreenMode() === HEAL_SCREEN_MODE.SELECT){
+        const selectedAction = getSelectedHealAction();
+        if(moveHealItemCursor(selectedAction?.id, 1, ensureHealDetailState(state.detailed))){
+          showOverlayHeal();
+          markCursorMoved();
+        }
+      }
       return;
     }
     if(state.screen === "status"){
@@ -16773,7 +19391,7 @@
     }
     if(state.screen === "food"){
       if(getFoodScreenMode() === FOOD_SCREEN_MODE.RESULT){
-        closeFoodScreenToMenu();
+        closeFoodResultToSelect();
         return;
       }
       const selected = getSelectedFoodItem();
@@ -16784,14 +19402,34 @@
       }
       const result = applyFoodById(selected.id);
       if(!result.success){
-        uiState.foodWarningMessage = "在庫がありません。";
+        uiState.foodWarningMessage = String(result.warning || "在庫がありません。");
         showOverlayFood();
         return;
       }
       uiState.foodWarningMessage = "";
+      triggerMenuResultReveal(performance.now());
       setFoodScreenMode(FOOD_SCREEN_MODE.RESULT);
       setFoodResultPayload(buildFoodResultPayload(result.food, result.delta, result.remainingStock));
       showOverlayFood();
+      markCursorMoved();
+      return;
+    }
+    if(state.screen === "sleep"){
+      if(isSleepTransitionActive(performance.now())){
+        return;
+      }
+      const result = applySleepLightSelection(Date.now());
+      if(!result.success){
+        showOverlaySleep();
+        markCursorMoved();
+        return;
+      }
+      if(result.pending){
+        showOverlaySleep();
+        markCursorMoved();
+        return;
+      }
+      closeSleepScreenToMenu();
       markCursorMoved();
       return;
     }
@@ -16800,30 +19438,32 @@
         return;
       }
       if(getHealScreenMode() === HEAL_SCREEN_MODE.RESULT){
-        closeHealScreenToMenu();
+        closeHealResultToSelect();
         return;
       }
       const selectedAction = getSelectedHealAction();
+      const selectedItem = getSelectedHealItem(selectedAction?.id, ensureHealDetailState(state.detailed));
       if(!selectedAction){
         uiState.healWarningMessage = "使用可能な治療がありません。";
         showOverlayHeal();
         return;
       }
-      const availability = getHealActionAvailability(selectedAction, ensureHealDetailState(state.detailed));
+      const availability = getHealActionAvailability(selectedAction, ensureHealDetailState(state.detailed), selectedItem);
       if(availability.canUse && availability.hasTarget && availability.hasEffect){
         uiState.healWarningMessage = "";
-        startHealExecutionSession(selectedAction.id, performance.now());
+        startHealExecutionSession(selectedAction.id, selectedItem?.id, performance.now());
         showOverlayHeal();
         markCursorMoved();
         return;
       }
-      const result = applyHealActionById(selectedAction.id);
+      const result = applyHealActionById(selectedAction.id, selectedItem?.id);
       if(!result.success){
         uiState.healWarningMessage = String(result.warning || "実行不可。");
         showOverlayHeal();
         return;
       }
       uiState.healWarningMessage = "";
+      triggerMenuResultReveal(performance.now());
       setHealScreenMode(HEAL_SCREEN_MODE.RESULT);
       setHealResultPayload(result.payload);
       showOverlayHeal();
@@ -16881,6 +19521,13 @@
       if(!state.menu.active){ menuActivate(); return; }
       const item = menuCurrentItem();
       if(item) applyAction(item.id);
+      return;
+    }
+    if(state.screen === "adv"){
+      const session = getAdvSession();
+      if(normalizeAdvPhase(session?.phase) === ADV_PHASE.RESULT){
+        closeAdvScreenToMenu();
+      }
       return;
     }
     if(state.screen === "edit"){
@@ -16945,11 +19592,26 @@
       return;
     }
     if(state.screen === "food"){
+      if(getFoodScreenMode() === FOOD_SCREEN_MODE.RESULT){
+        closeFoodResultToSelect();
+        return;
+      }
       closeFoodScreenToMenu();
+      return;
+    }
+    if(state.screen === "sleep"){
+      if(isSleepTransitionActive(performance.now())){
+        return;
+      }
+      closeSleepScreenToMenu();
       return;
     }
     if(state.screen === "heal"){
       if(isHealExecutionActive()){
+        return;
+      }
+      if(getHealScreenMode() === HEAL_SCREEN_MODE.RESULT){
+        closeHealResultToSelect();
         return;
       }
       closeHealScreenToMenu();
@@ -16992,6 +19654,13 @@
           return;
         }
         abortBttlBattle(ctxBattle, nowMs);
+      }
+      return;
+    }
+    if(state.screen === "adv"){
+      const session = getAdvSession();
+      if(normalizeAdvPhase(session?.phase) === ADV_PHASE.RESULT){
+        closeAdvScreenToMenu();
       }
       return;
     }
@@ -17487,12 +20156,20 @@
       drawSprite16x16(Math.round(sx), Math.round(sy), anim.sprite, DOT_SCALE);
 
       // sleep overlay
-      if(state.isSleeping){
-        drawText(state.mon.x + 40, state.mon.y - 30, "Zzz", { color: "rgba(14,20,15,0.65)" });
+      if(isMonsterTuckedIn()){
+        const dimRect = getMenuSleepDimRect();
         ctx.save();
-        ctx.fillStyle = "rgba(14,20,15,0.10)";
-        ctx.fillRect(16, 28, W - 32, H - 44);
+        ctx.fillStyle = "rgba(14,20,15,0.34)";
+        ctx.fillRect(dimRect.x, dimRect.y, dimRect.w, dimRect.h);
         ctx.restore();
+      }
+      if(state.isSleeping || isMonsterTuckedIn()){
+        drawText(
+          state.mon.x + 40,
+          state.mon.y - 30,
+          "Zzz",
+          { color: isMonsterTuckedIn() ? "rgba(232,238,228,0.96)" : "rgba(14,20,15,0.65)" }
+        );
       }
     }
 
@@ -17550,6 +20227,9 @@
       hudHint.textContent = mode === FOOD_SCREEN_MODE.RESULT
         ? "A/B BACK"
         : (hasStock ? "↑↓ SELECT  A:USE  B:BACK" : "B:BACK");
+    }else if(state.screen === "sleep"){
+      hudTitle.textContent = "SLEEP";
+      hudHint.textContent = "←→ LIGHT  A:APPLY  B:BACK";
     }else if(state.screen === "heal"){
       const mode = getHealScreenMode();
       hudTitle.textContent = "HEAL";
@@ -17558,12 +20238,18 @@
         : (mode === HEAL_SCREEN_MODE.RESULT
         ? "A/B BACK"
         : "↑↓ SELECT  A:USE  B:BACK");
+    }else if(state.screen === "adv"){
+      const session = getAdvSession();
+      hudTitle.textContent = "ADV";
+      hudHint.textContent = normalizeAdvPhase(session?.phase) === ADV_PHASE.RESULT
+        ? "A/B BACK"
+        : "SEARCHING...";
     }else{
       hudTitle.textContent = state.screen.toUpperCase();
       hudHint.textContent = "A/B BACK";
     }
 
-    const overlayRect = (state.screen === "status" || state.screen === "food" || state.screen === "heal")
+    const overlayRect = (state.screen === "status" || state.screen === "food" || state.screen === "heal" || state.screen === "sleep" || state.screen === "adv")
       ? OVERLAY_STAT_RECT
       : OVERLAY_LOG_RECT;
     const panelX = overlayRect.x;
@@ -17587,6 +20273,11 @@
       finalizeFrame();
       return;
     }
+    if(state.screen === "sleep"){
+      showOverlaySleep(nowMs);
+      finalizeFrame();
+      return;
+    }
     if(state.screen === "heal"){
       updateHealExecutionSession(nowMs);
       showOverlayHeal();
@@ -17596,7 +20287,7 @@
 
     const overlayLogData = buildOverlayLogByScreen(state.screen);
     if(overlayLogData){
-      showOverlayLog(overlayLogData);
+      showOverlayLog(overlayLogData, overlayRect);
     }else{
       hideOverlayLog();
     }
@@ -17651,6 +20342,8 @@
     }
 
     updateDetailedMetricsRealtime(Date.now());
+    updateAdv(nowFrame);
+    updateSleepTransition(nowFrame);
     updateTrnTimeout(nowFrame);
     updateBttl(nowFrame);
 
