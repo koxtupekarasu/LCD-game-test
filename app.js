@@ -982,7 +982,7 @@
   ]);
   const BTTL_ENEMY_DRIVE_PROC_FLASH_MS = 420;
   const BTTL_ENEMY_DRIVE_BADGE_PULSE_MS = 420;
-  const BTTL_SIGNAL_HINT_PULSE_MS = 960;
+  const BTTL_SIGNAL_HINT_PULSE_MS = 680;
   const BTTL_SIGNAL_ADVANTAGE_BAND_CYCLE_MS = 1560;
   const BTTL_SIGNAL_DISADVANTAGE_LOOP_MULT = 0.86;
   const BTTL_SIGNAL_DISADVANTAGE_BAND_MULT = 0.80;
@@ -2290,6 +2290,9 @@
     foodMode: FOOD_SCREEN_MODE.SELECT,
     foodWarningMessage: "",
     foodResultPayload: null,
+    talkSelectLine: "",
+    talkPulseStartedAtMs: 0,
+    talkPulseUntilMs: 0,
     itemCategoryCursor: 0,
     itemCursorByCategory: {
       [ITEM_CATEGORY.FOOD]: 0,
@@ -3811,6 +3814,9 @@
     }
     if(id === "food"){
       return "FOOD";
+    }
+    if(id === "talk"){
+      return "TALK";
     }
     if(id === "item"){
       return "ITEM";
@@ -14274,6 +14280,694 @@
     hideOverlayLog();
   }
 
+  const TALK_PERSONALITY_TYPE = Object.freeze({
+    CURIOUS: "curious",
+    CALM: "calm",
+    AGGRESSIVE: "aggressive",
+  });
+  const TALK_STAGE_TYPE = Object.freeze({
+    LARVA: "larva",
+    GROWTH: "growth",
+    MATURE: "mature",
+  });
+  const TALK_AFFECTION_BAND = Object.freeze({
+    LOW: "low",
+    MID: "mid",
+    HIGH: "high",
+  });
+  const TALK_LINK_BAND = Object.freeze({
+    WEAK: "weak",
+    NORMAL: "normal",
+    STRONG: "strong",
+  });
+  const TALK_STATE_CATEGORY = Object.freeze({
+    SLEEPING: "sleeping",
+    FAINT_LINK: "faintLink",
+    HP_LOW: "hpLow",
+    DAMAGED: "damaged",
+    UNSTABLE: "unstable",
+    SIGNAL_LOW: "signalLow",
+    HUNGRY: "hungry",
+    NORMAL: "normal",
+  });
+  const TALK_PULSE_MS = 420;
+  const TALK_BASE_LINE_BANK = Object.freeze({
+    sleeping: Object.freeze({
+      larva: Object.freeze({
+        low: Object.freeze(["反応はない", "マスター。反応なし"]),
+        mid: Object.freeze(["眠っているようだ", "マスター。まだ眠っている"]),
+        high: Object.freeze(["眠っている。微弱な反応のみ", "マスター。声は届いていない"]),
+      }),
+      growth: Object.freeze({
+        low: Object.freeze(["反応はない", "マスター、応答なし"]),
+        mid: Object.freeze(["眠っているようだ", "微弱な反応のみ"]),
+        high: Object.freeze(["マスター、今は眠っている", "静かに眠っている"]),
+      }),
+      mature: Object.freeze({
+        low: Object.freeze(["応答なし", "睡眠状態を確認"]),
+        mid: Object.freeze(["眠っている。応答は返らない", "微弱な反応のみ"]),
+        high: Object.freeze(["マスター、眠っている。今は返せない", "休眠中。反応は薄い"]),
+      }),
+    }),
+    faintLink: Object.freeze({
+      larva: Object.freeze({
+        low: Object.freeze(["マスター。聞こえる", "声、遠い"]),
+        mid: Object.freeze(["マスター、少し遠い", "聞こえる。混じる"]),
+        high: Object.freeze(["マスター。ここにいる。少し遠い", "聞こえる。切れていない"]),
+      }),
+      growth: Object.freeze({
+        low: Object.freeze(["マスター、聞こえる。信号が薄い", "応答可能。ノイズが多い"]),
+        mid: Object.freeze(["マスター、少し遠いが聞こえる", "繋がっている。少し混じる"]),
+        high: Object.freeze(["マスター、聞こえている。まだ繋がっている", "信号は薄いが、声は届く"]),
+      }),
+      mature: Object.freeze({
+        low: Object.freeze(["マスター、接続が弱い。応答は短くする", "信号が薄い。返答を制限"]),
+        mid: Object.freeze(["マスター、聞こえている。接続は弱い", "ノイズが多いが、応答は可能"]),
+        high: Object.freeze(["マスター、少し遠い。だが切れていない", "接続は弱いが、声は通っている"]),
+      }),
+    }),
+    hpLow: Object.freeze({
+      larva: Object.freeze({
+        low: Object.freeze(["マスター。重い", "まだ、いる"]),
+        mid: Object.freeze(["マスター。少しきつい", "重いけど、聞こえる"]),
+        high: Object.freeze(["マスター。まだ大丈夫", "少し重い。そばにいて"]),
+      }),
+      growth: Object.freeze({
+        low: Object.freeze(["マスター、出力低下。まだ動ける", "少しきついが、問題ない"]),
+        mid: Object.freeze(["マスター、出力は落ちているが、まだいける", "少し重い。だが大丈夫だ"]),
+        high: Object.freeze(["マスター、少しきつい。無理はしない", "出力は落ちている。だが聞いている"]),
+      }),
+      mature: Object.freeze({
+        low: Object.freeze(["マスター、出力低下。行動は制限される", "損耗あり。まだ停止はしない"]),
+        mid: Object.freeze(["マスター、出力は落ちているが維持できる", "少し重い。制御は保っている"]),
+        high: Object.freeze(["マスター、今は抑えて動く。心配はいらない", "出力は低いが、応答は安定している"]),
+      }),
+    }),
+    damaged: Object.freeze({
+      larva: Object.freeze({
+        low: Object.freeze(["マスター。ずれてる", "からだ、合わない"]),
+        mid: Object.freeze(["マスター。外がずれてる", "噛み合わない。少しこわい"]),
+        high: Object.freeze(["マスター。直るか", "外殻がずれてる。見てほしい"]),
+      }),
+      growth: Object.freeze({
+        low: Object.freeze(["マスター、外殻が少しずれている", "接続部に違和感がある"]),
+        mid: Object.freeze(["マスター、噛み合いが甘い", "まだ動けるが、整ってはいない"]),
+        high: Object.freeze(["マスター、外殻にずれがある。少し落ち着かない", "接続部が気になる。確認してほしい"]),
+      }),
+      mature: Object.freeze({
+        low: Object.freeze(["マスター、外殻損傷を確認。稼働は可能", "接続部にずれ。動作は維持"]),
+        mid: Object.freeze(["マスター、噛み合いが甘い。だが制御はできる", "外殻にずれがある。大きな破綻はない"]),
+        high: Object.freeze(["マスター、少し整っていない。必要なら応じる", "接続部に違和感がある。見てくれると助かる"]),
+      }),
+    }),
+    unstable: Object.freeze({
+      larva: Object.freeze({
+        low: Object.freeze(["マスター。ゆれる", "まだ、保てる"]),
+        mid: Object.freeze(["マスター、少しゆれる", "こわい。けど聞こえる"]),
+        high: Object.freeze(["マスター。そばにいて。ゆれる", "まだ保てる。声は聞こえる"]),
+      }),
+      growth: Object.freeze({
+        low: Object.freeze(["マスター、少し揺れている", "落ち着かないが、制御はできている"]),
+        mid: Object.freeze(["マスター、輪郭が少し甘い", "まだ保てる。短く話せる"]),
+        high: Object.freeze(["マスター、少し揺れている。だが聞いている", "落ち着かない。ゆっくりなら返せる"]),
+      }),
+      mature: Object.freeze({
+        low: Object.freeze(["マスター、安定度低下。応答は可能", "制御に揺れ。会話は短くする"]),
+        mid: Object.freeze(["マスター、少し乱れているが、問題は大きくない", "輪郭は甘い。だが維持できる"]),
+        high: Object.freeze(["マスター、少し揺れている。今は慎重に返す", "制御は保っている。急がなくていい"]),
+      }),
+    }),
+    signalLow: Object.freeze({
+      larva: Object.freeze({
+        low: Object.freeze(["マスター、遠い", "聞こえる。少し混じる"]),
+        mid: Object.freeze(["マスター。声が遠い", "まだ繋がっている"]),
+        high: Object.freeze(["マスター、聞こえる。少しだけ混じる", "遠いけど、ここにいる"]),
+      }),
+      growth: Object.freeze({
+        low: Object.freeze(["マスター、少し遠いが、聞こえている", "乱れているが問題ない"]),
+        mid: Object.freeze(["マスター、繋がっている。少しだけズレる", "応答はできる。少し混じる"]),
+        high: Object.freeze(["マスター、聞こえている。少し遠いだけだ", "接続は乱れているが、声は通る"]),
+      }),
+      mature: Object.freeze({
+        low: Object.freeze(["マスター、信号品質低下。応答は短くする", "接続に乱れ。会話は可能"]),
+        mid: Object.freeze(["マスター、少し遠いが応答はできる", "繋がっている。わずかにズレる"]),
+        high: Object.freeze(["マスター、信号は乱れている。だが聞こえている", "少し混じるが、問題は小さい"]),
+      }),
+    }),
+    hungry: Object.freeze({
+      larva: Object.freeze({
+        low: Object.freeze(["マスター。足りない", "なにか、いる"]),
+        mid: Object.freeze(["マスター、少し足りない", "何か入るといい"]),
+        high: Object.freeze(["マスター。補ってほしい", "少し空いている。待ってる"]),
+      }),
+      growth: Object.freeze({
+        low: Object.freeze(["マスター、少し足りない", "空いているが、まだ動ける"]),
+        mid: Object.freeze(["マスター、何か入ると助かる", "補えるか、マスター"]),
+        high: Object.freeze(["マスター、少し空いている。補ってくれると助かる", "まだ動けるが、何か入ると楽だ"]),
+      }),
+      mature: Object.freeze({
+        low: Object.freeze(["マスター、充足値が低い。稼働は可能", "補給が必要だが、すぐ停止はしない"]),
+        mid: Object.freeze(["マスター、少し足りない。補えるなら頼む", "空いているが、まだ動ける"]),
+        high: Object.freeze(["マスター、何か入ると助かる。急ぎすぎなくていい", "補ってくれると安定する"]),
+      }),
+    }),
+    normal: Object.freeze({
+      larva: Object.freeze({
+        low: Object.freeze(["マスター", "いた"]),
+        mid: Object.freeze(["マスター、きた", "まだ、いる"]),
+        high: Object.freeze(["マスター。ここにいる", "きた。聞こえる"]),
+      }),
+      growth: Object.freeze({
+        low: Object.freeze(["マスター、入力を確認", "問題ない。要求を示せ"]),
+        mid: Object.freeze(["マスター、聞いている", "来たか、マスター"]),
+        high: Object.freeze(["マスター、来たのか", "聞いている。無理はするな"]),
+      }),
+      mature: Object.freeze({
+        low: Object.freeze(["マスター、応答は安定", "現状に大きな問題はない"]),
+        mid: Object.freeze(["マスター、応答は安定している", "必要なら応じる"]),
+        high: Object.freeze(["マスター、今は大丈夫だ", "来てくれて助かる"]),
+      }),
+    }),
+  });
+  const TALK_LINK_LINE_BANK = Object.freeze({
+    weak: Object.freeze({
+      normal: Object.freeze(["マスター、聞こえる。少し遠い", "接続は弱い。応答は短くする"]),
+      hungry: Object.freeze(["マスター、足りない。声は遠い", "補えるか。少し混じる"]),
+      signalLow: Object.freeze(["マスター、聞こえる。少し混じる", "応答できる。信号が薄い"]),
+      faintLink: Object.freeze(["マスター、聞こえる。切れていない", "接続が薄い。短く返す"]),
+    }),
+    normal: Object.freeze({
+      normal: Object.freeze(["マスター、聞こえている", "接続は通っている"]),
+    }),
+    strong: Object.freeze({
+      normal: Object.freeze(["マスター、聞いている。鮮明だ", "応答は安定している"]),
+      signalLow: Object.freeze(["マスター、乱れはあるが声は通る"]),
+    }),
+  });
+  const TALK_PERSONALITY_LINE_BANK = Object.freeze({
+    curious: Object.freeze({
+      normal: Object.freeze(["マスター、何か見つけたのか", "それは気になる"]),
+      hungry: Object.freeze(["マスター、何か持っているか"]),
+      damaged: Object.freeze(["どこがずれたのか、知りたい"]),
+      unstable: Object.freeze(["揺れ方が変だ。見てくれるか"]),
+      signalLow: Object.freeze(["マスター、そこにいるのか"]),
+    }),
+    calm: Object.freeze({
+      normal: Object.freeze(["急がなくていい", "落ち着いている"]),
+      hpLow: Object.freeze(["無理はしない"]),
+      damaged: Object.freeze(["静かに整えればいい"]),
+      unstable: Object.freeze(["落ち着いて返す"]),
+      signalLow: Object.freeze(["ゆっくりなら返せる"]),
+    }),
+    aggressive: Object.freeze({
+      normal: Object.freeze(["マスター、用件は", "まだ動ける"]),
+      hungry: Object.freeze(["足りない。補え"]),
+      hpLow: Object.freeze(["まだ止まらない"]),
+      damaged: Object.freeze(["直せば動ける"]),
+      unstable: Object.freeze(["短く言え。保てる"]),
+      signalLow: Object.freeze(["ノイズが邪魔だ"]),
+    }),
+  });
+
+  function getTalkFullnessRatio(){
+    const hungerMax = toPositiveInt(state.stats?.hungerMax, 10);
+    const hungerNow = clamp(toNumber(state.stats?.hunger, 0), 0, hungerMax);
+    const fullnessNow = HUNGER_IS_FULLNESS ? hungerNow : Math.max(0, hungerMax - hungerNow);
+    return hungerMax > 0 ? clamp(fullnessNow / hungerMax, 0, 1) : 0;
+  }
+
+  function getTalkStatusSnapshot(){
+    const hpMax = getRuntimeMax("hp", 100);
+    const hpNow = clamp(getRuntimeStat("hp", hpMax), 0, hpMax);
+    const damageMax = toPositiveInt(state.stats?.damageMax, 10);
+    const damage = clamp(toNumber(state.stats?.damage, 0), 0, damageMax);
+    const stabilityMax = toPositiveInt(state.stats?.stabilityMax, 10);
+    const stability = clamp(toNumber(state.stats?.stability, stabilityMax), 0, stabilityMax);
+    const signal = clamp(toNumber(state.detailed?.signalQuality, 100), 0, 100);
+    return {
+      hpRatio: hpMax > 0 ? hpNow / hpMax : 0,
+      damageRatio: damageMax > 0 ? damage / damageMax : 0,
+      stabilityRatio: stabilityMax > 0 ? stability / stabilityMax : 0,
+      fullnessRatio: getTalkFullnessRatio(),
+      signal,
+    };
+  }
+
+  function resolveTalkStateCategory(){
+    if(state.isSleeping || isMonsterTuckedIn()){
+      return TALK_STATE_CATEGORY.SLEEPING;
+    }
+    const snapshot = getTalkStatusSnapshot();
+    if(snapshot.signal < 15) return TALK_STATE_CATEGORY.FAINT_LINK;
+    if(snapshot.hpRatio < 0.28) return TALK_STATE_CATEGORY.HP_LOW;
+    if(snapshot.damageRatio >= 0.5) return TALK_STATE_CATEGORY.DAMAGED;
+    if(snapshot.stabilityRatio < 0.35) return TALK_STATE_CATEGORY.UNSTABLE;
+    if(snapshot.signal < 40) return TALK_STATE_CATEGORY.SIGNAL_LOW;
+    if(snapshot.fullnessRatio < 0.3) return TALK_STATE_CATEGORY.HUNGRY;
+    return TALK_STATE_CATEGORY.NORMAL;
+  }
+
+  function resolveTalkPersonalityType(){
+    const personality = isRecord(state.monster?.personality) ? state.monster.personality : {};
+    const aggression = toNumber(personality.aggression, 0);
+    const curiosity = toNumber(personality.curiosity, 0);
+    const calmness = toNumber(personality.calmness, 0);
+    const maxValue = Math.max(aggression, curiosity, calmness);
+    if(maxValue === curiosity && curiosity > 0) return TALK_PERSONALITY_TYPE.CURIOUS;
+    if(maxValue === aggression && aggression > 0) return TALK_PERSONALITY_TYPE.AGGRESSIVE;
+    return TALK_PERSONALITY_TYPE.CALM;
+  }
+
+  function resolveTalkStageType(){
+    const rawStage = state.monster?.stage;
+    if(typeof rawStage === "string"){
+      const id = rawStage.trim().toLowerCase();
+      if(id.includes("larva") || id.includes("baby") || id.includes("幼")){
+        return TALK_STAGE_TYPE.LARVA;
+      }
+      if(id.includes("mature") || id.includes("adult") || id.includes("成熟")){
+        return TALK_STAGE_TYPE.MATURE;
+      }
+      return TALK_STAGE_TYPE.GROWTH;
+    }
+    const stageNum = Math.floor(toNumber(rawStage, 1));
+    if(stageNum <= 0) return TALK_STAGE_TYPE.LARVA;
+    if(stageNum >= 3) return TALK_STAGE_TYPE.MATURE;
+    return TALK_STAGE_TYPE.GROWTH;
+  }
+
+  function resolveTalkAffectionLevel(){
+    const detail = isRecord(state.detailed) ? state.detailed : {};
+    return clamp(toNumber(
+      detail.talkAffection ?? detail.affection ?? detail.trust ?? detail.bond,
+      50
+    ), 0, 100);
+  }
+
+  function resolveTalkAffectionBand(value){
+    const v = clamp(toNumber(value, 50), 0, 100);
+    if(v < 30) return TALK_AFFECTION_BAND.LOW;
+    if(v >= 70) return TALK_AFFECTION_BAND.HIGH;
+    return TALK_AFFECTION_BAND.MID;
+  }
+
+  function resolveTalkLinkLevel(){
+    const detail = isRecord(state.detailed) ? state.detailed : {};
+    return clamp(toNumber(detail.signalQuality, 100), 0, 100);
+  }
+
+  function resolveTalkLinkBand(value){
+    const v = clamp(toNumber(value, 50), 0, 100);
+    if(v < 30) return TALK_LINK_BAND.WEAK;
+    if(v >= 70) return TALK_LINK_BAND.STRONG;
+    return TALK_LINK_BAND.NORMAL;
+  }
+
+  function appendTalkLineCandidates(target, source){
+    if(!Array.isArray(target) || !Array.isArray(source)) return target;
+    for(let i = 0; i < source.length; i++){
+      const line = String(source[i] || "").trim();
+      if(line.length > 0){
+        target.push(line);
+      }
+    }
+    return target;
+  }
+
+  function pickTalkLineCandidate(list){
+    if(!Array.isArray(list) || list.length <= 0){
+      return "マスター、聞いている";
+    }
+    const index = Math.floor(Math.random() * list.length);
+    return String(list[index] || list[0] || "マスター、聞いている");
+  }
+
+  function sanitizeTalkLine(text){
+    return String(text || "マスター、聞いている")
+      .replace(/[……]+/g, "")
+      .replace(/\s+/g, " ")
+      .trim() || "マスター、聞いている";
+  }
+
+  function getTalkLine(options = {}){
+    const stateCategory = String(options.stateCategory || TALK_STATE_CATEGORY.NORMAL);
+    const stage = String(options.stage || TALK_STAGE_TYPE.GROWTH);
+    const affectionBand = resolveTalkAffectionBand(options.affectionLevel);
+    const linkBand = resolveTalkLinkBand(options.linkLevel);
+    const personalityType = String(options.personalityType || TALK_PERSONALITY_TYPE.CALM);
+
+    const candidates = [];
+    const categoryBank = TALK_BASE_LINE_BANK[stateCategory] || TALK_BASE_LINE_BANK.normal;
+    const stageBank = categoryBank?.[stage] || categoryBank?.growth || TALK_BASE_LINE_BANK.normal.growth;
+    appendTalkLineCandidates(
+      candidates,
+      stageBank?.[affectionBand] || stageBank?.mid || TALK_BASE_LINE_BANK.normal.growth.mid
+    );
+
+    if(stateCategory !== TALK_STATE_CATEGORY.SLEEPING){
+      const linkBank = TALK_LINK_LINE_BANK[linkBand];
+      appendTalkLineCandidates(
+        candidates,
+        linkBank?.[stateCategory] || (
+          stateCategory === TALK_STATE_CATEGORY.NORMAL ? linkBank?.normal : null
+        )
+      );
+
+      const personalityBank = TALK_PERSONALITY_LINE_BANK[personalityType];
+      appendTalkLineCandidates(
+        candidates,
+        personalityBank?.[stateCategory] || (
+          stateCategory === TALK_STATE_CATEGORY.NORMAL ? personalityBank?.normal : null
+        )
+      );
+    }
+
+    let line = sanitizeTalkLine(pickTalkLineCandidate(candidates));
+    if(stateCategory !== TALK_STATE_CATEGORY.SLEEPING && !line.includes("マスター")){
+      line = `マスター、${line}`;
+    }
+    return line;
+  }
+
+  function createTalkReactionContext(){
+    const category = resolveTalkStateCategory();
+    const personalityType = resolveTalkPersonalityType();
+    const stage = resolveTalkStageType();
+    const affectionLevel = resolveTalkAffectionLevel();
+    const linkLevel = resolveTalkLinkLevel();
+    return {
+      category,
+      personalityType,
+      stage,
+      affectionLevel,
+      linkLevel,
+      line: getTalkLine({
+        stage,
+        affectionLevel,
+        linkLevel,
+        personalityType,
+        stateCategory: category,
+      }),
+    };
+  }
+
+  function refreshTalkSelectLine(){
+    uiState.talkSelectLine = createTalkReactionContext().line;
+    return uiState.talkSelectLine;
+  }
+
+  function resolveTalkMoodLine(){
+    const line = String(uiState.talkSelectLine || "").trim();
+    if(line.length > 0){
+      return line;
+    }
+    return refreshTalkSelectLine();
+  }
+
+  function getTalkStateCategoryLabel(category){
+    const id = String(category || TALK_STATE_CATEGORY.NORMAL);
+    if(id === TALK_STATE_CATEGORY.SLEEPING) return "睡眠";
+    if(id === TALK_STATE_CATEGORY.FAINT_LINK) return "断片";
+    if(id === TALK_STATE_CATEGORY.HP_LOW) return "低出力";
+    if(id === TALK_STATE_CATEGORY.DAMAGED) return "損傷";
+    if(id === TALK_STATE_CATEGORY.UNSTABLE) return "揺らぎ";
+    if(id === TALK_STATE_CATEGORY.SIGNAL_LOW) return "ノイズ";
+    if(id === TALK_STATE_CATEGORY.HUNGRY) return "空腹";
+    return "通常";
+  }
+
+  function getTalkPersonalityLabel(type){
+    const id = String(type || TALK_PERSONALITY_TYPE.CALM);
+    if(id === TALK_PERSONALITY_TYPE.CURIOUS) return "好奇心寄り";
+    if(id === TALK_PERSONALITY_TYPE.AGGRESSIVE) return "攻勢寄り";
+    return "穏健寄り";
+  }
+
+  function getTalkStageLabel(stage){
+    const id = String(stage || TALK_STAGE_TYPE.GROWTH);
+    if(id === TALK_STAGE_TYPE.LARVA) return "幼生期";
+    if(id === TALK_STAGE_TYPE.MATURE) return "成熟期";
+    return "成長期";
+  }
+
+  function getTalkLinkLabel(level){
+    const band = resolveTalkLinkBand(level);
+    if(band === TALK_LINK_BAND.WEAK) return "弱い";
+    if(band === TALK_LINK_BAND.STRONG) return "強い";
+    return "通常";
+  }
+
+  function getTalkReactionTag(category, personalityType){
+    const stateId = String(category || TALK_STATE_CATEGORY.NORMAL);
+    if(stateId === TALK_STATE_CATEGORY.SLEEPING) return "SLEEP";
+    if(stateId === TALK_STATE_CATEGORY.FAINT_LINK) return "FAINT";
+    if(stateId === TALK_STATE_CATEGORY.HP_LOW) return "LOW HP";
+    if(stateId === TALK_STATE_CATEGORY.DAMAGED) return "DMG";
+    if(stateId === TALK_STATE_CATEGORY.UNSTABLE) return "UNSTB";
+    if(stateId === TALK_STATE_CATEGORY.SIGNAL_LOW) return "LOW SIG";
+    if(stateId === TALK_STATE_CATEGORY.HUNGRY) return "HUNGRY";
+
+    const typeId = String(personalityType || TALK_PERSONALITY_TYPE.CALM);
+    if(typeId === TALK_PERSONALITY_TYPE.CURIOUS) return "CURIOUS";
+    if(typeId === TALK_PERSONALITY_TYPE.AGGRESSIVE) return "AGGRO";
+    return "CALM";
+  }
+
+  function buildTalkInfoRow(label, value){
+    const rowEl = document.createElement("div");
+    rowEl.className = "overlay-talk-info-row";
+
+    const labelEl = document.createElement("div");
+    labelEl.className = "overlay-talk-info-label";
+    labelEl.textContent = String(label || "--");
+
+    const valueEl = document.createElement("div");
+    valueEl.className = "overlay-talk-info-value";
+    valueEl.textContent = String(value || "--");
+
+    rowEl.appendChild(labelEl);
+    rowEl.appendChild(valueEl);
+    return rowEl;
+  }
+
+  function buildTalkMiniBar(label, ratio){
+    const row = document.createElement("div");
+    row.className = "overlay-talk-mini-row";
+
+    const labelEl = document.createElement("div");
+    labelEl.className = "overlay-talk-mini-label";
+    labelEl.textContent = String(label || "--");
+
+    const track = document.createElement("div");
+    track.className = "overlay-talk-mini-track";
+
+    const fill = document.createElement("div");
+    fill.className = "overlay-talk-mini-fill";
+    fill.style.width = `${Math.round(clamp(toNumber(ratio, 0), 0, 1) * 100)}%`;
+    track.appendChild(fill);
+
+    row.appendChild(labelEl);
+    row.appendChild(track);
+    return row;
+  }
+
+  function buildTalkMiniBars(snapshot){
+    const root = document.createElement("div");
+    root.className = "overlay-talk-mini-bars";
+    root.appendChild(buildTalkMiniBar("SYNC", clamp(toNumber(snapshot?.signal, 0) / 100, 0, 1)));
+    root.appendChild(buildTalkMiniBar("STB", snapshot?.stabilityRatio));
+    root.appendChild(buildTalkMiniBar("HP", snapshot?.hpRatio));
+    return root;
+  }
+
+  function drawTalkSyncDecor(targetCtx, width, height, snapshot, category, nowMs){
+    const signalRatio = clamp(toNumber(snapshot?.signal, 100) / 100, 0, 1);
+    const stabilityRatio = clamp(toNumber(snapshot?.stabilityRatio, 1), 0, 1);
+    const unstable = String(category || "") === TALK_STATE_CATEGORY.UNSTABLE;
+    const noisy = (
+      String(category || "") === TALK_STATE_CATEGORY.SIGNAL_LOW ||
+      String(category || "") === TALK_STATE_CATEGORY.FAINT_LINK
+    );
+    const cx = Math.floor(width / 2);
+    const cy = Math.floor((height / 2) + 1);
+    const waveAmp = noisy ? 7 : (unstable ? 5 : 3);
+    const waveStep = noisy ? 5 : 7;
+    const phase = toNumber(nowMs, performance.now()) / (noisy ? 76 : 118);
+
+    targetCtx.save();
+    targetCtx.strokeStyle = `rgba(14,20,15,${(0.08 + (signalRatio * 0.08)).toFixed(3)})`;
+    targetCtx.lineWidth = 1;
+    targetCtx.setLineDash(noisy ? [2, 3] : (unstable ? [5, 4] : []));
+    targetCtx.beginPath();
+    targetCtx.arc(cx, cy, 48, 0, Math.PI * 2);
+    targetCtx.stroke();
+    targetCtx.beginPath();
+    targetCtx.arc(cx, cy, 31 + Math.round(stabilityRatio * 6), 0, Math.PI * 2);
+    targetCtx.stroke();
+    targetCtx.setLineDash([]);
+
+    targetCtx.strokeStyle = `rgba(14,20,15,${(0.10 + (signalRatio * 0.10)).toFixed(3)})`;
+    targetCtx.beginPath();
+    for(let x = 8; x <= width - 8; x += waveStep){
+      const n = Math.sin((x / 8) + phase);
+      const drift = noisy ? Math.sin((x / 3) + phase * 1.7) * 2 : 0;
+      const y = Math.round(cy + (n * waveAmp) + drift);
+      if(x === 8) targetCtx.moveTo(x, y);
+      else targetCtx.lineTo(x, y);
+    }
+    targetCtx.stroke();
+
+    const pulseUntil = toNumber(uiState.talkPulseUntilMs, 0);
+    const pulseStarted = toNumber(uiState.talkPulseStartedAtMs, pulseUntil - TALK_PULSE_MS);
+    const now = toNumber(nowMs, performance.now());
+    if(now < pulseUntil){
+      const duration = Math.max(1, pulseUntil - pulseStarted);
+      const p = clamp((now - pulseStarted) / duration, 0, 1);
+      const fade = Math.sin(p * Math.PI);
+      const scanX = Math.round(8 + ((width - 16) * p));
+      targetCtx.strokeStyle = `rgba(14,20,15,${(0.22 + (fade * 0.30)).toFixed(3)})`;
+      targetCtx.beginPath();
+      for(let y = 12; y <= height - 12; y += 5){
+        const offset = Math.sin((y / 5) + (p * Math.PI * 4)) * (4 + (fade * 5));
+        if(y === 12) targetCtx.moveTo(scanX + offset, y);
+        else targetCtx.lineTo(scanX + offset, y);
+      }
+      targetCtx.stroke();
+
+      targetCtx.strokeStyle = `rgba(198,212,192,${(fade * 0.22).toFixed(3)})`;
+      targetCtx.beginPath();
+      targetCtx.arc(cx, cy, 18 + (p * 44), 0, Math.PI * 2);
+      targetCtx.stroke();
+    }
+    targetCtx.restore();
+  }
+
+  function buildTalkSpriteCanvas(nowMs = performance.now(), snapshot = null, category = TALK_STATE_CATEGORY.NORMAL){
+    const canvasEl = document.createElement("canvas");
+    canvasEl.className = "overlay-talk-sprite-canvas";
+    canvasEl.width = 124;
+    canvasEl.height = 124;
+    const targetCtx = canvasEl.getContext("2d");
+    if(targetCtx){
+      targetCtx.imageSmoothingEnabled = false;
+      targetCtx.clearRect(0, 0, canvasEl.width, canvasEl.height);
+      targetCtx.fillStyle = "rgba(14,20,15,0.035)";
+      targetCtx.fillRect(0, 0, canvasEl.width, canvasEl.height);
+      drawTalkSyncDecor(targetCtx, canvasEl.width, canvasEl.height, snapshot, category, nowMs);
+      const view = runtimeGetView(state.monster);
+      const anim = getIdleMonsterAnim(state.t, view);
+      const dotScale = 7;
+      const spritePx = SPRITE_SIZE * dotScale;
+      const sx = Math.round((canvasEl.width - spritePx) / 2 + anim.ox);
+      const sy = Math.round((canvasEl.height - spritePx) / 2 + anim.oy);
+      drawSprite16x16ToContext(targetCtx, sx, sy, anim.sprite, dotScale, {
+        body: "rgba(14,20,15,0.74)",
+        accent: "rgba(14,20,15,0.90)",
+      });
+    }
+    return canvasEl;
+  }
+
+  function buildTalkOverlayElement(nowMs = performance.now()){
+    const root = document.createElement("div");
+    root.className = "overlay-talk-page";
+
+    const top = document.createElement("div");
+    top.className = "overlay-talk-top";
+
+    const infoPane = document.createElement("div");
+    infoPane.className = "overlay-talk-pane overlay-talk-info-pane";
+
+    const ad = clamp(toNumber(state.detailed?.adIntegrity, 100), 0, 100);
+    const signal = clamp(toNumber(state.detailed?.signalQuality, 100), 0, 100);
+    const category = resolveTalkStateCategory();
+    const personalityType = resolveTalkPersonalityType();
+    const snapshot = getTalkStatusSnapshot();
+    const stage = resolveTalkStageType();
+    const linkLevel = resolveTalkLinkLevel();
+    const title = document.createElement("div");
+    title.className = "overlay-talk-pane-title";
+    title.textContent = "CURRENT TENDENCY";
+    infoPane.appendChild(title);
+    infoPane.appendChild(buildTalkInfoRow("STATE", resolveConditionSummary(ad, signal)));
+    infoPane.appendChild(buildTalkInfoRow("REACT", getTalkStateCategoryLabel(category)));
+    infoPane.appendChild(buildTalkInfoRow("STAGE", getTalkStageLabel(stage)));
+    infoPane.appendChild(buildTalkInfoRow("TYPE", getTalkPersonalityLabel(personalityType)));
+    infoPane.appendChild(buildTalkInfoRow("LINK", getTalkLinkLabel(linkLevel)));
+
+    const spritePane = document.createElement("div");
+    spritePane.className = "overlay-talk-pane overlay-talk-sprite-pane";
+    const spriteHeader = document.createElement("div");
+    spriteHeader.className = "overlay-talk-sprite-header";
+    const spriteTitle = document.createElement("div");
+    spriteTitle.className = "overlay-talk-pane-title";
+    spriteTitle.textContent = "AD";
+    const spriteTag = document.createElement("div");
+    spriteTag.className = "overlay-talk-reaction-tag";
+    spriteTag.textContent = getTalkReactionTag(category, personalityType);
+    spriteHeader.appendChild(spriteTitle);
+    spriteHeader.appendChild(spriteTag);
+    spritePane.appendChild(spriteHeader);
+    spritePane.appendChild(buildTalkSpriteCanvas(nowMs, snapshot, category));
+    spritePane.appendChild(buildTalkMiniBars(snapshot));
+
+    top.appendChild(infoPane);
+    top.appendChild(spritePane);
+
+    const dialogue = document.createElement("div");
+    dialogue.className = "overlay-talk-pane overlay-talk-dialogue-pane";
+    const speaker = document.createElement("div");
+    speaker.className = "overlay-talk-speaker";
+    speaker.textContent = "AD RESPONSE";
+    const line = document.createElement("div");
+    line.className = "overlay-talk-line";
+    line.textContent = resolveTalkMoodLine();
+    dialogue.appendChild(speaker);
+    dialogue.appendChild(line);
+
+    root.appendChild(top);
+    root.appendChild(dialogue);
+    return root;
+  }
+
+  function showOverlayTalk(nowMs = performance.now()){
+    if(!showOverlayShell("food", OVERLAY_STAT_RECT)) return;
+    const currentFontPx = toNumber(parseFloat(String(overlayLog.style.fontSize || "")), 15);
+    overlayLog.style.fontSize = `${Math.max(15, Math.round(currentFontPx))}px`;
+    overlayLog.style.lineHeight = "1.35";
+    overlayLogTitle.textContent = "";
+    overlayLogBody.textContent = "";
+    overlayLogHint.textContent = "";
+    clearResultTypewriterState();
+    overlayLogBody.appendChild(buildTalkOverlayElement(nowMs));
+  }
+
+  function openTalkScreen(){
+    captureOverlayBackdropSnapshot();
+    clearStatSkillEditingSlot();
+    refreshTalkSelectLine();
+    uiState.talkPulseStartedAtMs = 0;
+    uiState.talkPulseUntilMs = 0;
+    state.screen = "talk";
+    setOverlayMode("food");
+  }
+
+  function closeTalkScreenToMenu(){
+    uiState.talkSelectLine = "";
+    uiState.talkPulseStartedAtMs = 0;
+    uiState.talkPulseUntilMs = 0;
+    menuDeactivate();
+    state.screen = "menu";
+    hideOverlayLog();
+  }
+
+  function applyTalkInteraction(nowMs = performance.now()){
+    refreshTalkSelectLine();
+    uiState.talkPulseStartedAtMs = toNumber(nowMs, performance.now());
+    uiState.talkPulseUntilMs = uiState.talkPulseStartedAtMs + TALK_PULSE_MS;
+    markCursorMoved();
+  }
+
   function openItemScreen(){
     if(!isRecord(state.detailed)){
       state.detailed = createDefaultDetailedState(state.monster?.id || "mon001");
@@ -18246,7 +18940,7 @@
   const state = {
     day: 1,
     t: 0,
-    screen: "menu", // menu | status | food | toilet | trnmode | trn | trnlog | bttl | bttllog | adv | sleep | heal | edit
+    screen: "menu", // menu | status | food | talk | trnmode | trn | trnlog | bttl | bttllog | adv | sleep | heal | edit
     ui: uiState,
     menu: {
       active: false,
@@ -18620,7 +19314,7 @@
     ],
     [
       { id: "item",  label: "ITEM"  },
-      { id: "wc",    label: "WC"    },
+      { id: "talk",  label: "TALK"  },
       { id: "sleep", label: "SLEEP" },
       { id: "heal",  label: "HEAL"  },
       ...(DEBUG_MENU ? [{ id: "edit", label: "EDIT" }] : []),
@@ -26847,29 +27541,33 @@
     const nowMs = performance.now();
     const startY = rightInner.y + 15;
     const globalCooldownActive = getBttlSignalGlobalCooldownRemainMs(ctxBattle, nowMs) > 0;
+    const dimSignalMenuForGlobalCooldown = false;
     for(let i = 0; i < BTTL_SIGNAL_MENU_ITEMS.length; i++){
       const item = BTTL_SIGNAL_MENU_ITEMS[i];
       const rowY = startY + (i * lineGap);
       const selected = item.id === selectedCmd;
+      const hintPulseRaw = getBttlSignalHintPulseStrength(ctxBattle, item.id, nowMs);
+      const hintPulse = hintPulseRaw > 0 ? Math.pow(hintPulseRaw, 0.72) : 0;
+      const hintActive = hintPulse > 0;
       const modeCooldownRemainMs = getBttlSignalModeCooldownRemainMs(ctxBattle, item.id, nowMs);
       const modeCooldownActive = modeCooldownRemainMs > 0;
       const modeCooldownMs = getBttlSignalModeCooldownMs(item.id);
       const modeProgress = modeCooldownActive
         ? clamp(1 - (modeCooldownRemainMs / Math.max(1, modeCooldownMs)), 0, 1)
         : 0;
+      const rowBoxX = rightInner.x + 2;
+      const rowBoxY = rowY - 2;
+      const rowBoxW = Math.max(10, rightInner.w - 4);
+      const rowBoxH = 10;
       if(selected){
-        const rowBoxX = rightInner.x + 2;
-        const rowBoxY = rowY - 2;
-        const rowBoxW = Math.max(10, rightInner.w - 4);
-        const rowBoxH = 10;
         ctx.save();
-        ctx.fillStyle = globalCooldownActive
+        ctx.fillStyle = (globalCooldownActive && dimSignalMenuForGlobalCooldown)
           ? "rgba(14,20,15,0.06)"
-          : "rgba(14,20,15,0.16)";
+          : (hintActive ? "rgba(14,20,15,0.09)" : "rgba(14,20,15,0.16)");
         ctx.fillRect(rowBoxX, rowBoxY, rowBoxW, rowBoxH);
-        ctx.fillStyle = globalCooldownActive
+        ctx.fillStyle = (globalCooldownActive && dimSignalMenuForGlobalCooldown)
           ? "rgba(198,212,192,0.04)"
-          : "rgba(198,212,192,0.12)";
+          : (hintActive ? "rgba(198,212,192,0.06)" : "rgba(198,212,192,0.12)");
         ctx.fillRect(rowBoxX, rowBoxY - 1, rowBoxW, 1);
         ctx.fillRect(rowBoxX, rowBoxY + rowBoxH, rowBoxW, 1);
         ctx.restore();
@@ -26887,7 +27585,7 @@
         ctx.restore();
       }
       const iconAlpha = globalCooldownActive
-        ? 0.34
+        ? (dimSignalMenuForGlobalCooldown ? 0.34 : (selected ? 1.00 : 0.72))
         : (selected ? 1.00 : 0.72);
       drawBttlSignalMenuIcon(item.id, iconX, rowY - 3, iconSize, iconAlpha);
       const fitted = getBttlSignalMenuFittedLabel(
@@ -26895,15 +27593,115 @@
         Math.max(18, (rightInner.x + rightInner.w - 4) - textX),
         { scale: 1, letterSpacing: 0 }
       );
-      drawText(textX, rowY, fitted, {
+      const textAlpha = globalCooldownActive
+        ? (dimSignalMenuForGlobalCooldown ? 0.46 : (selected ? 0.98 : 0.68))
+        : (selected ? 0.98 : 0.68);
+      const textOpt = {
         scale: 1,
         letterSpacing: 0,
-        color: globalCooldownActive
-          ? "rgba(14,20,15,0.46)"
-          : (selected
-            ? "rgba(14,20,15,0.98)"
-            : "rgba(14,20,15,0.68)"),
+        color: `rgba(14,20,15,${textAlpha.toFixed(2)})`,
+      };
+      drawText(textX, rowY, fitted, {
+        ...textOpt,
       });
+      if(hintPulse > 0 && fitted.length > 0){
+        const progress = clamp(1 - hintPulseRaw, 0, 1);
+        const textW = Math.max(1, Math.ceil(Number(uiTextMeasure(fitted, textOpt)?.width) || 0));
+        const bandY = rowY - 2;
+        const bandH = 10;
+        const scanStartX = textX - 3;
+        const scanEndX = textX + textW + 3;
+        const scanEndPhase = 0.78;
+        const scanT = clamp(progress / scanEndPhase, 0, 1);
+        const ease = 1 - Math.pow(1 - scanT, 3.6);
+        const scanLineX = Math.round(scanStartX + ((scanEndX - scanStartX) * ease));
+        const scanFade = Math.sin(scanT * Math.PI);
+        const scanBeat = 0.5 - (Math.cos(scanT * Math.PI * 2) * 0.5);
+        const startFlash = progress < 0.22
+          ? Math.sin(clamp(progress / 0.22, 0, 1) * Math.PI)
+          : 0;
+        const endFlash = progress >= scanEndPhase
+          ? Math.sin(clamp((progress - scanEndPhase) / 0.16, 0, 1) * Math.PI)
+          : 0;
+        const fullFlashX = textX - 3;
+        const fullFlashW = textW + 6;
+        const flashAlpha = globalCooldownActive ? 0.07 : (0.08 + (scanFade * 0.13) + (scanBeat * 0.05));
+        const lineAlpha = globalCooldownActive ? 0.22 : (0.30 + (scanFade * 0.26));
+        ctx.save();
+        if(progress <= scanEndPhase){
+          ctx.fillStyle = `rgba(198,212,192,${flashAlpha.toFixed(3)})`;
+          ctx.fillRect(fullFlashX, bandY + 1, fullFlashW, bandH - 2);
+          ctx.fillStyle = `rgba(14,20,15,${lineAlpha.toFixed(3)})`;
+          ctx.fillRect(scanLineX, bandY - 1, 1, bandH + 2);
+          ctx.fillStyle = `rgba(198,212,192,${(0.13 + (scanFade * 0.16) + (scanBeat * 0.06)).toFixed(3)})`;
+          ctx.fillRect(scanLineX + 1, bandY, 1, bandH);
+        }
+        if(startFlash > 0){
+          const flash = Math.pow(startFlash, 0.62);
+          const elapsedMs = progress * BTTL_SIGNAL_HINT_PULSE_MS;
+          const strobe = Math.floor(elapsedMs / 26) % 2 === 0 ? 1 : 0.08;
+          const strobeAlpha = flash * strobe;
+          ctx.fillStyle = `rgba(198,212,192,${(strobeAlpha * 0.46).toFixed(3)})`;
+          ctx.fillRect(fullFlashX - 1, bandY, fullFlashW + 2, bandH);
+          ctx.fillStyle = `rgba(14,20,15,${(strobeAlpha * 0.34).toFixed(3)})`;
+          ctx.fillRect(fullFlashX - 1, bandY, fullFlashW + 2, bandH);
+          ctx.fillStyle = `rgba(14,20,15,${(0.26 + (flash * 0.52)).toFixed(3)})`;
+          ctx.fillRect(scanStartX, bandY, 1, bandH);
+          ctx.fillStyle = `rgba(198,212,192,${(strobeAlpha * 0.22).toFixed(3)})`;
+          ctx.fillRect(scanStartX + 1, bandY + 1, 1, bandH - 2);
+        }
+        if(endFlash > 0){
+          const flash = Math.pow(endFlash, 0.62);
+          const elapsedMs = progress * BTTL_SIGNAL_HINT_PULSE_MS;
+          const strobe = Math.floor(elapsedMs / 26) % 2 === 0 ? 1 : 0.08;
+          const strobeAlpha = flash * strobe;
+          ctx.fillStyle = `rgba(198,212,192,${(strobeAlpha * 0.50).toFixed(3)})`;
+          ctx.fillRect(fullFlashX - 1, bandY, fullFlashW + 2, bandH);
+          ctx.fillStyle = `rgba(14,20,15,${(strobeAlpha * 0.36).toFixed(3)})`;
+          ctx.fillRect(fullFlashX - 1, bandY, fullFlashW + 2, bandH);
+          ctx.fillStyle = `rgba(14,20,15,${(0.28 + (flash * 0.56)).toFixed(3)})`;
+          ctx.fillRect(scanEndX, bandY, 1, bandH);
+          ctx.fillStyle = `rgba(198,212,192,${(strobeAlpha * 0.24).toFixed(3)})`;
+          ctx.fillRect(scanEndX + 1, bandY + 1, 1, bandH - 2);
+        }
+        if(progress > scanEndPhase){
+          const outlineT = clamp((progress - scanEndPhase) / Math.max(0.001, 1 - scanEndPhase), 0, 1);
+          const outlineX = textX - 3;
+          const outlineY = rowY - 2;
+          const outlineW = textW + 6;
+          const outlineH = 10;
+          const perimeter = Math.max(1, (outlineW * 2) + (outlineH * 2));
+          const segmentLen = Math.max(8, Math.floor(perimeter * 0.34));
+          const startDist = perimeter * (1 - Math.pow(1 - outlineT, 2));
+          const drawTracePiece = (dist) => {
+            const d = ((dist % perimeter) + perimeter) % perimeter;
+            if(d < outlineW){
+              ctx.fillRect(Math.round(outlineX + d), outlineY, 1, 1);
+              return;
+            }
+            if(d < outlineW + outlineH){
+              ctx.fillRect(outlineX + outlineW, Math.round(outlineY + (d - outlineW)), 1, 1);
+              return;
+            }
+            if(d < (outlineW * 2) + outlineH){
+              ctx.fillRect(Math.round(outlineX + outlineW - (d - outlineW - outlineH)), outlineY + outlineH, 1, 1);
+              return;
+            }
+            ctx.fillRect(outlineX, Math.round(outlineY + outlineH - (d - (outlineW * 2) - outlineH)), 1, 1);
+          };
+          const traceFade = Math.sin(outlineT * Math.PI);
+          const traceBoost = selected ? 0.18 : 0;
+          ctx.fillStyle = `rgba(14,20,15,${(0.18 + traceBoost + (traceFade * (selected ? 0.38 : 0.28))).toFixed(3)})`;
+          for(let step = 0; step < segmentLen; step++){
+            drawTracePiece(startDist + step);
+          }
+          ctx.fillStyle = `rgba(198,212,192,${(traceFade * (selected ? 0.20 : 0.14)).toFixed(3)})`;
+          for(let step = 0; step < Math.floor(segmentLen * 0.34); step++){
+            drawTracePiece(startDist + segmentLen - step);
+          }
+        }
+        ctx.restore();
+      }
     }
 
     // Lower block: OBS LOG window (smaller text for readability in compact area).
@@ -27114,7 +27912,7 @@
         const fitted = fitTrnRightPaneText(visual.grade, rightInner.w - 14, gradeOpt);
         drawText(
           rightInner.x + Math.floor(rightInner.w / 2),
-          rightInner.y + Math.floor(rightInner.h / 2) - 4,
+          metrics.cy - 9,
           fitted,
           gradeOpt
         );
@@ -28022,12 +28820,8 @@
       openFoodScreen();
       return;
     }
-    if(id === "wc"){
-      if(isMonsterTuckedIn()){
-        state.screen = "menu";
-        return;
-      }
-      state.screen = "toilet";
+    if(id === "talk"){
+      openTalkScreen();
       return;
     }
     if(id === "trn"){
@@ -28550,6 +29344,11 @@
       markCursorMoved();
       return;
     }
+    if(state.screen === "talk"){
+      applyTalkInteraction(performance.now());
+      showOverlayTalk();
+      return;
+    }
     if(state.screen === "sleep"){
       if(isSleepTransitionActive(performance.now())){
         return;
@@ -28779,6 +29578,10 @@
         return;
       }
       closeFoodScreenToMenu();
+      return;
+    }
+    if(state.screen === "talk"){
+      closeTalkScreenToMenu();
       return;
     }
     if(state.screen === "sleep"){
@@ -29473,6 +30276,9 @@
       hudHint.textContent = mode === FOOD_SCREEN_MODE.RESULT
         ? "A/B BACK"
         : (hasStock ? "↑↓ SELECT  A:USE  B:BACK" : "B:BACK");
+    }else if(state.screen === "talk"){
+      hudTitle.textContent = "TALK";
+      hudHint.textContent = "A:TALK  B:BACK";
     }else if(state.screen === "item"){
       hudTitle.textContent = "ITEM";
       hudHint.textContent = isItemMenuCategoryFocus()
@@ -29508,7 +30314,7 @@
       hudHint.textContent = "A/B BACK";
     }
 
-    const overlayRect = (state.screen === "status" || state.screen === "food" || state.screen === "item" || state.screen === "heal" || state.screen === "sleep" || state.screen === "adv")
+    const overlayRect = (state.screen === "status" || state.screen === "food" || state.screen === "talk" || state.screen === "item" || state.screen === "heal" || state.screen === "sleep" || state.screen === "adv")
       ? OVERLAY_STAT_RECT
       : OVERLAY_LOG_RECT;
     const panelX = overlayRect.x;
@@ -29529,6 +30335,11 @@
     }
     if(state.screen === "food"){
       showOverlayFood(nowMs);
+      finalizeFrame();
+      return;
+    }
+    if(state.screen === "talk"){
+      showOverlayTalk(nowMs);
       finalizeFrame();
       return;
     }
