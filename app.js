@@ -70,15 +70,362 @@
   const SLEEP_CURTAIN_TRANSITION_MS = 420;
   const SLEEP_CURTAIN_SETTLE_MS = 360;
   const ADV_PHASE = Object.freeze({
-    SEARCH: "search",
+    MAP_SELECT: "map_select",
+    EXPLORE: "explore",
     RESULT: "result",
   });
-  const ADV_SEARCHING_MS = 1600;
-  const ADV_REWARD_ITEM_IDS = Object.freeze([
-    "patch_tape_i",
-    "stabilizer_amp_i",
-    "purge_filter_i",
+  const ADV_MAP_LIST_VISIBLE_ROWS = 5;
+  const ADV_LOG_MAX = 5;
+  const ADV_ZONE_TYPE = Object.freeze({
+    MAINTENANCE: "maintenance",
+    RECORD: "record",
+    LINE: "line",
+    CONTROL: "control",
+    ECOLOGY: "ecology",
+  });
+  const ADV_LAYER = Object.freeze({
+    UPPER: "upper",
+    MIDDLE: "middle",
+    LOWER: "lower",
+  });
+  const ADV_RADIAL_TYPE = Object.freeze({
+    AXIS: "axis",
+    MID: "mid",
+    OUTER: "outer",
+  });
+  const ADV_NODE_NAME_STATE = Object.freeze({
+    UNKNOWN: "unknown",
+    CONFIRMED: "confirmed",
+  });
+  const ADV_STATE_LABEL = Object.freeze({
+    CONTAMINATION: "contamination",
+    ANOMALY: "anomaly",
+    DANGER: "danger",
+  });
+  const ADV_STATE_LABEL_TEXT = Object.freeze({
+    [ADV_STATE_LABEL.CONTAMINATION]: "汚染",
+    [ADV_STATE_LABEL.ANOMALY]: "異常",
+    [ADV_STATE_LABEL.DANGER]: "危険",
+  });
+  const ADV_BOARD_NODE_TYPE = Object.freeze({
+    OBSERVE: "observe",
+    COLLECT: "collect",
+    PRESERVE: "preserve",
+    DEFENSE: "defense",
+    CONTAMINATION: "contamination",
+    ANALYZE: "analyze",
+    ANOMALY: "anomaly",
+    BOSS: "boss",
+  });
+  const ADV_BOARD_NODE_DISPLAY = Object.freeze({
+    [ADV_BOARD_NODE_TYPE.OBSERVE]: Object.freeze({
+      label: "観測",
+      shortLabel: "OBS",
+      outcome: "result",
+      detail: "観測ログや輪郭情報を拾うノード。",
+    }),
+    [ADV_BOARD_NODE_TYPE.COLLECT]: Object.freeze({
+      label: "採取",
+      shortLabel: "COL",
+      outcome: "result",
+      detail: "資源や断片を回収するノード。",
+    }),
+    [ADV_BOARD_NODE_TYPE.PRESERVE]: Object.freeze({
+      label: "保全",
+      shortLabel: "PRV",
+      outcome: "result",
+      detail: "保全処理や補修材の取得に向くノード。",
+    }),
+    [ADV_BOARD_NODE_TYPE.DEFENSE]: Object.freeze({
+      label: "防衛",
+      shortLabel: "DEF",
+      outcome: "battle",
+      detail: "防衛反応が残る危険ノード。",
+    }),
+    [ADV_BOARD_NODE_TYPE.CONTAMINATION]: Object.freeze({
+      label: "汚染",
+      shortLabel: "POL",
+      outcome: "battle",
+      detail: "汚染反応が強く、戦闘化しやすいノード。",
+    }),
+    [ADV_BOARD_NODE_TYPE.ANALYZE]: Object.freeze({
+      label: "解析",
+      shortLabel: "ANL",
+      outcome: "result",
+      detail: "照合や用途理解を進めるノード。",
+    }),
+    [ADV_BOARD_NODE_TYPE.ANOMALY]: Object.freeze({
+      label: "異常",
+      shortLabel: "ANM",
+      outcome: "conditional",
+      detail: "異常反応。結果ノードにも戦闘ノードにもなりうる。",
+    }),
+    [ADV_BOARD_NODE_TYPE.BOSS]: Object.freeze({
+      label: "ボス",
+      shortLabel: "BOSS",
+      outcome: "battle",
+      detail: "最奥反応。区画終端の制圧対象。",
+    }),
+  });
+  const ADV_BOARD_DANGER_DEPTH = Object.freeze({
+    LOW: 6,
+    MID: 7,
+    HIGH: 8,
+  });
+  const ADV_BOARD_NODE_MIN_TOTAL = 10;
+  const ADV_BOARD_NODE_MAX_TOTAL = 14;
+  const ADV_RUN_COLLECT_BONUS_CHANCE = 0.45;
+  const ADV_RUN_MAINTAIN_HP_GAIN = 1;
+  const ADV_RUN_MAINTAIN_STA_GAIN = 2;
+  const ADV_RUN_MAINTAIN_STB_GAIN = 1;
+  const ADV_PROTO_STAGE = Object.freeze({
+    SCAN: "scan",
+    SYNC: "sync",
+    RESULT: "result",
+  });
+  const ADV_NODE_KIND = Object.freeze({
+    OBSERVE: "observe",
+    CONTACT: "contact",
+    COLLECT: "collect",
+    HAZARD: "hazard",
+    ANOMALY: "anomaly",
+  });
+  const ADV_NODE_KIND_DISPLAY = Object.freeze({
+    [ADV_NODE_KIND.OBSERVE]: Object.freeze({
+      label: "OBSERVE",
+      labelJa: "観測",
+      iconId: "observe",
+      reactionIconId: "interest",
+    }),
+    [ADV_NODE_KIND.CONTACT]: Object.freeze({
+      label: "CONTACT",
+      labelJa: "接触",
+      iconId: "contact",
+      reactionIconId: "attune",
+    }),
+    [ADV_NODE_KIND.COLLECT]: Object.freeze({
+      label: "COLLECT",
+      labelJa: "採取",
+      iconId: "collect",
+      reactionIconId: "interest",
+    }),
+    [ADV_NODE_KIND.HAZARD]: Object.freeze({
+      label: "HAZARD",
+      labelJa: "危険",
+      iconId: "hazard",
+      reactionIconId: "caution",
+    }),
+    [ADV_NODE_KIND.ANOMALY]: Object.freeze({
+      label: "ANOMALY",
+      labelJa: "異常",
+      iconId: "anomaly",
+      reactionIconId: "reject",
+    }),
+  });
+  const ADV_UI_LAYOUT = Object.freeze({
+    header: Object.freeze({ x: 12, y: 8, w: 360, h: 28 }),
+    scan: Object.freeze({ x: 12, y: 40, w: 360, h: 128 }),
+    sync: Object.freeze({ x: 12, y: 174, w: 360, h: 74 }),
+    hud: Object.freeze({ x: 12, y: 252, w: 360, h: 28 }),
+  });
+  const ADV_OBSERVE_LOCK_TEMP_THRESHOLD = 70;
+  const ADV_OBSERVE_LOCK_FULL_THRESHOLD = 100;
+  const ADV_OBSERVE_REQUIRED_SYNC_HITS = 4;
+  const ADV_OBSERVE_FAIL_DANGER_HITS = 2;
+  const ADV_OBSERVE_FAIL_MISS_COUNT = 4;
+  const ADV_COMMAND_CATALOG = Object.freeze([
+    Object.freeze({
+      id: "advance",
+      label: "進む",
+      description: "接続済みの隣接地点へ移動し、新たな反応点を探る。",
+    }),
+    Object.freeze({
+      id: "inspect",
+      label: "調べる",
+      description: "現地を観測し、資材や断片ログを拾う。",
+    }),
+    Object.freeze({
+      id: "correlate",
+      label: "照合",
+      description: "取得済み断片を照合し、名称や用途の理解を進める。",
+    }),
+    Object.freeze({
+      id: "retreat",
+      label: "戻る",
+      description: "探索ノードを離れ、観測接続先選択へ戻る。",
+    }),
   ]);
+  const ADV_DUNGEON_FACING = Object.freeze({
+    NORTH: "north",
+    EAST: "east",
+    SOUTH: "south",
+    WEST: "west",
+  });
+  const ADV_DUNGEON_FACING_ORDER = Object.freeze([
+    ADV_DUNGEON_FACING.NORTH,
+    ADV_DUNGEON_FACING.EAST,
+    ADV_DUNGEON_FACING.SOUTH,
+    ADV_DUNGEON_FACING.WEST,
+  ]);
+  const ADV_NODE_CATALOG = Object.freeze([
+    Object.freeze({
+      id: "maint_block",
+      nodeId: "maint_block",
+      label: "保守区画",
+      description: "旧補修系の断片が集まる再構成領域。基礎資源らしき反応が散っている。",
+      danger: "LOW",
+      rewardHints: Object.freeze(["HEAL", "MATERIAL"]),
+      unlocked: true,
+      visibleFromStart: true,
+      themeId: "maint",
+      zoneType: ADV_ZONE_TYPE.MAINTENANCE,
+      layer: ADV_LAYER.LOWER,
+      radialType: ADV_RADIAL_TYPE.MID,
+      discoveredNameState: ADV_NODE_NAME_STATE.UNKNOWN,
+      stateLabels: Object.freeze([]),
+      localMapId: "maint_local_01",
+      mapNode: Object.freeze({ x: 0.28, y: 0.76 }),
+      areaLabels: Object.freeze(["接続口", "保守導線", "補修棚列", "作業端末"]),
+      rewardItemIds: Object.freeze(["patch_tape_i", "material_plate", "stabilizer_amp_i"]),
+      flavorLogs: Object.freeze([
+        "培養設備向けの交換部材が混じっている。",
+        "保全設備の補修記録が断続的に残っている。",
+      ]),
+      specialResponseToAd: false,
+      hintedRelationStage: 0,
+    }),
+    Object.freeze({
+      id: "record_layer",
+      nodeId: "record_layer",
+      label: "記録区画",
+      description: "索引断片が密集する再構成領域。照合可能な記録反応が残っている。",
+      danger: "MID",
+      rewardHints: Object.freeze(["ARCHIVE", "HEAL"]),
+      unlocked: true,
+      visibleFromStart: true,
+      themeId: "record",
+      zoneType: ADV_ZONE_TYPE.RECORD,
+      layer: ADV_LAYER.MIDDLE,
+      radialType: ADV_RADIAL_TYPE.AXIS,
+      discoveredNameState: ADV_NODE_NAME_STATE.UNKNOWN,
+      stateLabels: Object.freeze([]),
+      localMapId: "record_local_01",
+      mapNode: Object.freeze({ x: 0.49, y: 0.50 }),
+      areaLabels: Object.freeze(["索引縁", "記録棚列", "照合室", "回収ポスト"]),
+      rewardItemIds: Object.freeze(["archive_fragment", "stabilizer_amp_i", "material_scrap"]),
+      flavorLogs: Object.freeze([
+        "種子バンク関連の索引断片が混在している。",
+        "生体サンプル管理ログが欠損したまま残る。",
+      ]),
+      specialResponseToAd: false,
+      hintedRelationStage: 0,
+    }),
+    Object.freeze({
+      id: "dead_line",
+      nodeId: "dead_line",
+      label: "回線区画",
+      description: "切断経路由来の不安定領域。断続した信号反応が漂っている。",
+      danger: "HIGH",
+      rewardHints: Object.freeze(["SIGNAL", "HEAL"]),
+      unlocked: true,
+      visibleFromStart: true,
+      themeId: "deadline",
+      zoneType: ADV_ZONE_TYPE.LINE,
+      layer: ADV_LAYER.UPPER,
+      radialType: ADV_RADIAL_TYPE.OUTER,
+      discoveredNameState: ADV_NODE_NAME_STATE.UNKNOWN,
+      stateLabels: Object.freeze([ADV_STATE_LABEL.ANOMALY, ADV_STATE_LABEL.DANGER]),
+      localMapId: "line_local_01",
+      mapNode: Object.freeze({ x: 0.72, y: 0.24 }),
+      areaLabels: Object.freeze(["遮断門", "断線回廊", "再接続槽", "末端回線"]),
+      rewardItemIds: Object.freeze(["signal_probe", "purge_filter_i", "signal_modulator"]),
+      flavorLogs: Object.freeze([
+        "生態観測センサー由来の異常信号が混線している。",
+        "未知の生体反応ログが断続的に挿入される。",
+      ]),
+      specialResponseToAd: false,
+      hintedRelationStage: 0,
+    }),
+    Object.freeze({
+      id: "control_vault",
+      nodeId: "control_vault",
+      label: "制御区画",
+      description: "主軸深部に埋もれた封鎖領域。強い管理痕跡だけが残っている。",
+      danger: "HIGH",
+      rewardHints: Object.freeze(["ARCHIVE", "MATERIAL"]),
+      unlocked: false,
+      visibleFromStart: true,
+      themeId: "control",
+      zoneType: ADV_ZONE_TYPE.CONTROL,
+      layer: ADV_LAYER.LOWER,
+      radialType: ADV_RADIAL_TYPE.AXIS,
+      discoveredNameState: ADV_NODE_NAME_STATE.UNKNOWN,
+      stateLabels: Object.freeze([ADV_STATE_LABEL.DANGER]),
+      localMapId: "control_local_01",
+      mapNode: Object.freeze({ x: 0.49, y: 0.80 }),
+      areaLabels: Object.freeze(["制御接点", "中枢導線", "保留領域"]),
+      rewardItemIds: Object.freeze(["control_core_fragment", "archive_fragment", "signal_modulator"]),
+      flavorLogs: Object.freeze([
+        "環境調整アルゴリズムの断片が封鎖されている。",
+        "深層制御ログが照合待ちのまま残っている。",
+      ]),
+      specialResponseToAd: false,
+      hintedRelationStage: 0,
+    }),
+    Object.freeze({
+      id: "biotic_reserve",
+      nodeId: "biotic_reserve",
+      label: "生態区画",
+      description: "下層深部に沈む静かな領域。湿度と有機反応の偏りがある。",
+      danger: "HIGH",
+      rewardHints: Object.freeze(["MATERIAL", "ARCHIVE"]),
+      unlocked: false,
+      visibleFromStart: true,
+      themeId: "biotic",
+      zoneType: ADV_ZONE_TYPE.ECOLOGY,
+      layer: ADV_LAYER.LOWER,
+      radialType: ADV_RADIAL_TYPE.AXIS,
+      discoveredNameState: ADV_NODE_NAME_STATE.UNKNOWN,
+      stateLabels: Object.freeze([ADV_STATE_LABEL.CONTAMINATION, ADV_STATE_LABEL.ANOMALY]),
+      localMapId: "biotic_local_01",
+      mapNode: Object.freeze({ x: 0.58, y: 0.84 }),
+      areaLabels: Object.freeze(["培養境界", "保全槽列", "湿潤域"]),
+      rewardItemIds: Object.freeze(["bio_sample_tag", "material_plate", "purge_filter_i"]),
+      flavorLogs: Object.freeze([
+        "保全種データの参照跡が途切れたまま残る。",
+        "培養設備の状態異常ログが断片的に観測される。",
+      ]),
+      specialResponseToAd: true,
+      hintedRelationStage: 0,
+    }),
+  ]);
+  const ADV_MAP_CATALOG = ADV_NODE_CATALOG;
+  const ADV_KNOWLEDGE_THRESHOLDS_BY_DANGER = Object.freeze({
+    LOW: Object.freeze({
+      name: 3,
+      purpose: 4,
+      historyTier1: 5,
+      historyTier2: 8,
+      stateKnown: 3,
+      stateDetail: 5,
+    }),
+    MID: Object.freeze({
+      name: 4,
+      purpose: 5,
+      historyTier1: 6,
+      historyTier2: 9,
+      stateKnown: 4,
+      stateDetail: 6,
+    }),
+    HIGH: Object.freeze({
+      name: 5,
+      purpose: 6,
+      historyTier1: 7,
+      historyTier2: 10,
+      stateKnown: 5,
+      stateDetail: 7,
+    }),
+  });
   const DEV_ALLOW_ACTIONS_DURING_SLEEP = true;
   const TRN_MODE_SCREEN = "trnmode";
   const TRN_SCREEN = "trn";
@@ -464,20 +811,96 @@
   const BTTL_HIT_SYNC_WEIGHT = 0.12;
   const BTTL_HIT_MIN = 0.08;
   const BTTL_HIT_MAX = 0.95;
-  const BTTL_ENEMY_SIG = 62;
-  const BTTL_ENEMY_SYNC = 56;
-  const BTTL_ENEMY_HP_RATIO = 0.62;
-  const BTTL_ENEMY_HP_MIN = 8;
-  const BTTL_ENEMY_HP_MAX = 65;
+  const BTTL_ENEMY_SIG = 64;
+  const BTTL_ENEMY_SYNC = 58;
+  const BTTL_ENEMY_HP_RATIO = 0.72;
+  const BTTL_ENEMY_HP_MIN = 12;
+  const BTTL_ENEMY_HP_MAX = 72;
+  const BTTL_ENEMY_DIFFICULTY = Object.freeze({
+    NORMAL: "normal",
+    ADV_NORMAL: "adv_normal",
+    ADV_DANGER: "adv_danger",
+    ADV_BOSS: "adv_boss",
+  });
+  const BTTL_ENEMY_DIFFICULTY_PRESET = Object.freeze({
+    [BTTL_ENEMY_DIFFICULTY.NORMAL]: Object.freeze({
+      id: BTTL_ENEMY_DIFFICULTY.NORMAL,
+      introType: BTTL_START_INTRO_TYPE.ENCOUNT,
+      hpRatio: 0.72,
+      hpMin: 12,
+      hpMax: 72,
+      sig: 64,
+      sync: 58,
+      heavyChanceBase: 0.14,
+      heavyCooldownMs: 5200,
+      heavyInitialReadyRatio: 0.45,
+      heavyDamageBonus: 13,
+      defendDamageMult: 0.88,
+    }),
+    [BTTL_ENEMY_DIFFICULTY.ADV_NORMAL]: Object.freeze({
+      id: BTTL_ENEMY_DIFFICULTY.ADV_NORMAL,
+      introType: BTTL_START_INTRO_TYPE.ENCOUNT,
+      hpRatio: 0.84,
+      hpMin: 14,
+      hpMax: 84,
+      sig: 68,
+      sync: 61,
+      heavyChanceBase: 0.18,
+      heavyCooldownMs: 4500,
+      heavyInitialReadyRatio: 0.45,
+      heavyDamageBonus: 15,
+      defendDamageMult: 0.85,
+    }),
+    [BTTL_ENEMY_DIFFICULTY.ADV_DANGER]: Object.freeze({
+      id: BTTL_ENEMY_DIFFICULTY.ADV_DANGER,
+      introType: BTTL_START_INTRO_TYPE.WARNING,
+      hpRatio: 0.98,
+      hpMin: 18,
+      hpMax: 98,
+      sig: 72,
+      sync: 64,
+      heavyChanceBase: 0.24,
+      heavyCooldownMs: 3700,
+      heavyInitialReadyRatio: 0.45,
+      heavyDamageBonus: 17,
+      defendDamageMult: 0.82,
+    }),
+    [BTTL_ENEMY_DIFFICULTY.ADV_BOSS]: Object.freeze({
+      id: BTTL_ENEMY_DIFFICULTY.ADV_BOSS,
+      introType: BTTL_START_INTRO_TYPE.WARNING,
+      hpRatio: 1.12,
+      hpMin: 24,
+      hpMax: 120,
+      sig: 78,
+      sync: 68,
+      heavyChanceBase: 0.30,
+      heavyCooldownMs: 3000,
+      heavyInitialReadyRatio: 0.45,
+      heavyDamageBonus: 20,
+      defendDamageMult: 0.78,
+    }),
+  });
   const BTTL_SIGNAL_GAME_RESULT_HOLD_MS = 2200;
   const BTTL_SIGNAL_GAME_MAX_MS = 4200;
   const BTTL_FINISH_GAME_MAX_MS = 4200;
   const BTTL_SIGNAL_MENU_ITEMS = Object.freeze([
-    Object.freeze({ id: "boost", label: "BOOST" }),
-    Object.freeze({ id: "stabilize", label: "STABILIZE" }),
-    Object.freeze({ id: "calibrate", label: "CALIBRATE" }),
-    Object.freeze({ id: "overclock", label: "OVER CLOCK" }),
+    Object.freeze({ id: "boost", label: "BOOST", menuLabel: "BOOST" }),
+    Object.freeze({ id: "stabilize", label: "STABILIZE", menuLabel: "STABILIZE" }),
+    Object.freeze({ id: "calibrate", label: "CALIBRATE", menuLabel: "CALIBRATE" }),
+    Object.freeze({ id: "overclock", label: "OVER CLOCK", menuLabel: "OVER CLOCK" }),
   ]);
+  const BTTL_SIGNAL_ICON_MAP = Object.freeze({
+    boost: "./assets/signal_icons/bttl_signal_boost.png",
+    stabilize: "./assets/signal_icons/bttl_signal_stabilize.png",
+    calibrate: "./assets/signal_icons/bttl_signal_calibrate.png",
+    overclock: "./assets/signal_icons/bttl_signal_overclock.png",
+  });
+  const BTTL_SIGNAL_DRIVE_ICON_MAP = Object.freeze({
+    boost: "focus",
+    stabilize: "surge",
+    calibrate: "guard",
+    overclock: "rampage",
+  });
   const BTTL_SIGNAL_CMD_TO_TRN_MODE = Object.freeze({
     boost: "boost",
     stabilize: "noise",
@@ -497,15 +920,15 @@
     overclock: "signalUseOverclock",
   });
   const BTTL_SIGNAL_HIT_BONUS_BY_TIER = Object.freeze({
-    boost: Object.freeze([0.00, 0.04, 0.08, 0.12]),
-    stabilize: Object.freeze([0.00, 0.06, 0.12, 0.18]),
-    calibrate: Object.freeze([0.00, 0.04, 0.09, 0.14]),
+    boost: Object.freeze([0.00, 0.03, 0.06, 0.09]),
+    stabilize: Object.freeze([0.00, 0.00, 0.00, 0.00]),
+    calibrate: Object.freeze([0.00, 0.06, 0.12, 0.18]),
     overclock: Object.freeze([0.00, 0.00, 0.00, 0.00]),
   });
   const BTTL_SIGNAL_INTERVAL_MULT_BY_TIER = Object.freeze({
-    boost: Object.freeze([0.99, 0.94, 0.88, 0.82]),
-    stabilize: Object.freeze([1.00, 0.97, 0.93, 0.89]),
-    calibrate: Object.freeze([1.00, 0.96, 0.91, 0.87]),
+    boost: Object.freeze([1.00, 0.94, 0.87, 0.80]),
+    stabilize: Object.freeze([1.00, 1.00, 1.00, 1.00]),
+    calibrate: Object.freeze([1.00, 0.98, 0.94, 0.90]),
     overclock: Object.freeze([1.00, 1.00, 1.00, 1.00]),
   });
   const BTTL_SIGNAL_GCD_MS = 700;
@@ -533,22 +956,23 @@
   });
   const BTTL_SIGNAL_KNOCKBACK_RESIST_BY_TIER = Object.freeze({
     boost: Object.freeze([0.00, 0.00, 0.00, 0.00]),
-    stabilize: Object.freeze([0.00, 0.00, 0.00, 0.00]),
+    stabilize: Object.freeze([0.00, 0.12, 0.22, 0.34]),
     calibrate: Object.freeze([0.00, 0.00, 0.00, 0.00]),
     overclock: Object.freeze([0.00, 0.20, 0.35, 0.50]),
   });
   const BTTL_SIGNAL_DAMAGE_TAKEN_MULT_BY_TIER = Object.freeze({
     boost: Object.freeze([1.00, 1.00, 1.00, 1.00]),
-    stabilize: Object.freeze([1.00, 1.00, 1.00, 1.00]),
+    stabilize: Object.freeze([1.00, 0.96, 0.92, 0.88]),
     calibrate: Object.freeze([1.00, 1.00, 1.00, 1.00]),
     overclock: Object.freeze([1.14, 1.18, 1.23, 1.30]),
   });
   const BTTL_SIGNAL_BREAK_TAKEN_MULT_BY_TIER = Object.freeze({
     boost: Object.freeze([1.00, 1.00, 1.00, 1.00]),
-    stabilize: Object.freeze([1.00, 1.00, 1.00, 1.00]),
+    stabilize: Object.freeze([1.00, 0.88, 0.76, 0.64]),
     calibrate: Object.freeze([1.00, 1.00, 1.00, 1.00]),
     overclock: Object.freeze([1.22, 1.30, 1.42, 1.56]),
   });
+  const BTTL_SIGNAL_ADVANTAGE_BONUS_MULT = 1.20;
   const BTTL_SIGNAL_BADGE_Y_OFFSET = 0;
   const BTTL_ENEMY_DRIVE_ITEMS = Object.freeze([
     Object.freeze({ id: "surge", label: "SURGE" }),
@@ -556,7 +980,15 @@
     Object.freeze({ id: "focus", label: "FOCUS" }),
     Object.freeze({ id: "rampage", label: "RAMPAGE" }),
   ]);
-  const BTTL_ENEMY_DRIVE_PROC_FLASH_MS = 1400;
+  const BTTL_ENEMY_DRIVE_PROC_FLASH_MS = 420;
+  const BTTL_ENEMY_DRIVE_BADGE_PULSE_MS = 420;
+  const BTTL_SIGNAL_HINT_PULSE_MS = 960;
+  const BTTL_SIGNAL_ADVANTAGE_BAND_CYCLE_MS = 1560;
+  const BTTL_SIGNAL_DISADVANTAGE_LOOP_MULT = 0.86;
+  const BTTL_SIGNAL_DISADVANTAGE_BAND_MULT = 0.80;
+  const BTTL_SIGNAL_DISADVANTAGE_CRIT_MULT = 0.76;
+  const BTTL_SIGNAL_DISADVANTAGE_NEAR_MARGIN_MULT = 0.74;
+  const BTTL_SIGNAL_DISADVANTAGE_REWARD_MULT = 1.5;
   const BTTL_ENEMY_DRIVE_BADGE_Y_OFFSET = -20;
   const BTTL_ENEMY_DRIVE_DECIDE_INTERVAL_MS = 450;
   const BTTL_ENEMY_DRIVE_COOLDOWN_MS_BY_CMD = Object.freeze({
@@ -650,14 +1082,14 @@
   const BTTL_ALLY_REFLECT_BASE = 0.08;
   const BTTL_ALLY_REFLECT_SYNC_WEIGHT = 0.18;
   const BTTL_ALLY_REFLECT_STABILITY_WEIGHT = 0.12;
-  const BTTL_HEAVY_CHANCE_BASE = 0.16;
-  const BTTL_HEAVY_COOLDOWN_MS = 5400;
+  const BTTL_HEAVY_CHANCE_BASE = 0.14;
+  const BTTL_HEAVY_COOLDOWN_MS = 5200;
   const BTTL_HEAVY_INITIAL_READY_RATIO = 0.45;
   const BTTL_HEAVY_TEST_MODE = false;
   const BTTL_HEAVY_TEST_CHANCE_BASE = 0.42;
   const BTTL_HEAVY_TEST_COOLDOWN_MS = 2400;
   const BTTL_HEAVY_TEST_INITIAL_READY_RATIO = 0.20;
-  const BTTL_HEAVY_DAMAGE_BONUS = 14;
+  const BTTL_HEAVY_DAMAGE_BONUS = 13;
   const BTTL_HEAVY_SPEED_MULT = 0.88;
   const BTTL_HEAVY_DODGE_PENALTY = 0.12;
   const BTTL_HEAVY_PARRY_BONUS = 0.06;
@@ -1098,7 +1530,7 @@
     }),
   });
   const DETAIL_STORAGE_KEY = "dotmon_detail_v1";
-  const DETAIL_STATE_VERSION = 6;
+  const DETAIL_STATE_VERSION = 7;
   const STAT_PAGE_COUNT = 4;
   const LAST_DELTA_NONE_TEXT = "なし";
   const FOOD_SCREEN_MODE = Object.freeze({
@@ -1121,11 +1553,12 @@
   const HEAL_ABNORMAL_MIN = 0;
   const HEAL_ABNORMAL_MAX = 3;
   const HEAL_ABNORMAL_KEYS = Object.freeze(["noise", "desync", "contamination", "decay"]);
+  const HEAL_PURGE_PRIORITY = Object.freeze(["contamination", "noise", "desync", "decay"]);
   const HEAL_CYCLE_FLOOR_KEYS = Object.freeze(["damage", "noise", "desync", "contamination", "decay"]);
   const HEAL_STAMINA_COST_BY_TYPE = Object.freeze({
     patch: 2,
-    stabilize: 1,
-    purge: 2,
+    stabilize: 2,
+    purge: 3,
   });
   const HEAL_EXECUTION_INSERT_MS = 220;
   const HEAL_EXECUTION_FLASH_MS = 280;
@@ -1133,14 +1566,22 @@
   const HEAL_EXECUTION_HOLD_MS = 120;
   const HEAL_EXECUTION_RETURN_MS = 140;
   const HEAL_EXECUTION_FULL_INSERT_Y = 36;
+  const ALLOW_HEAL_IN_SLEEP = false;
+  const HEAL_LOG_RESULT_DELAY_MS = 180;
+  const HEAL_STATUS_LOG_LABELS = Object.freeze({
+    noise: "NOISE",
+    desync: "DESYNC",
+    contamination: "CONTAMINATION",
+    decay: "DECAY",
+  });
   const HEAL_ACTION_CATALOG = Object.freeze([
     Object.freeze({
       id: HEAL_TYPE.PATCH,
       label: "PATCH",
-      description: "深い損傷を補修。損傷を大きく抑え、HPを少量補う。",
+      description: "深い損傷を補修。安定時は効率が上がり、DECAY中は通りが鈍る。",
       previewTokens: Object.freeze([
         Object.freeze({ label: "DMG", value: -2 }),
-        Object.freeze({ label: "HP", value: 1 }),
+        Object.freeze({ label: "HP", value: 12 }),
         Object.freeze({ label: "STA", value: -HEAL_STAMINA_COST_BY_TYPE.patch }),
       ]),
       resultLead: "深部損傷を補修。",
@@ -1148,10 +1589,9 @@
     Object.freeze({
       id: HEAL_TYPE.STABILIZE,
       label: "STABILIZE",
-      description: "同期乱れを抑制。DESYNCを沈静化し、安定度を立て直す。",
+      description: "同期乱れを補正。低安定時や NOISE / DESYNC 下で効率が上がる。",
       previewTokens: Object.freeze([
         Object.freeze({ label: "STB", value: 2 }),
-        Object.freeze({ label: "DESYNC", value: -2 }),
         Object.freeze({ label: "STA", value: -HEAL_STAMINA_COST_BY_TYPE.stabilize }),
       ]),
       resultLead: "同期乱れを抑制。",
@@ -1159,12 +1599,12 @@
     Object.freeze({
       id: HEAL_TYPE.PURGE,
       label: "PURGE",
-      description: "汚染を浄化。NOISE / CONTAMINATION を強く減衰し、DECAYも抑える。",
+      description: "汚染を浄化。優先順に状態異常を除去し、高安定時は追加で通る。",
       previewTokens: Object.freeze([
-        Object.freeze({ label: "ABN", value: -2 }),
+        Object.freeze({ label: "ABN", value: -1 }),
         Object.freeze({ label: "STA", value: -HEAL_STAMINA_COST_BY_TYPE.purge }),
       ]),
-      resultLead: "汚染を浄化。",
+      resultLead: "汚染を浄化し、残留異常を排出。",
     }),
   ]);
   const HEAL_ACTION_BY_ID = Object.freeze(
@@ -1189,6 +1629,23 @@
     FIELD: "field",
     BATTLE: "battle",
     NONE: "none",
+  });
+  const ITEM_MENU_CATEGORY_ORDER = Object.freeze([
+    ITEM_CATEGORY.FOOD,
+    ITEM_CATEGORY.HEAL,
+    ITEM_CATEGORY.MATERIAL,
+    ITEM_CATEGORY.SIGNAL_SUPPORT,
+  ]);
+  const ITEM_MENU_CATEGORY_LABELS = Object.freeze({
+    [ITEM_CATEGORY.FOOD]: "FOOD",
+    [ITEM_CATEGORY.HEAL]: "HEAL",
+    [ITEM_CATEGORY.MATERIAL]: "MATERIAL",
+    [ITEM_CATEGORY.SIGNAL_SUPPORT]: "SIGNAL",
+  });
+  const ITEM_MENU_LIST_VISIBLE_ROWS = 7;
+  const ITEM_MENU_FOCUS = Object.freeze({
+    CATEGORY: "category",
+    LIST: "list",
   });
   const ITEM_COUNT_INFINITE = -1;
   const ITEM_COUNT_MAX = 99;
@@ -1571,6 +2028,45 @@
       description: "補修や治療器材の素材になる整形プレート。",
     }),
     Object.freeze({
+      id: "archive_fragment",
+      label: "記録断片",
+      category: ITEM_CATEGORY.MATERIAL,
+      subType: "archive",
+      rank: 1,
+      stackable: true,
+      maxStack: ITEM_COUNT_MAX,
+      defaultStock: 0,
+      useContexts: Object.freeze([ITEM_USE_CONTEXT.NONE]),
+      effectId: "",
+      description: "区画名や管理履歴の照合に使える断片記録。",
+    }),
+    Object.freeze({
+      id: "control_core_fragment",
+      label: "制御核断片",
+      category: ITEM_CATEGORY.MATERIAL,
+      subType: "control",
+      rank: 2,
+      stackable: true,
+      maxStack: ITEM_COUNT_MAX,
+      defaultStock: 0,
+      useContexts: Object.freeze([ITEM_USE_CONTEXT.NONE]),
+      effectId: "",
+      description: "深層制御域から剥離した特殊断片素材。",
+    }),
+    Object.freeze({
+      id: "bio_sample_tag",
+      label: "生体試料タグ",
+      category: ITEM_CATEGORY.MATERIAL,
+      subType: "biotic",
+      rank: 1,
+      stackable: true,
+      maxStack: ITEM_COUNT_MAX,
+      defaultStock: 0,
+      useContexts: Object.freeze([ITEM_USE_CONTEXT.NONE]),
+      effectId: "",
+      description: "生体保全設備の管理痕跡を残す識別タグ。",
+    }),
+    Object.freeze({
       id: "signal_probe",
       label: "信号プローブ",
       category: ITEM_CATEGORY.SIGNAL_SUPPORT,
@@ -1684,10 +2180,19 @@
     w: W - 48,
     h: 194,
   });
+  const OVERLAY_ADV_PROTO_RECT = Object.freeze({
+    x: 0,
+    y: 0,
+    w: W,
+    h: H,
+  });
   const OVERLAY_FONT_BASE_PX = 16;
   const OVERLAY_FONT_BASE_CANVAS_SCALE = 1.6;
   const OVERLAY_FONT_MIN_PX = 16;
   const OVERLAY_FONT_MAX_PX = 28;
+  const RESULT_TYPEWRITER_CHAR_MS = 12;
+  const RESULT_TYPEWRITER_LINE_STAGGER_MS = 42;
+  const RESULT_TYPEWRITER_LINE_JITTER_MS = 18;
   const LOG_DEFAULT_NO_CHANGE_TEXT = "変化なし。";
   const LOG_NO_CHANGE_TEXT_BY_ACTION = Object.freeze({
     food: "反応なし。",
@@ -1710,9 +2215,18 @@
   const DEBUG_MENU_CATEGORIES = Object.freeze([
     Object.freeze({ id: "stats", label: "STATUS", description: "HP/STB/STA/DMG を調整" }),
     Object.freeze({ id: "abnormal", label: "ABNORMAL", description: "NOISE / DESYNC / CONTAM / DECAY を変更。" }),
+    Object.freeze({ id: "items", label: "ITEMS", description: "所持アイテム数量を調整。" }),
+    Object.freeze({ id: "adv", label: "ADV", description: "区画ごとの理解進行と runEffects を確認 / 初期化。" }),
     Object.freeze({ id: "flags", label: "FLAGS", description: "sleep などの状態フラグを切り替える。" }),
     Object.freeze({ id: "time", label: "TIME", description: "ゲーム内時刻を変更。" }),
     Object.freeze({ id: "screen", label: "SCREEN", description: "各画面へ直接遷移。" }),
+  ]);
+  const DEBUG_MENU_MAX_VISIBLE_ITEMS = 4;
+  const DEBUG_ITEM_CATEGORY_ORDER = Object.freeze([
+    ITEM_CATEGORY.HEAL,
+    ITEM_CATEGORY.FOOD,
+    ITEM_CATEGORY.MATERIAL,
+    ITEM_CATEGORY.SIGNAL_SUPPORT,
   ]);
   const DEBUG_STAT_PRESETS = Object.freeze([
     Object.freeze({ id: "normal", label: "NORMAL", hpRatio: 0.72, stbRatio: 0.70, staRatio: 0.72, damageRatio: 0.18 }),
@@ -1776,6 +2290,15 @@
     foodMode: FOOD_SCREEN_MODE.SELECT,
     foodWarningMessage: "",
     foodResultPayload: null,
+    itemCategoryCursor: 0,
+    itemCursorByCategory: {
+      [ITEM_CATEGORY.FOOD]: 0,
+      [ITEM_CATEGORY.HEAL]: 0,
+      [ITEM_CATEGORY.MATERIAL]: 0,
+      [ITEM_CATEGORY.SIGNAL_SUPPORT]: 0,
+    },
+    itemPaneFocus: ITEM_MENU_FOCUS.CATEGORY,
+    itemWarningMessage: "",
     advSession: null,
     sleepLightSelection: SLEEP_LIGHT_SELECTION.ON,
     sleepTransition: null,
@@ -1785,6 +2308,7 @@
     healWarningMessage: "",
     healResultPayload: null,
     healExecutionSession: null,
+    resultTypewriter: {},
     overlayBackdropDataUrl: "",
     debugMenuOpen: false,
     debugMenuPane: "items",
@@ -1964,6 +2488,7 @@
     const nextMode = String(mode || "").toLowerCase();
     const shouldShow = (
       (nextMode === "stat" || nextMode === "food") &&
+      state.screen !== "adv" &&
       typeof uiState.overlayBackdropDataUrl === "string" &&
       uiState.overlayBackdropDataUrl.length > 0
     );
@@ -2115,6 +2640,27 @@
     return next;
   }
 
+  function getDebugVisibleItemRange(totalItems, selectedIndex, maxVisible = DEBUG_MENU_MAX_VISIBLE_ITEMS){
+    const total = Math.max(0, Math.floor(toNumber(totalItems, 0)));
+    const maxRows = Math.max(1, Math.floor(toNumber(maxVisible, 1)));
+    if(total <= maxRows){
+      return { start: 0, end: total };
+    }
+    const selected = clamp(Math.floor(toNumber(selectedIndex, 0)), 0, Math.max(0, total - 1));
+    const half = Math.floor(maxRows / 2);
+    let start = selected - half;
+    let end = start + maxRows;
+    if(start < 0){
+      start = 0;
+      end = maxRows;
+    }
+    if(end > total){
+      end = total;
+      start = Math.max(0, end - maxRows);
+    }
+    return { start, end };
+  }
+
   function setDebugCategoryCursor(index){
     const next = normalizeDebugCategoryIndex(index);
     uiState.debugCategoryCursor = next;
@@ -2224,6 +2770,51 @@
     return setHealAbnormalLevel(detail, key, current + Math.floor(toNumber(delta, 0)));
   }
 
+  function getDebugInventoryCategoryOrderIndex(category){
+    const id = normalizeItemMenuCategory(category, ITEM_CATEGORY.MATERIAL);
+    const index = DEBUG_ITEM_CATEGORY_ORDER.indexOf(id);
+    return index >= 0 ? index : DEBUG_ITEM_CATEGORY_ORDER.length;
+  }
+
+  function listDebugEditableInventoryItems(){
+    return ITEM_CATALOG
+      .filter((item) => isRecord(item) && !Boolean(item.alwaysInfinite))
+      .slice()
+      .sort((a, b) => {
+        const categoryDiff = getDebugInventoryCategoryOrderIndex(a?.category) - getDebugInventoryCategoryOrderIndex(b?.category);
+        if(categoryDiff !== 0){
+          return categoryDiff;
+        }
+        return Math.floor(toNumber(a?.sortOrder, 0)) - Math.floor(toNumber(b?.sortOrder, 0));
+      });
+  }
+
+  function formatDebugInventoryCountValue(item, count){
+    const categoryText = getItemMenuCategoryLabel(item?.category);
+    if(isItemCountInfinite(count)){
+      return `${categoryText}  ∞`;
+    }
+    const currentText = String(Math.max(0, Math.floor(toNumber(count, 0)))).padStart(2, "0");
+    const maxText = String(Math.max(1, getItemMaxStack(item))).padStart(2, "0");
+    return `${categoryText}  ${currentText}/${maxText}`;
+  }
+
+  function adjustDebugInventoryItemCount(itemId, delta){
+    if(!isRecord(state.detailed)){
+      state.detailed = createDefaultDetailedState(state.monster?.id || "mon001");
+    }
+    const detail = state.detailed;
+    ensureInventoryDetailState(detail);
+    const item = getItemById(itemId);
+    if(!detail || !item || Boolean(item.alwaysInfinite)){
+      return getInventoryItemCount(detail, itemId);
+    }
+    const current = getInventoryItemCount(detail, item.id);
+    const next = setInventoryItemCount(detail, item.id, current + Math.floor(toNumber(delta, 0)));
+    saveDetailedState();
+    return next;
+  }
+
   function normalizeDebugSleepOverride(next){
     if(next === true) return true;
     if(next === false) return false;
@@ -2308,11 +2899,250 @@
     }
   }
 
+  function resetDebugAdvKnowledge(){
+    if(!isRecord(state.detailed)){
+      state.detailed = createDefaultDetailedState(state.monster?.id || "mon001");
+    }
+    state.detailed.advState = createDefaultAdvDetailState();
+    return true;
+  }
+
   function formatDebugAbnormalChoices(current){
     return [0, 1, 2, 3].map((value) => ({
       label: `Lv${value}`,
       active: value === current,
     }));
+  }
+
+  function formatDebugAdvKnowledgeValue(nodeOrId, detailOverride = null){
+    const thresholds = getAdvKnowledgeThresholds(nodeOrId);
+    const knowledge = getAdvNodeKnowledgeState(nodeOrId, detailOverride);
+    const nameProgress = clamp(Math.floor(toNumber(knowledge?.nameProgress, 0)), 0, 99);
+    const purposeProgress = clamp(Math.floor(toNumber(knowledge?.purposeProgress, 0)), 0, 99);
+    const historyProgress = clamp(Math.floor(toNumber(knowledge?.historyProgress, 0)), 0, 99);
+    const stateLabelProgress = clamp(Math.floor(toNumber(knowledge?.stateLabelProgress, 0)), 0, 99);
+    return `N${nameProgress}/${thresholds.name} P${purposeProgress}/${thresholds.purpose} H${historyProgress}/${thresholds.historyTier2} S${stateLabelProgress}/${thresholds.stateDetail}`;
+  }
+
+  function buildDebugAdvKnowledgeDescription(nodeOrId, detailOverride = null){
+    const node = isRecord(nodeOrId) ? nodeOrId : getAdvMapById(nodeOrId);
+    if(!node){
+      return "ADV 区画データが見つからない。";
+    }
+    const thresholds = getAdvKnowledgeThresholds(node);
+    const knowledge = getAdvNodeKnowledgeState(node, detailOverride);
+    const nameProgress = clamp(Math.floor(toNumber(knowledge?.nameProgress, 0)), 0, 99);
+    const purposeProgress = clamp(Math.floor(toNumber(knowledge?.purposeProgress, 0)), 0, 99);
+    const historyProgress = clamp(Math.floor(toNumber(knowledge?.historyProgress, 0)), 0, 99);
+    const stateLabelProgress = clamp(Math.floor(toNumber(knowledge?.stateLabelProgress, 0)), 0, 99);
+    const historyTier = clamp(Math.floor(toNumber(knowledge?.discoveredHistoryTier, 0)), 0, 2);
+    const stateLabelText = getAdvMapStateLabelText(node);
+    const nameStateText = isAdvNodeNameConfirmed(node, detailOverride)
+      ? "確定"
+      : `あと${Math.max(0, thresholds.name - nameProgress)}`;
+    const purposeStateText = knowledge?.discoveredPurpose
+      ? "照合済"
+      : `あと${Math.max(0, thresholds.purpose - purposeProgress)}`;
+    let historyStateText = "";
+    if(historyTier >= 2){
+      historyStateText = "断片II 解放";
+    }else if(historyTier >= 1){
+      historyStateText = `断片I 解放 / IIまであと${Math.max(0, thresholds.historyTier2 - historyProgress)}`;
+    }else{
+      historyStateText = `未解放 / Iまであと${Math.max(0, thresholds.historyTier1 - historyProgress)}`;
+    }
+    let stateStateText = "";
+    if(knowledge?.stateLabelDetailKnown){
+      stateStateText = stateLabelText.length > 0
+        ? `詳細済 (${stateLabelText})`
+        : "詳細済";
+    }else if(knowledge?.discoveredStateLabel){
+      stateStateText = stateLabelText.length > 0
+        ? `表示済 (${stateLabelText}) / 詳細まであと${Math.max(0, thresholds.stateDetail - stateLabelProgress)}`
+        : `表示済 / 詳細まであと${Math.max(0, thresholds.stateDetail - stateLabelProgress)}`;
+    }else{
+      stateStateText = `未表示 / 表示まであと${Math.max(0, thresholds.stateKnown - stateLabelProgress)}`;
+    }
+    const displayName = getAdvMapDisplayName(node, detailOverride);
+    const actualName = String(node.label || "???");
+    const unlockText = isAdvNodeUnlocked(node, detailOverride) ? "OPEN" : "LOCK";
+    return [
+      `表示:${displayName} / 実名:${actualName} / ${unlockText} / ${getAdvLayerJa(node)} / 危険:${getAdvDangerLevelJa(node)}`,
+      `名称:${nameProgress}/${thresholds.name} ${nameStateText}  用途:${purposeProgress}/${thresholds.purpose} ${purposeStateText}`,
+      `過去:${historyProgress}/${thresholds.historyTier2} ${historyStateText}`,
+      `状態:${stateLabelProgress}/${thresholds.stateDetail} ${stateStateText}`,
+    ].join("\n");
+  }
+
+  function getDebugAdvPhaseText(value){
+    const phase = normalizeAdvPhase(value);
+    if(phase === ADV_PHASE.EXPLORE) return "EXPLORE";
+    if(phase === ADV_PHASE.RESULT) return "RESULT";
+    return "MAP";
+  }
+
+  function formatDebugAdvBoardNodeRef(board, nodeId){
+    const safeId = String(nodeId || "").trim().toLowerCase();
+    if(safeId.length <= 0) return "--";
+    const node = getAdvBoardNodeById(board, safeId);
+    const shortLabel = String(getAdvBoardNodeDisplay(node?.type).shortLabel || "NODE");
+    return `${shortLabel}:${safeId}`;
+  }
+
+  function formatDebugAdvDamageReductionText(value){
+    const multiplier = clamp(toNumber(value, 0), 0, 1);
+    if(multiplier <= 0){
+      return "NONE";
+    }
+    const reductionPercent = Math.round((1 - multiplier) * 100);
+    return `x${multiplier.toFixed(2)} (-${reductionPercent}%)`;
+  }
+
+  function formatDebugAdvAnomalyBuffText(buff){
+    if(!isRecord(buff)) return "NONE";
+    const kind = String(buff.kind || "").trim().toLowerCase();
+    const charges = Math.max(0, Math.floor(toNumber(buff.charges, 0)));
+    if(kind.length <= 0 || charges <= 0){
+      return "NONE";
+    }
+    if(kind === "next_reward_bonus"){
+      return `報酬+1 x${charges}`;
+    }
+    return `${kind} x${charges}`;
+  }
+
+  function formatDebugAdvContaminateRiskText(risk){
+    if(!isRecord(risk)) return "NONE";
+    const kind = String(risk.kind || "").trim().toLowerCase();
+    const amount = Math.max(0, Math.floor(toNumber(risk.amount, 0)));
+    if(amount <= 0){
+      return "NONE";
+    }
+    if(kind === "hp"){
+      return `HP -${amount}`;
+    }
+    if(kind === "stb"){
+      return `STB -${amount}`;
+    }
+    return `${kind.toUpperCase()} -${amount}`;
+  }
+
+  function formatDebugAdvSessionValue(sessionOverride = null){
+    const session = isRecord(sessionOverride) ? sessionOverride : getAdvSession();
+    if(!session){
+      return "NO SESSION";
+    }
+    const map = getSelectedAdvMap(session);
+    return `${getDebugAdvPhaseText(session.phase)} / ${getAdvMapDisplayName(map)}`;
+  }
+
+  function buildDebugAdvSessionDescription(sessionOverride = null){
+    const session = isRecord(sessionOverride) ? sessionOverride : getAdvSession();
+    if(!session){
+      return "現在 ADV セッションなし。\nADV に入ると runEffects を追跡できる。";
+    }
+    const map = getSelectedAdvMap(session);
+    const board = getAdvBoard(session);
+    const currentNode = getAdvBoardCurrentNode(board);
+    const selectedNode = getAdvBoardNodeById(board, board?.selectedNodeId);
+    const nextNodeIds = getAdvBoardVisibleNextNodeIds(session);
+    const displayName = getAdvMapDisplayName(map);
+    return [
+      `phase:${getDebugAdvPhaseText(session.phase)}  map:${displayName}`,
+      board
+        ? `current:${formatDebugAdvBoardNodeRef(board, currentNode?.id)}  selected:${formatDebugAdvBoardNodeRef(board, selectedNode?.id)}`
+        : "盤面:未展開",
+      board
+        ? `次候補:${nextNodeIds.length}  boardSeed:${String(board.seed || "--").slice(0, 16)}`
+        : `battleNode:${String(session.battleNodeId || "--")}`,
+      `戦闘復帰:${session.returnFromBattle ? "ON" : "OFF"}  MAP戻り:${session.returnToMapSelectAfterBattle ? "ON" : "OFF"}`,
+    ].join("\n");
+  }
+
+  function formatDebugAdvRunEffectsValue(sessionOverride = null){
+    const session = isRecord(sessionOverride) ? sessionOverride : getAdvSession();
+    if(!session){
+      return "NO DATA";
+    }
+    const runEffects = ensureAdvRunEffects(session);
+    const reductionText = toNumber(runEffects.nextBattleDamageReduction, 0) > 0
+      ? `DEF${Math.round((1 - clamp(toNumber(runEffects.nextBattleDamageReduction, 0), 0, 1)) * 100)}`
+      : "DEF-";
+    const anomalyCharges = Math.max(0, Math.floor(toNumber(runEffects.anomalyBuff?.charges, 0)));
+    const anomalyText = anomalyCharges > 0 ? `ANM${anomalyCharges}` : "ANM-";
+    const bossText = `B${Math.max(0, Math.floor(toNumber(runEffects.bossProgress, 0)))}`;
+    const clearText = runEffects.zoneCleared ? "CLR" : "---";
+    return `${reductionText} ${anomalyText} ${bossText} ${clearText}`;
+  }
+
+  function buildDebugAdvRunEffectsDescription(sessionOverride = null){
+    const session = isRecord(sessionOverride) ? sessionOverride : getAdvSession();
+    if(!session){
+      return "ADV セッションなし。";
+    }
+    const runEffects = ensureAdvRunEffects(session);
+    return [
+      `防護:${formatDebugAdvDamageReductionText(runEffects.nextBattleDamageReduction)}`,
+      `異常:${formatDebugAdvAnomalyBuffText(runEffects.anomalyBuff)}`,
+      `汚染:${formatDebugAdvContaminateRiskText(runEffects.pendingContaminateRisk)}  踏破:${runEffects.zoneCleared ? "ON" : "OFF"}`,
+      `解析:${Math.max(0, Math.floor(toNumber(runEffects.bossProgress, 0)))}  解放:${runEffects.unlockedNodeIds.length}  ログ:${runEffects.logs.length}`,
+    ].join("\n");
+  }
+
+  function formatDebugAdvForecastValue(sessionOverride = null){
+    const session = isRecord(sessionOverride) ? sessionOverride : getAdvSession();
+    if(!session){
+      return "NO DATA";
+    }
+    const runEffects = ensureAdvRunEffects(session);
+    const forecastCount = Object.keys(isRecord(runEffects.observeForecast) ? runEffects.observeForecast : {}).length;
+    return `NEXT ${forecastCount} / UNL ${runEffects.unlockedNodeIds.length}`;
+  }
+
+  function buildDebugAdvForecastDescription(sessionOverride = null){
+    const session = isRecord(sessionOverride) ? sessionOverride : getAdvSession();
+    if(!session){
+      return "ADV セッションなし。";
+    }
+    const runEffects = ensureAdvRunEffects(session);
+    const board = getAdvBoard(session);
+    const forecastEntries = Object.keys(isRecord(runEffects.observeForecast) ? runEffects.observeForecast : {})
+      .sort()
+      .map((nodeId) => `${formatDebugAdvBoardNodeRef(board, nodeId)}=${Math.max(0, Math.floor(toNumber(runEffects.observeForecast[nodeId], 0)))}`)
+      .slice(0, 6);
+    const unlockEntries = (Array.isArray(runEffects.unlockedNodeIds) ? runEffects.unlockedNodeIds : [])
+      .map((nodeId) => formatDebugAdvBoardNodeRef(board, nodeId))
+      .slice(0, 6);
+    const visibleEntries = getAdvBoardVisibleNextNodeIds(session)
+      .map((nodeId) => formatDebugAdvBoardNodeRef(board, nodeId))
+      .slice(0, 6);
+    return [
+      `予兆:${forecastEntries.length > 0 ? forecastEntries.join(" / ") : "なし"}`,
+      `解放:${unlockEntries.length > 0 ? unlockEntries.join(", ") : "なし"}`,
+      `次候補:${visibleEntries.length > 0 ? visibleEntries.join(", ") : "なし"}`,
+    ].join("\n");
+  }
+
+  function formatDebugAdvRunLogValue(sessionOverride = null){
+    const session = isRecord(sessionOverride) ? sessionOverride : getAdvSession();
+    if(!session){
+      return "NO DATA";
+    }
+    const runEffects = ensureAdvRunEffects(session);
+    return `${runEffects.logs.length} ENTRIES`;
+  }
+
+  function buildDebugAdvRunLogDescription(sessionOverride = null){
+    const session = isRecord(sessionOverride) ? sessionOverride : getAdvSession();
+    if(!session){
+      return "ADV セッションなし。";
+    }
+    const runEffects = ensureAdvRunEffects(session);
+    const logs = Array.isArray(runEffects.logs) ? runEffects.logs.slice(-5).reverse() : [];
+    if(logs.length <= 0){
+      return "runEffects.logs なし。";
+    }
+    return logs.map((entry, index) => `${logs.length - index}. ${String(entry || "").trim()}`).join("\n");
   }
 
   function getDebugItemsForCategory(categoryId){
@@ -2399,6 +3229,65 @@
       });
     }
 
+    if(id === "items"){
+      return listDebugEditableInventoryItems().map((item) => {
+        const count = getInventoryItemCount(detail, item.id);
+        return {
+          label: String(item.label || "--"),
+          value: formatDebugInventoryCountValue(item, count),
+          description: `${getItemMenuCategoryLabel(item.category)} / ID:${String(item.id || "--")} / 所持数量を変更。 ${String(item.description || "").trim()}`,
+          controls: "←→ ±1  A:+5  C:-5",
+          onLeft: () => { adjustDebugInventoryItemCount(item.id, -1); return true; },
+          onRight: () => { adjustDebugInventoryItemCount(item.id, 1); return true; },
+          onA: () => { adjustDebugInventoryItemCount(item.id, 5); return true; },
+          onC: () => { adjustDebugInventoryItemCount(item.id, -5); return true; },
+        };
+      });
+    }
+
+    if(id === "adv"){
+      const maps = ADV_NODE_CATALOG.filter((node) => isRecord(node));
+      const items = maps.map((map) => ({
+        label: String(map.label || "???"),
+        value: formatDebugAdvKnowledgeValue(map),
+        description: buildDebugAdvKnowledgeDescription(map),
+        controls: "VIEW",
+      }));
+      items.push({
+        label: "SESSION",
+        value: formatDebugAdvSessionValue(),
+        description: buildDebugAdvSessionDescription(),
+        controls: "VIEW",
+      });
+      items.push({
+        label: "RUN FX",
+        value: formatDebugAdvRunEffectsValue(),
+        description: buildDebugAdvRunEffectsDescription(),
+        controls: "VIEW",
+      });
+      items.push({
+        label: "FORECAST",
+        value: formatDebugAdvForecastValue(),
+        description: buildDebugAdvForecastDescription(),
+        controls: "VIEW",
+      });
+      items.push({
+        label: "FX LOG",
+        value: formatDebugAdvRunLogValue(),
+        description: buildDebugAdvRunLogDescription(),
+        controls: "VIEW",
+      });
+      items.push({
+        label: "RESET",
+        value: "READY",
+        description: "ADV の名称 / 用途 / 過去 / 状態理解を初期化。区画名を ??? に戻す。",
+        controls: "A RESET",
+        onA: () => { resetDebugAdvKnowledge(); return true; },
+        onRight: () => { resetDebugAdvKnowledge(); return true; },
+      });
+      return items;
+    }
+
     if(id === "flags"){
       const sleepOverride = normalizeDebugSleepOverride(uiState.debugSleepOverride);
       return [
@@ -2416,6 +3305,14 @@
           onRight: () => { cycleDebugSleepOverride(1); return true; },
           onA: () => { cycleDebugSleepOverride(1); return true; },
           onC: () => { cycleDebugSleepOverride(-1); return true; },
+        },
+        {
+          label: "ADV RESET",
+          value: "READY",
+          description: "ADV の名称 / 用途 / 過去 / 状態理解を初期化。区画名を ??? に戻す。",
+          controls: "A RESET",
+          onA: () => { resetDebugAdvKnowledge(); return true; },
+          onRight: () => { resetDebugAdvKnowledge(); return true; },
         },
       ];
     }
@@ -2530,15 +3427,20 @@
     const category = getDebugSelectedCategory();
     const items = getDebugItemsForCategory(category?.id);
     const itemCursor = setDebugItemCursor(getDebugCategoryCursor(), getDebugItemCursor(getDebugCategoryCursor()));
+    const visibleRange = getDebugVisibleItemRange(
+      items.length,
+      itemCursor,
+      category?.id === "adv" ? 4 : DEBUG_MENU_MAX_VISIBLE_ITEMS
+    );
 
     const detailTitle = document.createElement("div");
     detailTitle.className = "debug-menu-detail-title";
-    detailTitle.textContent = `${String(category?.label || "--")}  [${String(state.screen || "").toUpperCase()}]`;
+    detailTitle.textContent = `${String(category?.label || "--")}  [${String(state.screen || "").toUpperCase()}]${items.length > (visibleRange.end - visibleRange.start) ? `  ${visibleRange.start + 1}-${visibleRange.end}/${items.length}` : ""}`;
     detailPane.appendChild(detailTitle);
 
     const itemList = document.createElement("div");
     itemList.className = "debug-menu-item-list";
-    for(let i = 0; i < items.length; i++){
+    for(let i = visibleRange.start; i < visibleRange.end; i++){
       const item = items[i];
       const row = document.createElement("div");
       const isSelected = i === itemCursor;
@@ -2551,13 +3453,8 @@
 
       const value = createDebugMenuValueElement(item);
 
-      const meta = document.createElement("div");
-      meta.className = "debug-menu-item-meta";
-      meta.textContent = String(item?.controls || "");
-
       row.appendChild(label);
       row.appendChild(value);
-      row.appendChild(meta);
       itemList.appendChild(row);
     }
     detailPane.appendChild(itemList);
@@ -2581,15 +3478,8 @@
       ? String(selectedItem.description || category?.description || "")
       : String(category?.description || "");
 
-    const bottomHint = document.createElement("div");
-    bottomHint.className = "debug-menu-bottom-hint";
-    bottomHint.textContent = getDebugPane() === "categories"
-      ? "↑↓ CATEGORY  A/→ DETAIL  B/ESC CLOSE"
-      : String(selectedItem?.controls || "←→ CHANGE  A APPLY  C ALT") + "  B CATEGORY  ESC CLOSE";
-
     bottom.appendChild(bottomTitle);
     bottom.appendChild(bottomText);
-    bottom.appendChild(bottomHint);
 
     el.appendChild(title);
     el.appendChild(main);
@@ -2921,6 +3811,9 @@
     }
     if(id === "food"){
       return "FOOD";
+    }
+    if(id === "item"){
+      return "ITEM";
     }
     if(id === "heal"){
       return "HEAL";
@@ -3887,6 +4780,43 @@
     ctx.restore();
   }
 
+  function drawBttlSignalDisadvantageNoise(playRect, nowMs, seed = 0){
+    if(!playRect) return;
+    const phase = toNumber(seed, 0);
+    const scanPulse = 0.5 - (Math.cos(((nowMs * 0.006) + phase) * Math.PI) * 0.5);
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(playRect.x, playRect.y, playRect.w, playRect.h);
+    ctx.clip();
+    ctx.fillStyle = `rgba(14,20,15,${(0.022 + (scanPulse * 0.020)).toFixed(3)})`;
+    ctx.fillRect(playRect.x + 1, playRect.y + 1, Math.max(4, playRect.w - 2), Math.max(4, playRect.h - 2));
+    for(let i = 0; i < 7; i++){
+      const linePhase = phase + (i * 0.63);
+      const y01 = (Math.sin((nowMs * 0.0058) + linePhase) + 1) * 0.5;
+      const w01 = (Math.sin((nowMs * 0.0074) + (linePhase * 1.9)) + 1) * 0.5;
+      const yy = playRect.y + 1 + Math.floor(y01 * Math.max(1, playRect.h - 3));
+      const xx = playRect.x + 1 + Math.floor(((Math.sin((nowMs * 0.0046) + (linePhase * 1.4)) + 1) * 0.5) * Math.max(2, playRect.w * 0.16));
+      const ww = Math.max(16, Math.floor((playRect.w * 0.52) + (w01 * playRect.w * 0.38)));
+      const alpha = 0.042 + (((i % 2 === 0 ? scanPulse : (1 - scanPulse))) * 0.050);
+      ctx.fillStyle = `rgba(14,20,15,${alpha.toFixed(3)})`;
+      ctx.fillRect(xx, yy, Math.min(ww, Math.max(6, (playRect.x + playRect.w - 1) - xx)), 1);
+    }
+    for(let i = 0; i < 2; i++){
+      const sweepPhase = phase + (i * 1.3);
+      const sweepY = playRect.y + 1 + Math.floor((((Math.sin((nowMs * 0.0062) + sweepPhase) + 1) * 0.5)) * Math.max(1, playRect.h - 3));
+      const sweepAlpha = 0.058 + (((i === 0 ? scanPulse : (1 - scanPulse))) * 0.055);
+      ctx.fillStyle = `rgba(198,212,192,${sweepAlpha.toFixed(3)})`;
+      ctx.fillRect(playRect.x + 1, sweepY, Math.max(4, playRect.w - 2), 1);
+      ctx.fillStyle = `rgba(14,20,15,${(sweepAlpha * 0.48).toFixed(3)})`;
+      ctx.fillRect(playRect.x + 1, Math.min(playRect.y + playRect.h - 1, sweepY + 1), Math.max(4, playRect.w - 2), 1);
+    }
+    for(let y = playRect.y + 2; y < playRect.y + playRect.h - 1; y += 6){
+      ctx.fillStyle = "rgba(14,20,15,0.012)";
+      ctx.fillRect(playRect.x + 1, y, Math.max(4, playRect.w - 2), 1);
+    }
+    ctx.restore();
+  }
+
   function clearTrnResultBuffer(){
     uiState.trnResultBuffer = [];
     uiState.trnLastFeedback = null;
@@ -4031,7 +4961,7 @@
     if(!overlayLog || !overlayLogTitle || !overlayLogBody || !overlayLogHint) return false;
     const rect = rectOverride || (mode === "stat" ? OVERLAY_STAT_RECT : OVERLAY_LOG_RECT);
     setOverlayLogRect(rect);
-    overlayLog.classList.remove("mode-log", "mode-stat", "mode-food");
+    overlayLog.classList.remove("mode-log", "mode-stat", "mode-food", "is-adv-solid", "is-adv-proto");
     if(mode === "stat"){
       overlayLog.classList.add("mode-stat");
     }else if(mode === "food"){
@@ -4045,11 +4975,221 @@
     return true;
   }
 
-  function showOverlayLog(text, rectOverride = null){
+  function clearResultTypewriterState(){
+    uiState.resultTypewriter = {};
+  }
+
+  function normalizeResultTypewriterLines(source){
+    if(Array.isArray(source)){
+      const list = source
+        .map((line) => String(line ?? ""))
+        .filter((line) => line.length > 0);
+      return list.length > 0 ? list : ["結果なし。"];
+    }
+    const text = String(source ?? "");
+    const lines = text.split("\n").map((line) => String(line ?? ""));
+    return lines.length > 0 ? lines : ["結果なし。"];
+  }
+
+  function normalizeResultTypewriterConfig(options, lineCount = 0){
+    const safeOptions = isRecord(options) ? options : {};
+    const total = Math.max(0, Math.floor(toNumber(lineCount, 0)));
+    const baseDelayMs = Math.max(0, Math.floor(toNumber(safeOptions.baseDelayMs, 0)));
+    const preserveOrder = Boolean(safeOptions.preserveOrder);
+    const explicitLineDelays = Array.isArray(safeOptions.lineDelays)
+      ? Array.from({ length: total }, (_unused, index) => (
+        baseDelayMs + Math.max(0, Math.floor(toNumber(safeOptions.lineDelays[index], 0)))
+      ))
+      : null;
+    return {
+      baseDelayMs,
+      preserveOrder,
+      explicitLineDelays,
+    };
+  }
+
+  function ensureResultTypewriterState(key, lines, nowMs = performance.now(), options = null){
+    const safeLines = normalizeResultTypewriterLines(lines);
+    const config = normalizeResultTypewriterConfig(options, safeLines.length);
+    const delaySignature = Array.isArray(config.explicitLineDelays)
+      ? `custom:${config.explicitLineDelays.join(",")}`
+      : `${config.preserveOrder ? "seq" : "rnd"}:${config.baseDelayMs}`;
+    const signature = `${String(key || "result")}::${delaySignature}::${safeLines.join("\n")}`;
+    const store = isRecord(uiState.resultTypewriter) ? uiState.resultTypewriter : {};
+    const current = isRecord(store[signature]) ? store[signature] : null;
+    if(
+      current &&
+      String(current.key || "") === signature &&
+      Array.isArray(current.lineDelays) &&
+      current.lineDelays.length === safeLines.length
+    ){
+      return current;
+    }
+    let lineDelays = Array.isArray(config.explicitLineDelays)
+      ? config.explicitLineDelays.slice()
+      : Array.from({ length: safeLines.length }, () => 0);
+    if(!Array.isArray(config.explicitLineDelays)){
+      if(config.preserveOrder){
+        for(let i = 0; i < lineDelays.length; i++){
+          lineDelays[i] = config.baseDelayMs + (i * RESULT_TYPEWRITER_LINE_STAGGER_MS);
+        }
+      }else{
+        const order = Array.from({ length: safeLines.length }, (_unused, index) => index);
+        const rng = createAdvSeededRandom(hashAdvSeed(signature));
+        for(let i = order.length - 1; i > 0; i--){
+          const j = Math.floor(rng() * (i + 1));
+          const tmp = order[i];
+          order[i] = order[j];
+          order[j] = tmp;
+        }
+        for(let i = 0; i < order.length; i++){
+          lineDelays[order[i]] = config.baseDelayMs + (i * RESULT_TYPEWRITER_LINE_STAGGER_MS) + Math.floor(rng() * RESULT_TYPEWRITER_LINE_JITTER_MS);
+        }
+      }
+    }
+    const next = {
+      key: signature,
+      startedAtMs: nowMs,
+      lineDelays,
+    };
+    store[signature] = next;
+    uiState.resultTypewriter = store;
+    return next;
+  }
+
+  function appendResultTypewriterBody(container, source, key, nowMs = performance.now(), options = null){
+    if(!container) return;
+    const safeLines = normalizeResultTypewriterLines(source);
+    const typewriterState = ensureResultTypewriterState(key, safeLines, nowMs, options);
+    const elapsed = Math.max(0, nowMs - toNumber(typewriterState.startedAtMs, nowMs));
+    container.textContent = "";
+    container.classList.add("overlay-typewriter-body");
+    for(let i = 0; i < safeLines.length; i++){
+      const line = safeLines[i];
+      const row = document.createElement("div");
+      row.className = "overlay-typewriter-line";
+      const revealElapsed = elapsed - toNumber(typewriterState.lineDelays?.[i], 0);
+      const visibleChars = revealElapsed <= 0
+        ? 0
+        : clamp(Math.floor(revealElapsed / RESULT_TYPEWRITER_CHAR_MS), 0, line.length);
+      row.textContent = visibleChars > 0 ? line.slice(0, visibleChars) : "\u00A0";
+      container.appendChild(row);
+    }
+  }
+
+  function isResultDividerLine(line){
+    const text = String(line ?? "").trim();
+    return text.length > 0 && /^[-―ー_=\s]+$/.test(text);
+  }
+
+  function createStructuredResultPayloadFromText(text, defaultTitle = "RESULT"){
+    const rawLines = normalizeResultTypewriterLines(text).map((line) => String(line ?? ""));
+    let title = String(defaultTitle || "RESULT");
+    const lines = rawLines.slice();
+    if(lines.length > 0 && String(lines[0] || "").trim().length > 0){
+      title = String(lines.shift() || title);
+    }
+    const dividerIndex = lines.findIndex((line) => isResultDividerLine(line));
+    let resultLines = [];
+    let flavorLines = [];
+    if(dividerIndex >= 0){
+      resultLines = lines.slice(0, dividerIndex).filter((line) => String(line ?? "").trim().length > 0);
+      flavorLines = lines.slice(dividerIndex + 1).filter((line) => String(line ?? "").trim().length > 0);
+    }else if(lines.length > 0){
+      flavorLines = [lines[0]];
+      resultLines = lines.slice(1).filter((line) => String(line ?? "").trim().length > 0);
+    }
+    if(flavorLines.length <= 0 && resultLines.length > 0){
+      flavorLines = [resultLines.shift()];
+    }
+    return {
+      title,
+      flavorLines: flavorLines.length > 0 ? flavorLines : ["結果なし。"],
+      resultLines: resultLines.length > 0 ? resultLines : [],
+    };
+  }
+
+  function buildStructuredResultOverlayElement(payload, keyPrefix = "result", nowMs = performance.now()){
+    const wrap = document.createElement("div");
+    wrap.className = "overlay-food-result-wrap";
+
+    const title = document.createElement("div");
+    title.className = "overlay-food-result-title";
+    title.textContent = String(payload?.title || "RESULT");
+    wrap.appendChild(title);
+
+    const body = document.createElement("div");
+    body.className = "overlay-food-result-body overlay-food-result-body-structured";
+
+    const flavorLines = normalizeResultTypewriterLines(payload?.flavorLines || ["結果なし。"]);
+    const flavor = document.createElement("div");
+    flavor.className = "overlay-result-block overlay-result-block-flavor";
+    appendResultTypewriterBody(
+      flavor,
+      flavorLines,
+      `${String(keyPrefix)}:flavor:${flavorLines.join("\n")}`,
+      nowMs,
+      payload?.flavorTypewriterOptions
+    );
+    body.appendChild(flavor);
+
+    const divider = document.createElement("div");
+    divider.className = "overlay-result-divider";
+    divider.textContent = "";
+    body.appendChild(divider);
+
+    const resultLines = normalizeResultTypewriterLines(
+      (Array.isArray(payload?.resultLines) && payload.resultLines.length > 0)
+        ? payload.resultLines
+        : ["変化なし。"]
+    );
+    const result = document.createElement("div");
+    result.className = "overlay-result-block overlay-result-block-data";
+    appendResultTypewriterBody(
+      result,
+      resultLines,
+      `${String(keyPrefix)}:data:${resultLines.join("\n")}`,
+      nowMs,
+      payload?.resultTypewriterOptions
+    );
+    body.appendChild(result);
+
+    wrap.appendChild(body);
+    return wrap;
+  }
+
+  function showOverlayLog(text, rectOverride = null, options = null){
     if(!showOverlayShell("log", rectOverride)) return;
     overlayLogTitle.textContent = "";
-    overlayLogBody.textContent = String(text ?? "");
+    overlayLogBody.textContent = "";
+    overlayLogBody.classList.remove("overlay-typewriter-body");
     overlayLogHint.textContent = "";
+    if(Boolean(options?.structuredResult)){
+      const payload = createStructuredResultPayloadFromText(
+        text,
+        String(options?.title || "RESULT")
+      );
+      overlayLogBody.appendChild(
+        buildStructuredResultOverlayElement(
+          payload,
+          String(options?.key || `structured-result:${String(text ?? "")}`),
+          toNumber(options?.nowMs, performance.now())
+        )
+      );
+      return;
+    }
+    const useTypewriter = Boolean(options?.typewriter);
+    if(useTypewriter){
+      appendResultTypewriterBody(
+        overlayLogBody,
+        text,
+        String(options?.key || `overlay-log:${String(text ?? "")}`),
+        toNumber(options?.nowMs, performance.now())
+      );
+    }else{
+      clearResultTypewriterState();
+      overlayLogBody.textContent = String(text ?? "");
+    }
   }
 
   function resolveStatDescription(item){
@@ -4395,10 +5535,11 @@
   function hideOverlayLog(){
     if(!overlayLog) return;
     overlayLog.classList.add("hidden");
-    overlayLog.classList.remove("mode-log", "mode-stat", "mode-food");
+    overlayLog.classList.remove("mode-log", "mode-stat", "mode-food", "is-adv-solid", "is-adv-proto");
     if(overlayLogTitle) overlayLogTitle.textContent = "";
     if(overlayLogBody) overlayLogBody.textContent = "";
     if(overlayLogHint) overlayLogHint.textContent = "";
+    clearResultTypewriterState();
     setOverlayMode(null);
     syncOverlayBackdrop(null);
   }
@@ -4439,13 +5580,15 @@
   function buildOverlayLogByScreen(screen){
     if(screen === "adv"){
       const session = getAdvSession();
-      if(!session){
-        return "SEARCHING...\n回収対象を探索中";
+      const phase = normalizeAdvPhase(session?.phase);
+      if(phase === ADV_PHASE.EXPLORE){
+        return String(session?.leadText || "観測中。");
       }
-      if(normalizeAdvPhase(session.phase) === ADV_PHASE.RESULT){
-        return String(session.resultText || "取得完了");
+      const map = getSelectedAdvMap(session);
+      if(map){
+        return `${getAdvMapDisplayName(map)}\n${getAdvMapDescriptionText(map)}`;
       }
-      return resolveAdvSearchingText(performance.now(), session);
+      return "\u00A0";
     }
 
     let action = null;
@@ -4553,7 +5696,7 @@
     const drawn = itemIconDrawItemIconWithRank(iconCtx, sprite, 0, 0, size, opt.rank, {
       pixelColor: "rgba(14,20,15,0.78)",
       accentColor: "rgba(14,20,15,0.92)",
-      rankOffsetX: Math.max(4, Math.floor(size / 14)),
+      rankOffsetX: Math.max(1, Math.floor(size / 28)),
       rankOffsetY: Math.max(2, Math.floor(size / 18)),
       rankUnderOffsetX: 1,
       rankUnderOffsetY: 1,
@@ -4569,8 +5712,48 @@
     return createItemIconCanvasElement(sprite, {
       className: "overlay-food-icon-canvas",
       dotScale: FOOD_ICON_DOT_SCALE,
-      rank: food?.rank,
+      rank: 0,
     });
+  }
+
+  function createFoodRankCanvasElement(food){
+    const label = formatItemRankLabel(food?.rank);
+    if(label === "--"){
+      return null;
+    }
+    const scale = 2;
+    const letterSpacing = 0;
+    const reservedMetrics = uiTextMeasure("III", { scale, letterSpacing });
+    const labelMetrics = uiTextMeasure(label, { scale, letterSpacing });
+    const width = Math.max(
+      1,
+      Math.ceil(toNumber(reservedMetrics?.width, 0)) + 2
+    );
+    const height = Math.max(
+      1,
+      Math.ceil(toNumber(labelMetrics?.height, 0)) + 2
+    );
+    const rankCanvas = document.createElement("canvas");
+    rankCanvas.className = "overlay-food-icon-rank";
+    rankCanvas.width = width;
+    rankCanvas.height = height;
+    const rankCtx = rankCanvas.getContext("2d", { alpha: true });
+    if(!rankCtx){
+      return null;
+    }
+    rankCtx.imageSmoothingEnabled = false;
+    rankCtx.clearRect(0, 0, width, height);
+    uiTextDraw(rankCtx, label, 1, 1, {
+      scale,
+      letterSpacing,
+      color: "rgba(200,214,194,0.94)",
+    });
+    uiTextDraw(rankCtx, label, 0, 0, {
+      scale,
+      letterSpacing,
+      color: "rgba(14,20,15,0.96)",
+    });
+    return rankCanvas;
   }
 
   function normalizeItemCount(value, fallback = 0, maxCount = ITEM_COUNT_MAX){
@@ -4672,6 +5855,7 @@
       : createDefaultItemInventory();
     const srcRoot = isRecord(input) ? input : {};
     const srcItems = isRecord(srcRoot.items) ? srcRoot.items : srcRoot;
+    const nestedItems = isRecord(srcRoot.inventory?.items) ? srcRoot.inventory.items : {};
     const legacyFood = isRecord(legacyFoodInventory) ? legacyFoodInventory : {};
     const normalizedItems = {};
     for(let i = 0; i < ITEM_CATALOG.length; i++){
@@ -4688,6 +5872,9 @@
         getItemMaxStack(item)
       );
       let sourceCount = srcItems[id];
+      if(sourceCount == null && Object.prototype.hasOwnProperty.call(nestedItems, id)){
+        sourceCount = nestedItems[id];
+      }
       if(
         sourceCount == null &&
         String(item.category || "").trim().toLowerCase() === ITEM_CATEGORY.FOOD &&
@@ -4829,7 +6016,8 @@
   }
 
   function listInventoryItems(detail, options = {}){
-    const safeDetail = ensureInventoryDetailState(detail || state.detailed);
+    const safeDetail = detail || state.detailed;
+    ensureInventoryDetailState(safeDetail);
     if(!isRecord(safeDetail)){
       return [];
     }
@@ -4897,7 +6085,8 @@
   }
 
   function grantInventoryRewards(detail, rewards){
-    const safeDetail = ensureInventoryDetailState(detail || state.detailed);
+    const safeDetail = detail || state.detailed;
+    ensureInventoryDetailState(safeDetail);
     if(!isRecord(safeDetail)){
       return { changed: false, grants: [], lines: [] };
     }
@@ -5363,6 +6552,228 @@
     return detail.healCycle.floorByKey[id];
   }
 
+  function normalizeAdvNodeNameState(value, fallback = ADV_NODE_NAME_STATE.UNKNOWN){
+    const raw = String(value || "").trim().toLowerCase();
+    if(raw === ADV_NODE_NAME_STATE.CONFIRMED) return ADV_NODE_NAME_STATE.CONFIRMED;
+    if(raw === ADV_NODE_NAME_STATE.UNKNOWN) return ADV_NODE_NAME_STATE.UNKNOWN;
+    return fallback;
+  }
+
+  function createDefaultAdvNodeKnowledgeState(){
+    return {
+      nameProgress: 0,
+      purposeProgress: 0,
+      historyProgress: 0,
+      stateLabelProgress: 0,
+      purposeKnown: false,
+      historyKnown: false,
+      stateLabelsKnown: false,
+      discoveredPurpose: false,
+      discoveredHistoryTier: 0,
+      discoveredStateLabel: false,
+      stateLabelDetailKnown: false,
+      seenNodeTypes: {},
+    };
+  }
+
+  function getAdvKnowledgeThresholds(nodeOrId = null){
+    const node = isRecord(nodeOrId) ? nodeOrId : getAdvMapById(nodeOrId);
+    const dangerKey = String(node?.danger || "LOW").trim().toUpperCase();
+    const preset = ADV_KNOWLEDGE_THRESHOLDS_BY_DANGER[dangerKey] || ADV_KNOWLEDGE_THRESHOLDS_BY_DANGER.LOW;
+    return {
+      name: Math.max(1, Math.floor(toNumber(preset.name, 3))),
+      purpose: Math.max(1, Math.floor(toNumber(preset.purpose, 4))),
+      historyTier1: Math.max(1, Math.floor(toNumber(preset.historyTier1, 5))),
+      historyTier2: Math.max(1, Math.floor(toNumber(preset.historyTier2, 8))),
+      stateKnown: Math.max(1, Math.floor(toNumber(preset.stateKnown, 3))),
+      stateDetail: Math.max(1, Math.floor(toNumber(preset.stateDetail, 5))),
+    };
+  }
+
+  function normalizeAdvSeenNodeTypes(input, fallback = null){
+    const src = isRecord(input) ? input : (isRecord(fallback) ? fallback : {});
+    const normalized = {};
+    for(const [rawKey, rawValue] of Object.entries(src)){
+      const key = normalizeAdvBoardNodeType(rawKey, "");
+      if(key){
+        normalized[key] = Boolean(rawValue);
+      }
+    }
+    return normalized;
+  }
+
+  function syncAdvKnowledgeFlags(knowledge, thresholdsOverride = null){
+    if(!isRecord(knowledge)){
+      return createDefaultAdvNodeKnowledgeState();
+    }
+    const thresholds = isRecord(thresholdsOverride)
+      ? thresholdsOverride
+      : getAdvKnowledgeThresholds();
+    knowledge.nameProgress = Math.max(0, Math.floor(toNumber(knowledge.nameProgress, 0)));
+    knowledge.purposeProgress = Math.max(0, Math.floor(toNumber(knowledge.purposeProgress, 0)));
+    knowledge.historyProgress = Math.max(0, Math.floor(toNumber(knowledge.historyProgress, 0)));
+    knowledge.stateLabelProgress = Math.max(0, Math.floor(toNumber(knowledge.stateLabelProgress, 0)));
+    const purposeKnown = Boolean(
+      knowledge.discoveredPurpose ??
+      knowledge.purposeKnown ??
+      (knowledge.purposeProgress >= thresholds.purpose)
+    );
+    const historyTier = clamp(
+      Math.floor(toNumber(
+        knowledge.discoveredHistoryTier,
+        (
+          knowledge.historyProgress >= thresholds.historyTier2 ? 2 :
+          knowledge.historyProgress >= thresholds.historyTier1 ? 1 :
+          Boolean(knowledge.historyKnown) ? 1 :
+          0
+        )
+      )),
+      0,
+      2
+    );
+    const stateLabelKnown = Boolean(
+      knowledge.discoveredStateLabel ??
+      knowledge.stateLabelsKnown ??
+      (knowledge.stateLabelProgress >= thresholds.stateKnown)
+    );
+    const stateLabelDetailKnown = Boolean(
+      knowledge.stateLabelDetailKnown ??
+      (knowledge.stateLabelProgress >= thresholds.stateDetail)
+    );
+    knowledge.discoveredPurpose = purposeKnown;
+    knowledge.purposeKnown = purposeKnown;
+    knowledge.discoveredHistoryTier = historyTier;
+    knowledge.historyKnown = historyTier >= 1;
+    knowledge.discoveredStateLabel = stateLabelKnown;
+    knowledge.stateLabelsKnown = stateLabelKnown;
+    knowledge.stateLabelDetailKnown = stateLabelDetailKnown;
+    knowledge.seenNodeTypes = normalizeAdvSeenNodeTypes(knowledge.seenNodeTypes);
+    return knowledge;
+  }
+
+  function createDefaultAdvDetailState(){
+    const unlockedNodeIds = ADV_NODE_CATALOG
+      .filter((node) => Boolean(node?.unlocked))
+      .map((node) => String(node?.id || "").trim().toLowerCase())
+      .filter((id) => id.length > 0);
+    const nodeNameStateById = {};
+    for(let i = 0; i < ADV_NODE_CATALOG.length; i++){
+      const node = ADV_NODE_CATALOG[i];
+      const id = String(node?.id || "").trim().toLowerCase();
+      if(id.length <= 0) continue;
+      nodeNameStateById[id] = normalizeAdvNodeNameState(node?.discoveredNameState, ADV_NODE_NAME_STATE.UNKNOWN);
+    }
+    const nodeKnowledgeById = {};
+    for(let i = 0; i < ADV_NODE_CATALOG.length; i++){
+      const node = ADV_NODE_CATALOG[i];
+      const id = String(node?.id || "").trim().toLowerCase();
+      if(id.length <= 0) continue;
+      nodeKnowledgeById[id] = createDefaultAdvNodeKnowledgeState();
+    }
+    return {
+      unlockedNodeIds,
+      nodeNameStateById,
+      nodeKnowledgeById,
+    };
+  }
+
+  function normalizeAdvDetailState(input, fallback){
+    const base = isRecord(fallback) ? fallback : createDefaultAdvDetailState();
+    const src = isRecord(input) ? input : {};
+    const unlockedSet = new Set(
+      (Array.isArray(src.unlockedNodeIds) ? src.unlockedNodeIds : base.unlockedNodeIds)
+        .map((id) => String(id || "").trim().toLowerCase())
+        .filter((id) => id.length > 0)
+    );
+    const nodeNameStateById = {};
+    const srcStates = isRecord(src.nodeNameStateById) ? src.nodeNameStateById : {};
+    const baseStates = isRecord(base.nodeNameStateById) ? base.nodeNameStateById : {};
+    const srcKnowledge = isRecord(src.nodeKnowledgeById) ? src.nodeKnowledgeById : {};
+    const baseKnowledge = isRecord(base.nodeKnowledgeById) ? base.nodeKnowledgeById : {};
+    const nodeKnowledgeById = {};
+    for(let i = 0; i < ADV_NODE_CATALOG.length; i++){
+      const node = ADV_NODE_CATALOG[i];
+      const id = String(node?.id || "").trim().toLowerCase();
+      if(id.length <= 0) continue;
+      const thresholds = getAdvKnowledgeThresholds(node);
+      nodeNameStateById[id] = normalizeAdvNodeNameState(
+        srcStates[id],
+        normalizeAdvNodeNameState(baseStates[id], normalizeAdvNodeNameState(node?.discoveredNameState, ADV_NODE_NAME_STATE.UNKNOWN))
+      );
+      const knowledgeSrc = isRecord(srcKnowledge[id]) ? srcKnowledge[id] : {};
+      const knowledgeBase = syncAdvKnowledgeFlags(
+        isRecord(baseKnowledge[id]) ? { ...baseKnowledge[id] } : createDefaultAdvNodeKnowledgeState(),
+        thresholds
+      );
+      const normalizedKnowledge = {
+        nameProgress: Math.max(0, Math.floor(toNumber(knowledgeSrc.nameProgress, knowledgeBase.nameProgress))),
+        purposeProgress: Math.max(0, Math.floor(toNumber(knowledgeSrc.purposeProgress, knowledgeBase.purposeProgress))),
+        historyProgress: Math.max(0, Math.floor(toNumber(knowledgeSrc.historyProgress, knowledgeBase.historyProgress))),
+        stateLabelProgress: Math.max(0, Math.floor(toNumber(knowledgeSrc.stateLabelProgress, knowledgeBase.stateLabelProgress))),
+        purposeKnown: Boolean(knowledgeSrc.purposeKnown ?? knowledgeBase.purposeKnown),
+        historyKnown: Boolean(knowledgeSrc.historyKnown ?? knowledgeBase.historyKnown),
+        stateLabelsKnown: Boolean(knowledgeSrc.stateLabelsKnown ?? knowledgeBase.stateLabelsKnown),
+        discoveredPurpose: Boolean(knowledgeSrc.discoveredPurpose ?? knowledgeBase.discoveredPurpose ?? knowledgeSrc.purposeKnown ?? knowledgeBase.purposeKnown),
+        discoveredHistoryTier: clamp(
+          Math.floor(toNumber(
+            knowledgeSrc.discoveredHistoryTier,
+            knowledgeBase.discoveredHistoryTier ?? (Boolean(knowledgeSrc.historyKnown ?? knowledgeBase.historyKnown) ? 1 : 0)
+          )),
+          0,
+          2
+        ),
+        discoveredStateLabel: Boolean(knowledgeSrc.discoveredStateLabel ?? knowledgeBase.discoveredStateLabel ?? knowledgeSrc.stateLabelsKnown ?? knowledgeBase.stateLabelsKnown),
+        stateLabelDetailKnown: Boolean(knowledgeSrc.stateLabelDetailKnown ?? knowledgeBase.stateLabelDetailKnown),
+        seenNodeTypes: normalizeAdvSeenNodeTypes(knowledgeSrc.seenNodeTypes, knowledgeBase.seenNodeTypes),
+      };
+      nodeKnowledgeById[id] = syncAdvKnowledgeFlags(normalizedKnowledge, thresholds);
+      if(
+        nodeNameStateById[id] !== ADV_NODE_NAME_STATE.CONFIRMED &&
+        nodeKnowledgeById[id].nameProgress >= thresholds.name
+      ){
+        nodeNameStateById[id] = ADV_NODE_NAME_STATE.CONFIRMED;
+      }
+      if(Boolean(node?.unlocked)){
+        unlockedSet.add(id);
+      }
+    }
+    return {
+      unlockedNodeIds: Array.from(unlockedSet),
+      nodeNameStateById,
+      nodeKnowledgeById,
+    };
+  }
+
+  function ensureAdvDetailState(detail){
+    if(!isRecord(detail)) return null;
+    detail.advState = normalizeAdvDetailState(detail.advState);
+    return detail.advState;
+  }
+
+  function getAdvNodeKnowledgeState(nodeOrId, detailOverride = null){
+    const node = isRecord(nodeOrId) ? nodeOrId : getAdvMapById(nodeOrId);
+    const detail = isRecord(detailOverride) ? detailOverride : state.detailed;
+    const advState = ensureAdvDetailState(detail);
+    if(!node || !advState) return null;
+    const id = String(node.id || "").trim().toLowerCase();
+    if(id.length <= 0) return null;
+    if(!isRecord(advState.nodeKnowledgeById)){
+      advState.nodeKnowledgeById = {};
+    }
+    if(!isRecord(advState.nodeKnowledgeById[id])){
+      advState.nodeKnowledgeById[id] = createDefaultAdvNodeKnowledgeState();
+    }
+    return syncAdvKnowledgeFlags(advState.nodeKnowledgeById[id], getAdvKnowledgeThresholds(node));
+  }
+
+  function addAdvNodeKnowledgeProgress(nodeOrId, field, delta = 1, detailOverride = null){
+    const knowledge = getAdvNodeKnowledgeState(nodeOrId, detailOverride);
+    const key = String(field || "").trim();
+    if(!knowledge || key.length <= 0) return 0;
+    knowledge[key] = Math.max(0, Math.floor(toNumber(knowledge[key], 0)) + Math.max(0, Math.floor(toNumber(delta, 0))));
+    return knowledge[key];
+  }
+
   function createDefaultDetailedState(monsterId){
     const now = Date.now();
     const stagePlan = getBttlSkillPlanByStage(1);
@@ -5396,6 +6807,7 @@
       trainingCount: 0,
       trainingTypeCounts: createDefaultTrainingTypeCounts(),
       inventory: createDefaultItemInventory(),
+      advState: createDefaultAdvDetailState(),
       weight: FOOD_DEFAULT_WEIGHT,
       sleepProgress: createDefaultSleepProgressState(),
       abnormalState: createDefaultHealAbnormalState(),
@@ -5433,6 +6845,7 @@
     const trainingCount = Math.max(0, Math.floor(toNumber(src.trainingCount, base.trainingCount)));
     const trainingTypeCounts = normalizeTrainingTypeCounts(src.trainingTypeCounts, base.trainingTypeCounts);
     const chronotype = normalizeChronotype(src.chronotype, base.chronotype);
+    const advState = normalizeAdvDetailState(src.advState, base.advState);
     const basePlan = getBttlSkillPlanByStage(1);
     const skillUniqueId = (() => {
       const raw = String(src.skillUniqueId || "").trim().toLowerCase();
@@ -5508,6 +6921,7 @@
       trainingCount,
       trainingTypeCounts,
       inventory,
+      advState,
       weight,
       sleepProgress,
       abnormalState,
@@ -5522,6 +6936,7 @@
     const fallback = createDefaultDetailedState(state.monster?.id || "mon001");
     const parsed = safeParse(localStorage.getItem(DETAIL_STORAGE_KEY));
     const normalized = normalizeDetailedState(parsed, fallback);
+    ensureAdvDetailState(normalized);
     normalized.signalQuality = Math.min(normalized.signalQuality, normalized.adIntegrity);
     ensureFoodDetailState(normalized);
     ensureSleepDetailState(normalized);
@@ -5539,6 +6954,7 @@
 
   function saveDetailedState(){
     if(!isRecord(state.detailed)) return false;
+    ensureAdvDetailState(state.detailed);
     const payload = {
       ...state.detailed,
       version: DETAIL_STATE_VERSION,
@@ -6175,9 +7591,255 @@
     return items[idx] || null;
   }
 
+  function createDefaultItemMenuCursorState(){
+    return ITEM_MENU_CATEGORY_ORDER.reduce((acc, category) => {
+      acc[category] = 0;
+      return acc;
+    }, {});
+  }
+
+  function normalizeItemMenuCategory(value, fallback = ITEM_MENU_CATEGORY_ORDER[0]){
+    const raw = String(value || "").trim().toLowerCase();
+    return ITEM_MENU_CATEGORY_ORDER.includes(raw) ? raw : fallback;
+  }
+
+  function normalizeItemMenuCursorState(input){
+    const src = isRecord(input) ? input : {};
+    const out = createDefaultItemMenuCursorState();
+    const keys = Object.keys(out);
+    for(let i = 0; i < keys.length; i++){
+      const key = keys[i];
+      out[key] = Math.max(0, Math.floor(toNumber(src[key], out[key])));
+    }
+    return out;
+  }
+
+  function ensureItemMenuCursorState(){
+    uiState.itemCursorByCategory = normalizeItemMenuCursorState(uiState.itemCursorByCategory);
+    return uiState.itemCursorByCategory;
+  }
+
+  function normalizeItemMenuFocus(value, fallback = ITEM_MENU_FOCUS.CATEGORY){
+    const raw = String(value || "").trim().toLowerCase();
+    if(raw === ITEM_MENU_FOCUS.LIST){
+      return ITEM_MENU_FOCUS.LIST;
+    }
+    return fallback;
+  }
+
+  function getItemMenuFocus(){
+    uiState.itemPaneFocus = normalizeItemMenuFocus(uiState.itemPaneFocus);
+    return uiState.itemPaneFocus;
+  }
+
+  function setItemMenuFocus(focus){
+    uiState.itemPaneFocus = normalizeItemMenuFocus(focus);
+    return uiState.itemPaneFocus;
+  }
+
+  function isItemMenuCategoryFocus(){
+    return getItemMenuFocus() === ITEM_MENU_FOCUS.CATEGORY;
+  }
+
+  function isItemMenuListFocus(){
+    return getItemMenuFocus() === ITEM_MENU_FOCUS.LIST;
+  }
+
+  function getItemCategoryCursor(){
+    const total = ITEM_MENU_CATEGORY_ORDER.length;
+    if(total <= 0){
+      uiState.itemCategoryCursor = 0;
+      return 0;
+    }
+    const raw = Math.floor(toNumber(uiState.itemCategoryCursor, 0));
+    const normalized = ((raw % total) + total) % total;
+    uiState.itemCategoryCursor = normalized;
+    return normalized;
+  }
+
+  function setItemCategoryCursor(index){
+    const total = ITEM_MENU_CATEGORY_ORDER.length;
+    if(total <= 0){
+      uiState.itemCategoryCursor = 0;
+      return 0;
+    }
+    const raw = Math.floor(toNumber(index, 0));
+    const normalized = ((raw % total) + total) % total;
+    uiState.itemCategoryCursor = normalized;
+    return normalized;
+  }
+
+  function moveItemCategoryCursor(delta){
+    const step = Math.floor(toNumber(delta, 0));
+    if(step === 0) return false;
+    const before = getItemCategoryCursor();
+    const after = setItemCategoryCursor(before + step);
+    if(before === after) return false;
+    uiState.itemWarningMessage = "";
+    return true;
+  }
+
+  function getSelectedItemMenuCategory(){
+    return normalizeItemMenuCategory(ITEM_MENU_CATEGORY_ORDER[getItemCategoryCursor()], ITEM_CATEGORY.FOOD);
+  }
+
+  function getItemMenuCategoryLabel(category){
+    const id = normalizeItemMenuCategory(category, ITEM_CATEGORY.FOOD);
+    return String(ITEM_MENU_CATEGORY_LABELS[id] || id).trim().toUpperCase();
+  }
+
+  function getItemEntriesForCategory(category, detailOverride = null){
+    const categoryId = normalizeItemMenuCategory(category, ITEM_CATEGORY.FOOD);
+    const detail = detailOverride || state.detailed;
+    ensureInventoryDetailState(detail);
+    if(!isRecord(detail)){
+      return [];
+    }
+    return listInventoryItems(detail, {
+      category: categoryId,
+      includeZero: false,
+    });
+  }
+
+  function getItemMenuCursor(category, detailOverride = null){
+    const categoryId = normalizeItemMenuCategory(category, ITEM_CATEGORY.FOOD);
+    const cursors = ensureItemMenuCursorState();
+    const entries = getItemEntriesForCategory(categoryId, detailOverride);
+    if(entries.length <= 0){
+      cursors[categoryId] = 0;
+      return 0;
+    }
+    const raw = Math.floor(toNumber(cursors[categoryId], 0));
+    const normalized = ((raw % entries.length) + entries.length) % entries.length;
+    cursors[categoryId] = normalized;
+    return normalized;
+  }
+
+  function setItemMenuCursor(category, index, detailOverride = null){
+    const categoryId = normalizeItemMenuCategory(category, ITEM_CATEGORY.FOOD);
+    const cursors = ensureItemMenuCursorState();
+    const entries = getItemEntriesForCategory(categoryId, detailOverride);
+    if(entries.length <= 0){
+      cursors[categoryId] = 0;
+      return 0;
+    }
+    const raw = Math.floor(toNumber(index, 0));
+    const normalized = ((raw % entries.length) + entries.length) % entries.length;
+    cursors[categoryId] = normalized;
+    return normalized;
+  }
+
+  function moveItemMenuCursor(delta, detailOverride = null){
+    const step = Math.floor(toNumber(delta, 0));
+    if(step === 0) return false;
+    const category = getSelectedItemMenuCategory();
+    const before = getItemMenuCursor(category, detailOverride);
+    const after = setItemMenuCursor(category, before + step, detailOverride);
+    if(before === after) return false;
+    uiState.itemWarningMessage = "";
+    return true;
+  }
+
+  function getSelectedItemMenuEntry(detailOverride = null){
+    const category = getSelectedItemMenuCategory();
+    const entries = getItemEntriesForCategory(category, detailOverride);
+    if(entries.length <= 0){
+      return null;
+    }
+    return entries[getItemMenuCursor(category, detailOverride)] || null;
+  }
+
+  function formatItemMenuStockText(count){
+    if(isItemCountInfinite(count)){
+      return "∞";
+    }
+    return String(Math.max(0, Math.floor(toNumber(count, 0)))).padStart(2, "0");
+  }
+
+  function getItemMenuRouteText(itemOrEntry){
+    if(isItemMenuCategoryFocus()){
+      return "A: ITEM選択へ";
+    }
+    const item = isRecord(itemOrEntry?.item) ? itemOrEntry.item : getItemById(itemOrEntry?.id ?? itemOrEntry);
+    const category = String(item?.category || "").trim().toLowerCase();
+    if(category === ITEM_CATEGORY.FOOD){
+      return "A: FOODへ";
+    }
+    if(category === ITEM_CATEGORY.HEAL){
+      return "A: HEALへ";
+    }
+    return "使用先は未実装。";
+  }
+
+  function getItemMenuEmptyText(category){
+    const categoryId = normalizeItemMenuCategory(category, ITEM_CATEGORY.FOOD);
+    if(categoryId === ITEM_CATEGORY.FOOD){
+      return "所持フードがありません。";
+    }
+    if(categoryId === ITEM_CATEGORY.HEAL){
+      return "所持治療アイテムがありません。";
+    }
+    if(categoryId === ITEM_CATEGORY.MATERIAL){
+      return "所持素材がありません。";
+    }
+    return "所持信号補助アイテムがありません。";
+  }
+
+  function routeSelectedItemMenuEntry(){
+    const detail = state.detailed;
+    ensureInventoryDetailState(detail);
+    const entry = getSelectedItemMenuEntry(detail);
+    const item = entry?.item || null;
+    if(!item){
+      uiState.itemWarningMessage = "このカテゴリの所持品がありません。";
+      showOverlayItem();
+      return { success: false, redraw: true };
+    }
+
+    const itemId = String(item.id || "").trim().toLowerCase();
+    const category = String(item.category || "").trim().toLowerCase();
+    uiState.itemWarningMessage = "";
+
+    if(category === ITEM_CATEGORY.FOOD){
+      const selectableItems = getFoodSelectableItems(detail);
+      const foodIndex = selectableItems.findIndex((candidate) => String(candidate?.id || "").trim().toLowerCase() === itemId);
+      closeItemScreenToMenu();
+      openFoodScreen();
+      if(foodIndex >= 0){
+        setFoodCursor(foodIndex);
+      }
+      return { success: true, redraw: true, route: "food", itemId };
+    }
+
+    if(category === ITEM_CATEGORY.HEAL){
+      const actionId = normalizeHealActionId(item.subType, "");
+      const actionIndex = HEAL_ACTION_CATALOG.findIndex(
+        (action) => normalizeHealActionId(action?.id, "") === actionId
+      );
+      const entries = getHealItemEntriesForAction(actionId, detail, { includeZero: true });
+      const itemIndex = entries.findIndex(
+        (candidate) => String(candidate?.item?.id || "").trim().toLowerCase() === itemId
+      );
+      closeItemScreenToMenu();
+      openHealScreen();
+      if(actionIndex >= 0){
+        setHealCursor(actionIndex);
+      }
+      if(itemIndex >= 0){
+        setHealItemCursor(actionId, itemIndex, ensureHealDetailState(state.detailed));
+      }
+      return { success: true, redraw: true, route: "heal", itemId };
+    }
+
+    uiState.itemWarningMessage = "使用先は未実装。";
+    showOverlayItem();
+    return { success: false, redraw: true, reason: "unimplemented", itemId };
+  }
+
   function setFoodResultPayload(payload){
     if(!isRecord(payload)){
       uiState.foodResultPayload = null;
+      clearResultTypewriterState();
       return null;
     }
     uiState.foodResultPayload = {
@@ -6186,6 +7848,7 @@
         ? payload.lines.map((line) => String(line ?? ""))
         : [],
     };
+    clearResultTypewriterState();
     return uiState.foodResultPayload;
   }
 
@@ -6452,15 +8115,2025 @@
     return result;
   }
 
-  function normalizeAdvPhase(value, fallback = ADV_PHASE.SEARCH){
+  function normalizeAdvPhase(value, fallback = ADV_PHASE.MAP_SELECT){
     const raw = String(value || "").trim().toLowerCase();
+    if(raw === ADV_PHASE.EXPLORE) return ADV_PHASE.EXPLORE;
     if(raw === ADV_PHASE.RESULT) return ADV_PHASE.RESULT;
-    if(raw === ADV_PHASE.SEARCH) return ADV_PHASE.SEARCH;
+    if(raw === ADV_PHASE.MAP_SELECT) return ADV_PHASE.MAP_SELECT;
     return fallback;
   }
 
-  function pickAdvRewardItemId(){
-    const pool = ADV_REWARD_ITEM_IDS
+  function getAdvStateLabelText(label){
+    const id = String(label || "").trim().toLowerCase();
+    return ADV_STATE_LABEL_TEXT[id] || "";
+  }
+
+  function getAdvMapCatalog(detailOverride = null){
+    const detail = isRecord(detailOverride) ? detailOverride : state.detailed;
+    const advState = ensureAdvDetailState(detail);
+    return ADV_NODE_CATALOG.filter((node) => {
+      if(!isRecord(node)) return false;
+      if(Boolean(node.visibleFromStart)) return true;
+      const id = String(node.id || "").trim().toLowerCase();
+      return Array.isArray(advState?.unlockedNodeIds) && advState.unlockedNodeIds.includes(id);
+    });
+  }
+
+  function isAdvNodeUnlocked(nodeOrId, detailOverride = null){
+    const node = isRecord(nodeOrId) ? nodeOrId : getAdvMapById(nodeOrId);
+    if(!node) return false;
+    const detail = isRecord(detailOverride) ? detailOverride : state.detailed;
+    const advState = ensureAdvDetailState(detail);
+    const id = String(node.id || "").trim().toLowerCase();
+    if(Boolean(node.unlocked)) return true;
+    return Array.isArray(advState?.unlockedNodeIds) && advState.unlockedNodeIds.includes(id);
+  }
+
+  function getAdvNodeNameState(nodeOrId, detailOverride = null){
+    const node = isRecord(nodeOrId) ? nodeOrId : getAdvMapById(nodeOrId);
+    if(!node) return ADV_NODE_NAME_STATE.UNKNOWN;
+    const detail = isRecord(detailOverride) ? detailOverride : state.detailed;
+    const advState = ensureAdvDetailState(detail);
+    const id = String(node.id || "").trim().toLowerCase();
+    const normalizedState = normalizeAdvNodeNameState(
+      advState?.nodeNameStateById?.[id],
+      normalizeAdvNodeNameState(node.discoveredNameState, ADV_NODE_NAME_STATE.UNKNOWN)
+    );
+    if(normalizedState === ADV_NODE_NAME_STATE.CONFIRMED){
+      return normalizedState;
+    }
+    const knowledge = getAdvNodeKnowledgeState(node, detail);
+    const thresholds = getAdvKnowledgeThresholds(node);
+    if(toNumber(knowledge?.nameProgress, 0) >= thresholds.name){
+      return ADV_NODE_NAME_STATE.CONFIRMED;
+    }
+    return normalizedState;
+  }
+
+  function isAdvNodeNameConfirmed(nodeOrId, detailOverride = null){
+    return getAdvNodeNameState(nodeOrId, detailOverride) === ADV_NODE_NAME_STATE.CONFIRMED;
+  }
+
+  function getAdvMapDisplayName(nodeOrId, detailOverride = null){
+    const node = isRecord(nodeOrId) ? nodeOrId : getAdvMapById(nodeOrId);
+    if(!node) return "???";
+    return isAdvNodeNameConfirmed(node, detailOverride)
+      ? String(node.label || "???")
+      : "???";
+  }
+
+  function getAdvMapStateLabels(nodeOrId){
+    const node = isRecord(nodeOrId) ? nodeOrId : getAdvMapById(nodeOrId);
+    return Array.isArray(node?.stateLabels) ? node.stateLabels : [];
+  }
+
+  function getAdvMapStateLabelText(nodeOrId){
+    const labels = getAdvMapStateLabels(nodeOrId)
+      .map((label) => getAdvStateLabelText(label))
+      .filter((label) => label.length > 0);
+    return labels.join(" / ");
+  }
+
+  function getAdvLayerShort(nodeOrId){
+    const node = isRecord(nodeOrId) ? nodeOrId : getAdvMapById(nodeOrId);
+    const layer = String(node?.layer || "").trim().toLowerCase();
+    if(layer === ADV_LAYER.UPPER) return "UPPER";
+    if(layer === ADV_LAYER.MIDDLE) return "MIDDLE";
+    if(layer === ADV_LAYER.LOWER) return "LOWER";
+    return "--";
+  }
+
+  function getAdvLayerJa(nodeOrId){
+    const node = isRecord(nodeOrId) ? nodeOrId : getAdvMapById(nodeOrId);
+    const layer = String(node?.layer || "").trim().toLowerCase();
+    if(layer === ADV_LAYER.UPPER) return "上層";
+    if(layer === ADV_LAYER.MIDDLE) return "中層";
+    if(layer === ADV_LAYER.LOWER) return "下層";
+    return "--";
+  }
+
+  function getAdvDangerShort(nodeOrId){
+    const node = isRecord(nodeOrId) ? nodeOrId : getAdvMapById(nodeOrId);
+    const danger = String(node?.danger || "").trim().toUpperCase();
+    if(danger === "HIGH") return "HIGH";
+    if(danger === "MID") return "MID";
+    if(danger === "LOW") return "LOW";
+    return "--";
+  }
+
+  function getAdvDangerJa(nodeOrId){
+    const node = isRecord(nodeOrId) ? nodeOrId : getAdvMapById(nodeOrId);
+    const danger = String(node?.danger || "").trim().toUpperCase();
+    if(danger === "HIGH") return "危高";
+    if(danger === "MID") return "危中";
+    if(danger === "LOW") return "危低";
+    return "--";
+  }
+
+  function getAdvDangerLevelJa(nodeOrId){
+    const node = isRecord(nodeOrId) ? nodeOrId : getAdvMapById(nodeOrId);
+    const danger = String(node?.danger || "").trim().toUpperCase();
+    if(danger === "HIGH") return "高";
+    if(danger === "MID") return "中";
+    if(danger === "LOW") return "低";
+    return "--";
+  }
+
+  function getAdvMapScaleJa(nodeOrId){
+    const node = isRecord(nodeOrId) ? nodeOrId : getAdvMapById(nodeOrId);
+    const depthCount = getAdvBoardDepthCount(node);
+    if(depthCount >= 8) return "大";
+    if(depthCount >= 7) return "中";
+    return "小";
+  }
+
+  function getAdvMapBossStateText(nodeOrId){
+    const node = isRecord(nodeOrId) ? nodeOrId : getAdvMapById(nodeOrId);
+    if(!node) return "--";
+    return isAdvNodeUnlocked(node) ? "あり" : "不明";
+  }
+
+  const ADV_MAP_TRAIT_ORDER = Object.freeze([
+    Object.freeze({ id: "collapse", label: "崩壊" }),
+    Object.freeze({ id: "contamination", label: "汚染" }),
+    Object.freeze({ id: "lock", label: "封鎖" }),
+    Object.freeze({ id: "observe", label: "観測" }),
+  ]);
+
+  function getAdvMapTraitProfile(nodeOrId){
+    const node = isRecord(nodeOrId) ? nodeOrId : getAdvMapById(nodeOrId);
+    const profile = { collapse: 0, contamination: 0, lock: 0, observe: 0 };
+    if(!node){
+      return profile;
+    }
+    const zoneType = String(node.zoneType || "").trim().toLowerCase();
+    if(zoneType === ADV_ZONE_TYPE.MAINTENANCE){
+      profile.observe = 1;
+      profile.lock = 1;
+    }else if(zoneType === ADV_ZONE_TYPE.RECORD){
+      profile.observe = 3;
+      profile.lock = 1;
+    }else if(zoneType === ADV_ZONE_TYPE.LINE){
+      profile.observe = 2;
+      profile.contamination = 2;
+      profile.collapse = 3;
+    }else if(zoneType === ADV_ZONE_TYPE.CONTROL){
+      profile.observe = 1;
+      profile.lock = 3;
+      profile.collapse = 2;
+    }else if(zoneType === ADV_ZONE_TYPE.ECOLOGY){
+      profile.observe = 1;
+      profile.lock = 1;
+      profile.contamination = 2;
+      profile.collapse = 1;
+    }
+    if(!isAdvNodeUnlocked(node)){
+      profile.lock = Math.max(profile.lock, 3);
+    }
+    const labels = getAdvMapStateLabels(node);
+    if(labels.includes(ADV_STATE_LABEL.CONTAMINATION)){
+      profile.contamination = Math.max(profile.contamination, 3);
+    }
+    if(labels.includes(ADV_STATE_LABEL.DANGER)){
+      profile.collapse = Math.max(profile.collapse, 2);
+    }
+    if(labels.includes(ADV_STATE_LABEL.ANOMALY)){
+      profile.observe = Math.max(profile.observe, 2);
+      profile.collapse = Math.max(profile.collapse, 1);
+    }
+    return profile;
+  }
+
+  function getAdvMapFeatureTags(nodeOrId){
+    const node = isRecord(nodeOrId) ? nodeOrId : getAdvMapById(nodeOrId);
+    if(!node) return [];
+    const zoneType = String(node.zoneType || "").trim().toLowerCase();
+    const tags = [];
+    if(zoneType === ADV_ZONE_TYPE.MAINTENANCE){
+      tags.push("採取向き", "保全多", "資材寄り");
+    }else if(zoneType === ADV_ZONE_TYPE.RECORD){
+      tags.push("観測多", "解析向き", "記録濃");
+    }else if(zoneType === ADV_ZONE_TYPE.LINE){
+      tags.push("分岐多", "信号濃", "浄化向き");
+    }else if(zoneType === ADV_ZONE_TYPE.CONTROL){
+      tags.push("防衛強", "深層域", "解析重");
+    }else if(zoneType === ADV_ZONE_TYPE.ECOLOGY){
+      tags.push("採取向き", "異常注意", "有機濃");
+    }
+    const stateLabels = getAdvMapStateLabels(node);
+    if(stateLabels.includes(ADV_STATE_LABEL.DANGER) && !tags.includes("危険高")){
+      tags.push("危険高");
+    }
+    if(stateLabels.includes(ADV_STATE_LABEL.ANOMALY) && !tags.includes("異常注意")){
+      tags.push("異常注意");
+    }
+    if(stateLabels.includes(ADV_STATE_LABEL.CONTAMINATION) && !tags.includes("汚染濃")){
+      tags.push("汚染濃");
+    }
+    return tags.slice(0, 4);
+  }
+
+  function createAdvMapTraitIconCanvasElement(traitId, level = 0){
+    const canvasEl = document.createElement("canvas");
+    canvasEl.className = "overlay-adv-map-trait-icon-canvas";
+    canvasEl.width = 80;
+    canvasEl.height = 80;
+    const ctx2d = canvasEl.getContext("2d");
+    if(!ctx2d){
+      return canvasEl;
+    }
+    const image = ADV_MAP_TRAIT_IMAGES[String(traitId || "").trim().toLowerCase()] || null;
+    const strength = clamp(toNumber(level, 0), 0, 3);
+    ctx2d.clearRect(0, 0, canvasEl.width, canvasEl.height);
+    if(!(image instanceof Image) || !image.complete || image.naturalWidth <= 0 || image.naturalHeight <= 0){
+      return canvasEl;
+    }
+    const alphaByStrength = [0.18, 0.42, 0.68, 1.0];
+    const drawAlpha = alphaByStrength[strength] ?? 1.0;
+    const maxW = canvasEl.width - 6;
+    const maxH = canvasEl.height - 6;
+    const scale = Math.min(maxW / image.naturalWidth, maxH / image.naturalHeight);
+    const drawW = Math.max(1, Math.round(image.naturalWidth * scale));
+    const drawH = Math.max(1, Math.round(image.naturalHeight * scale));
+    const drawX = Math.round((canvasEl.width - drawW) * 0.5);
+    const drawY = Math.round((canvasEl.height - drawH) * 0.5);
+    ctx2d.imageSmoothingEnabled = false;
+    ctx2d.globalAlpha = drawAlpha;
+    ctx2d.drawImage(image, drawX, drawY, drawW, drawH);
+    ctx2d.globalAlpha = 1;
+    return canvasEl;
+  }
+
+  function getAdvZoneSymbolImage(zoneTypeOrMap){
+    const map = isRecord(zoneTypeOrMap) ? zoneTypeOrMap : null;
+    const zoneType = String(map?.zoneType || zoneTypeOrMap || "").trim().toLowerCase();
+    return ADV_ZONE_SYMBOL_IMAGES[zoneType] || null;
+  }
+
+  function getAdvBoardNodeIconImage(nodeType){
+    const safeType = normalizeAdvBoardNodeType(nodeType, ADV_BOARD_NODE_TYPE.OBSERVE);
+    return ADV_BOARD_NODE_ICON_IMAGES[safeType] || null;
+  }
+
+  const advTintedAssetCanvasCache = typeof WeakMap === "function" ? new WeakMap() : null;
+  const advAssetOpaqueBoundsCache = typeof WeakMap === "function" ? new WeakMap() : null;
+
+  function getAdvTintedAssetCanvas(image){
+    if(!isLoadedImage(image) || typeof document !== "object"){
+      return null;
+    }
+    if(advTintedAssetCanvasCache?.has(image)){
+      return advTintedAssetCanvasCache.get(image);
+    }
+    const canvasEl = document.createElement("canvas");
+    canvasEl.width = image.naturalWidth;
+    canvasEl.height = image.naturalHeight;
+    const ctx2d = canvasEl.getContext("2d");
+    if(!ctx2d){
+      return null;
+    }
+    ctx2d.clearRect(0, 0, canvasEl.width, canvasEl.height);
+    ctx2d.imageSmoothingEnabled = false;
+    ctx2d.drawImage(image, 0, 0, image.naturalWidth, image.naturalHeight);
+    ctx2d.globalCompositeOperation = "source-atop";
+    ctx2d.fillStyle = "rgba(14,20,15,1)";
+    ctx2d.fillRect(0, 0, canvasEl.width, canvasEl.height);
+    ctx2d.globalCompositeOperation = "source-over";
+    if(advTintedAssetCanvasCache){
+      advTintedAssetCanvasCache.set(image, canvasEl);
+    }
+    return canvasEl;
+  }
+
+  function getAdvAssetOpaqueBounds(image){
+    if(!isLoadedImage(image) || typeof document !== "object"){
+      return Object.freeze({
+        x: 0,
+        y: 0,
+        width: Math.max(1, Math.floor(toNumber(image?.naturalWidth, 1))),
+        height: Math.max(1, Math.floor(toNumber(image?.naturalHeight, 1))),
+      });
+    }
+    if(advAssetOpaqueBoundsCache?.has(image)){
+      return advAssetOpaqueBoundsCache.get(image);
+    }
+    const width = Math.max(1, Math.floor(toNumber(image.naturalWidth, 1)));
+    const height = Math.max(1, Math.floor(toNumber(image.naturalHeight, 1)));
+    const fallback = Object.freeze({ x: 0, y: 0, width, height });
+    const canvasEl = document.createElement("canvas");
+    canvasEl.width = width;
+    canvasEl.height = height;
+    const ctx2d = canvasEl.getContext("2d", { willReadFrequently: true });
+    if(!ctx2d){
+      return fallback;
+    }
+    ctx2d.clearRect(0, 0, width, height);
+    ctx2d.imageSmoothingEnabled = false;
+    ctx2d.drawImage(image, 0, 0, width, height);
+    let bounds = fallback;
+    try{
+      const imageData = ctx2d.getImageData(0, 0, width, height);
+      const pixels = imageData?.data;
+      if(pixels){
+        let minX = width;
+        let minY = height;
+        let maxX = -1;
+        let maxY = -1;
+        for(let y = 0; y < height; y++){
+          for(let x = 0; x < width; x++){
+            const alpha = pixels[((y * width) + x) * 4 + 3];
+            if(alpha <= 8) continue;
+            if(x < minX) minX = x;
+            if(y < minY) minY = y;
+            if(x > maxX) maxX = x;
+            if(y > maxY) maxY = y;
+          }
+        }
+        if(maxX >= minX && maxY >= minY){
+          bounds = Object.freeze({
+            x: minX,
+            y: minY,
+            width: Math.max(1, (maxX - minX) + 1),
+            height: Math.max(1, (maxY - minY) + 1),
+          });
+        }
+      }
+    }catch{
+      bounds = fallback;
+    }
+    if(advAssetOpaqueBoundsCache){
+      advAssetOpaqueBoundsCache.set(image, bounds);
+    }
+    return bounds;
+  }
+
+  function drawAdvAssetContain(ctx2d, image, x, y, width, height, options = {}){
+    if(!ctx2d || !isLoadedImage(image)) return false;
+    const alpha = clamp(toNumber(options.alpha, 1), 0, 1);
+    const useTint = options.tint !== false;
+    const smoothing = options.smoothing === true;
+    const source = (useTint ? getAdvTintedAssetCanvas(image) : null) || image;
+    const maxW = Math.max(1, Math.floor(toNumber(width, 1)));
+    const maxH = Math.max(1, Math.floor(toNumber(height, 1)));
+    const trimTransparent = options.trimTransparent !== false;
+    const sourceBounds = trimTransparent
+      ? getAdvAssetOpaqueBounds(image)
+      : {
+          x: 0,
+          y: 0,
+          width: Math.max(1, Math.floor(toNumber(source.width || source.naturalWidth, 1))),
+          height: Math.max(1, Math.floor(toNumber(source.height || source.naturalHeight, 1))),
+        };
+    const sourceW = Math.max(1, Math.floor(toNumber(sourceBounds.width, 1)));
+    const sourceH = Math.max(1, Math.floor(toNumber(sourceBounds.height, 1)));
+    const scale = Math.min(maxW / sourceW, maxH / sourceH);
+    const drawW = Math.max(1, Math.round(sourceW * scale));
+    const drawH = Math.max(1, Math.round(sourceH * scale));
+    const drawX = Math.round(toNumber(x, 0) + ((maxW - drawW) * 0.5));
+    const drawY = Math.round(toNumber(y, 0) + ((maxH - drawH) * 0.5));
+    ctx2d.save();
+    ctx2d.imageSmoothingEnabled = smoothing;
+    ctx2d.globalAlpha = alpha;
+    ctx2d.drawImage(
+      source,
+      Math.floor(toNumber(sourceBounds.x, 0)),
+      Math.floor(toNumber(sourceBounds.y, 0)),
+      sourceW,
+      sourceH,
+      drawX,
+      drawY,
+      drawW,
+      drawH
+    );
+    ctx2d.restore();
+    return true;
+  }
+
+  function getAdvZoneSymbolNoiseSeed(map){
+    const source = `${map?.id || ""}:${map?.zoneType || ""}:${map?.localMapId || ""}`;
+    let seed = 2166136261 >>> 0;
+    for(let i = 0; i < source.length; i++){
+      seed ^= source.charCodeAt(i);
+      seed = Math.imul(seed, 16777619) >>> 0;
+    }
+    return seed || 1;
+  }
+
+  function drawAdvZoneLockedNoise(ctx2d, x, y, width, height, seed){
+    if(!ctx2d) return;
+    const drawX = Math.floor(toNumber(x, 0));
+    const drawY = Math.floor(toNumber(y, 0));
+    const drawW = Math.max(1, Math.floor(toNumber(width, 1)));
+    const drawH = Math.max(1, Math.floor(toNumber(height, 1)));
+    let state = (seed >>> 0) || 1;
+    const nextRand = () => {
+      state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+      return state / 4294967295;
+    };
+    ctx2d.save();
+    ctx2d.imageSmoothingEnabled = false;
+    ctx2d.beginPath();
+    ctx2d.rect(drawX, drawY, drawW, drawH);
+    ctx2d.clip();
+
+    for(let row = 0; row < drawH; row += 3){
+      const chance = nextRand();
+      if(chance < 0.56) continue;
+      const alpha = 0.04 + (nextRand() * 0.08);
+      const inset = Math.floor(nextRand() * 6);
+      ctx2d.fillStyle = `rgba(14,20,15,${alpha.toFixed(3)})`;
+      ctx2d.fillRect(drawX + inset, drawY + row, Math.max(1, drawW - (inset * 2)), 1);
+    }
+
+    for(let i = 0; i < Math.floor((drawW * drawH) / 48); i++){
+      const size = 1 + Math.floor(nextRand() * 3);
+      const px = drawX + Math.floor(nextRand() * Math.max(1, drawW - size));
+      const py = drawY + Math.floor(nextRand() * Math.max(1, drawH - size));
+      const alpha = 0.06 + (nextRand() * 0.18);
+      ctx2d.fillStyle = `rgba(14,20,15,${alpha.toFixed(3)})`;
+      ctx2d.fillRect(px, py, size, size);
+    }
+
+    ctx2d.globalCompositeOperation = "destination-out";
+    for(let i = 0; i < Math.floor((drawW * drawH) / 96); i++){
+      const size = 1 + Math.floor(nextRand() * 2);
+      const px = drawX + Math.floor(nextRand() * Math.max(1, drawW - size));
+      const py = drawY + Math.floor(nextRand() * Math.max(1, drawH - size));
+      const alpha = 0.08 + (nextRand() * 0.16);
+      ctx2d.fillStyle = `rgba(0,0,0,${alpha.toFixed(3)})`;
+      ctx2d.fillRect(px, py, size, size);
+    }
+    ctx2d.restore();
+  }
+
+  function createAdvZonePaneNoiseCanvasElement(map){
+    const canvasEl = document.createElement("canvas");
+    canvasEl.className = "overlay-adv-zone-noise-canvas";
+    canvasEl.width = 480;
+    canvasEl.height = 282;
+    const ctx2d = canvasEl.getContext("2d");
+    if(!ctx2d){
+      return canvasEl;
+    }
+    const seed = getAdvZoneSymbolNoiseSeed(map);
+    drawAdvZoneLockedNoise(ctx2d, 0, 0, canvasEl.width, canvasEl.height, seed);
+    return canvasEl;
+  }
+
+  function createAdvZoneSymbolCanvasElement(map){
+    const canvasEl = document.createElement("canvas");
+    canvasEl.className = "overlay-adv-zone-symbol-canvas";
+    canvasEl.width = 480;
+    canvasEl.height = 282;
+    const ctx2d = canvasEl.getContext("2d");
+    if(!ctx2d){
+      return canvasEl;
+    }
+    ctx2d.clearRect(0, 0, canvasEl.width, canvasEl.height);
+    const image = getAdvZoneSymbolImage(map);
+    const locked = !isAdvNodeUnlocked(map);
+    const drawArea = {
+      x: 84,
+      y: 54,
+      width: canvasEl.width - 168,
+      height: canvasEl.height - 108,
+    };
+    if(!drawAdvAssetContain(
+      ctx2d,
+      image,
+      drawArea.x,
+      drawArea.y,
+      drawArea.width,
+      drawArea.height,
+      { alpha: locked ? 0.22 : 1, tint: true, smoothing: true }
+    )){
+      ctx2d.strokeStyle = "rgba(14,20,15,0.24)";
+      ctx2d.strokeRect(10.5, 10.5, canvasEl.width - 21, canvasEl.height - 21);
+    }
+    return canvasEl;
+  }
+
+  function getAdvMapTraitStripImage(){
+    if(isLoadedImage(ADV_MAP_TRAIT_STRIP_LOCAL_IMAGE)){
+      return ADV_MAP_TRAIT_STRIP_LOCAL_IMAGE;
+    }
+    if(isLoadedImage(ADV_MAP_TRAIT_STRIP_IMAGE)){
+      return ADV_MAP_TRAIT_STRIP_IMAGE;
+    }
+    return null;
+  }
+
+  function createAdvMapTraitStripCanvasElement(traitProfile = null){
+    const canvasEl = document.createElement("canvas");
+    canvasEl.className = "overlay-adv-map-trait-strip-canvas";
+    const image = getAdvMapTraitStripImage();
+    if(!isLoadedImage(image)){
+      canvasEl.width = 1;
+      canvasEl.height = 1;
+      return canvasEl;
+    }
+    canvasEl.width = image.naturalWidth;
+    canvasEl.height = image.naturalHeight;
+    const ctx2d = canvasEl.getContext("2d");
+    if(!ctx2d){
+      return canvasEl;
+    }
+    ctx2d.clearRect(0, 0, canvasEl.width, canvasEl.height);
+    ctx2d.imageSmoothingEnabled = false;
+    const resolvedProfile = isRecord(traitProfile)
+      ? {
+          collapse: clamp(toNumber(traitProfile.collapse, 0), 0, 3),
+          contamination: clamp(toNumber(traitProfile.contamination, 0), 0, 3),
+          lock: clamp(toNumber(traitProfile.lock, 0), 0, 3),
+          observe: clamp(toNumber(traitProfile.observe, 0), 0, 3),
+        }
+      : { collapse: 0, contamination: 0, lock: 0, observe: 0 };
+    const traitIds = ADV_MAP_TRAIT_ORDER.map((trait) => trait.id);
+    const panelWidth = canvasEl.width / Math.max(1, traitIds.length);
+    const panelHeight = canvasEl.height;
+
+    ctx2d.globalAlpha = 0.30;
+    ctx2d.drawImage(image, 0, 0, image.naturalWidth, image.naturalHeight);
+    ctx2d.globalAlpha = 1;
+
+    traitIds.forEach((traitId, index) => {
+      const level = clamp(toNumber(resolvedProfile[traitId], 0), 0, 3);
+      if(level <= 0){
+        return;
+      }
+      const srcX = Math.floor(panelWidth * index);
+      const srcY = 0;
+      const srcW = Math.floor(index === traitIds.length - 1 ? canvasEl.width - srcX : panelWidth);
+      const srcH = panelHeight;
+      const redrawAlphaByLevel = [0, 0.55, 0.78, 1.0];
+      const glowAlphaByLevel = [0, 0.08, 0.13, 0.18];
+      const borderAlphaByLevel = [0, 0.18, 0.28, 0.42];
+      ctx2d.globalAlpha = redrawAlphaByLevel[level] ?? 1;
+      ctx2d.drawImage(image, srcX, srcY, srcW, srcH, srcX, srcY, srcW, srcH);
+      ctx2d.globalAlpha = 1;
+      ctx2d.fillStyle = tone(glowAlphaByLevel[level] ?? 0);
+      ctx2d.fillRect(srcX + 1, srcY + 1, Math.max(0, srcW - 2), Math.max(0, srcH - 2));
+      ctx2d.strokeStyle = tone(borderAlphaByLevel[level] ?? 0);
+      ctx2d.lineWidth = level >= 3 ? 2 : 1;
+      ctx2d.strokeRect(srcX + 0.5, srcY + 0.5, Math.max(0, srcW - 1), Math.max(0, srcH - 1));
+    });
+    ctx2d.globalAlpha = 1;
+    return canvasEl;
+  }
+
+  function getAdvMapMetaText(nodeOrId){
+    const node = isRecord(nodeOrId) ? nodeOrId : getAdvMapById(nodeOrId);
+    if(!node) return "--";
+    const layerText = getAdvLayerShort(node);
+    if(!isAdvNodeUnlocked(node)){
+      return "LOCK";
+    }
+    return `${layerText} ${getAdvDangerShort(node)}`;
+  }
+
+  function getAdvMapDetailMetaText(nodeOrId){
+    const node = isRecord(nodeOrId) ? nodeOrId : getAdvMapById(nodeOrId);
+    if(!node) return "--";
+    const layerText = getAdvLayerJa(node);
+    if(!isAdvNodeUnlocked(node)){
+      return `${layerText}　状態：封鎖`;
+    }
+    return `${layerText}　危険度：${getAdvDangerJa(node).replace(/^危/, "")}`;
+  }
+
+  function confirmAdvNodeName(nodeOrId, detailOverride = null){
+    const node = isRecord(nodeOrId) ? nodeOrId : getAdvMapById(nodeOrId);
+    const detail = isRecord(detailOverride) ? detailOverride : state.detailed;
+    const advState = ensureAdvDetailState(detail);
+    if(!node || !advState) return { changed: false, node: null };
+    const id = String(node.id || "").trim().toLowerCase();
+    if(id.length <= 0) return { changed: false, node: null };
+    const before = getAdvNodeNameState(node, detail);
+    advState.nodeNameStateById[id] = ADV_NODE_NAME_STATE.CONFIRMED;
+    return {
+      changed: before !== ADV_NODE_NAME_STATE.CONFIRMED,
+      node,
+    };
+  }
+
+  function getAdvNodeFlavorLog(nodeOrId, fallbackText = ""){
+    const node = isRecord(nodeOrId) ? nodeOrId : getAdvMapById(nodeOrId);
+    const pool = Array.isArray(node?.flavorLogs) ? node.flavorLogs : [];
+    if(pool.length <= 0){
+      return String(fallbackText || "").trim();
+    }
+    const index = Math.floor(Math.random() * pool.length);
+    return String(pool[index] || fallbackText || "").trim();
+  }
+
+  function getAdvNodePurposeText(nodeOrId, detailOverride = null){
+    const node = isRecord(nodeOrId) ? nodeOrId : getAdvMapById(nodeOrId);
+    const knowledge = getAdvNodeKnowledgeState(node, detailOverride);
+    if(!node) return "--";
+    if(!knowledge?.discoveredPurpose) return "用途は未照合。";
+    const zoneType = String(node.zoneType || "").trim().toLowerCase();
+    if(zoneType === ADV_ZONE_TYPE.MAINTENANCE) return "整備・補修導線として使われていた。";
+    if(zoneType === ADV_ZONE_TYPE.RECORD) return "記録保管と照合のための層。";
+    if(zoneType === ADV_ZONE_TYPE.LINE) return "回線再接続と信号監視のための区画。";
+    if(zoneType === ADV_ZONE_TYPE.CONTROL) return "主軸制御と封鎖管理の深層区画。";
+    if(zoneType === ADV_ZONE_TYPE.ECOLOGY) return "保全生命圏を維持する管理区画。";
+    return "用途は未照合。";
+  }
+
+  function getAdvNodeUnknownDescriptionText(nodeOrId){
+    const node = isRecord(nodeOrId) ? nodeOrId : getAdvMapById(nodeOrId);
+    if(!node) return "--";
+    return String(node.description || "旧管理記録をもとに再構成された領域。").trim();
+  }
+
+  function getAdvNodeNameKnownDescriptionText(nodeOrId, detailOverride = null){
+    const node = isRecord(nodeOrId) ? nodeOrId : getAdvMapById(nodeOrId);
+    if(!node) return "--";
+    const mapName = getAdvMapDisplayName(node, detailOverride);
+    if(mapName === "???"){
+      return getAdvNodeUnknownDescriptionText(node);
+    }
+    return `${mapName}として照合された。用途は未照合。`;
+  }
+
+  function getAdvNodeHistoryTier(nodeOrId, detailOverride = null){
+    const knowledge = getAdvNodeKnowledgeState(nodeOrId, detailOverride);
+    return clamp(Math.floor(toNumber(knowledge?.discoveredHistoryTier, 0)), 0, 2);
+  }
+
+  function getAdvNodeHistoryTierText(nodeOrId, tier = null, detailOverride = null){
+    const node = isRecord(nodeOrId) ? nodeOrId : getAdvMapById(nodeOrId);
+    if(!node) return "--";
+    const safeTier = tier === null ? getAdvNodeHistoryTier(node, detailOverride) : clamp(Math.floor(toNumber(tier, 0)), 0, 2);
+    if(safeTier <= 0) return "過去記録は断片的。";
+    const zoneType = String(node.zoneType || "").trim().toLowerCase();
+    if(zoneType === ADV_ZONE_TYPE.MAINTENANCE){
+      return safeTier >= 2
+        ? "生態維持設備まで含む補修記録が流入していた。"
+        : "保守要員向けの整備導線が集中していた。";
+    }
+    if(zoneType === ADV_ZONE_TYPE.RECORD){
+      return safeTier >= 2
+        ? "種子バンクや生体サンプル記録の断片が残る。"
+        : "索引と保管のための照合層だった。";
+    }
+    if(zoneType === ADV_ZONE_TYPE.LINE){
+      return safeTier >= 2
+        ? "生態観測センサー由来の異常信号が混線している。"
+        : "回線再接続と信号監視の経路だった。";
+    }
+    if(zoneType === ADV_ZONE_TYPE.CONTROL){
+      return safeTier >= 2
+        ? "環境調整アルゴリズムと封鎖記録が残されている。"
+        : "主軸制御と封鎖管理を担っていた。";
+    }
+    if(zoneType === ADV_ZONE_TYPE.ECOLOGY){
+      return safeTier >= 2
+        ? "培養設備と保全種データの異常記録が滲んでいる。"
+        : "保全生命圏を維持する管理区画だった。";
+    }
+    return "過去記録は断片的。";
+  }
+
+  function getAdvNodeHistoryText(nodeOrId, detailOverride = null){
+    const node = isRecord(nodeOrId) ? nodeOrId : getAdvMapById(nodeOrId);
+    if(!node) return "--";
+    const tier = getAdvNodeHistoryTier(node, detailOverride);
+    if(tier <= 0) return "過去記録は断片的。";
+    if(tier >= 2){
+      const deepText = Array.isArray(node?.flavorLogs) ? String(node.flavorLogs[0] || "").trim() : "";
+      return deepText || getAdvNodeHistoryTierText(node, tier, detailOverride);
+    }
+    return getAdvNodeHistoryTierText(node, tier, detailOverride);
+  }
+
+  function getAdvNodeStateDetailText(nodeOrId){
+    const node = isRecord(nodeOrId) ? nodeOrId : getAdvMapById(nodeOrId);
+    if(!node) return "--";
+    const labels = getAdvMapStateLabels(node);
+    if(labels.length <= 0){
+      return "状態異常なし。";
+    }
+    const texts = [];
+    if(labels.includes(ADV_STATE_LABEL.CONTAMINATION)){
+      texts.push("汚染反応が濃い。");
+    }
+    if(labels.includes(ADV_STATE_LABEL.ANOMALY)){
+      texts.push("異常断片が混在している。");
+    }
+    if(labels.includes(ADV_STATE_LABEL.DANGER)){
+      texts.push("危険反応が高い。");
+    }
+    return texts.join(" ");
+  }
+
+  function getAdvNodeStateSummaryText(nodeOrId, detailOverride = null){
+    const node = isRecord(nodeOrId) ? nodeOrId : getAdvMapById(nodeOrId);
+    const knowledge = getAdvNodeKnowledgeState(node, detailOverride);
+    if(!node) return "--";
+    if(!knowledge?.discoveredStateLabel){
+      return "状態評価は未確定。";
+    }
+    const labelText = getAdvMapStateLabelText(node);
+    if(labelText.length <= 0){
+      return "状態異常なし。";
+    }
+    if(Boolean(knowledge?.stateLabelDetailKnown)){
+      return `状態: ${labelText}。${getAdvNodeStateDetailText(node)}`;
+    }
+    return `状態: ${labelText}`;
+  }
+
+  function getAdvMapDescriptionText(nodeOrId, detailOverride = null){
+    const node = isRecord(nodeOrId) ? nodeOrId : getAdvMapById(nodeOrId);
+    const knowledge = getAdvNodeKnowledgeState(node, detailOverride);
+    if(!node) return "--";
+    const unknownText = getAdvNodeUnknownDescriptionText(node);
+    const nameKnownText = getAdvNodeNameKnownDescriptionText(node, detailOverride);
+    const purposeText = getAdvNodePurposeText(node, detailOverride);
+    const historyText = getAdvNodeHistoryText(node, detailOverride);
+    if(!knowledge){
+      return unknownText;
+    }
+    const historyTier = getAdvNodeHistoryTier(node, detailOverride);
+    if(Boolean(knowledge.discoveredPurpose) && historyTier >= 1){
+      return `${purposeText} ${historyText}`.trim();
+    }
+    if(Boolean(knowledge.discoveredPurpose)){
+      return purposeText;
+    }
+    if(historyTier >= 1){
+      return historyText;
+    }
+    if(isAdvNodeNameConfirmed(node, detailOverride)){
+      return nameKnownText;
+    }
+    return unknownText;
+  }
+
+  function resolveAdvKnowledgeFocus(cell){
+    const kind = String(cell?.kind || "");
+    if(kind === "item"){
+      return ["purposeProgress", "nameProgress"];
+    }
+    if(kind === "event"){
+      return ["stateLabelProgress", "historyProgress"];
+    }
+    if(kind === "goal"){
+      return ["historyProgress", "purposeProgress", "nameProgress"];
+    }
+    return ["nameProgress", "purposeProgress"];
+  }
+
+  function correlateAdvNodeKnowledge(nodeOrId, detailOverride = null){
+    const node = isRecord(nodeOrId) ? nodeOrId : getAdvMapById(nodeOrId);
+    const detail = isRecord(detailOverride) ? detailOverride : state.detailed;
+    const knowledge = getAdvNodeKnowledgeState(node, detail);
+    if(!node || !knowledge) return { changed: false, messages: ["照合対象がありません。"] };
+    const thresholds = getAdvKnowledgeThresholds(node);
+    const messages = [];
+    let changed = false;
+    if(!isAdvNodeNameConfirmed(node, detail) && knowledge.nameProgress >= thresholds.name){
+      const result = confirmAdvNodeName(node, detail);
+      if(result.changed){
+        messages.push(`名称照合が一致。${String(node.label || "区画")} を確定した。`);
+        changed = true;
+      }
+    }
+    if(!knowledge.discoveredPurpose && knowledge.purposeProgress >= thresholds.purpose){
+      knowledge.discoveredPurpose = true;
+      knowledge.purposeKnown = true;
+      messages.push(getAdvNodePurposeText(node, detail));
+      changed = true;
+    }
+    const targetHistoryTier =
+      knowledge.historyProgress >= thresholds.historyTier2
+        ? 2
+        : (knowledge.historyProgress >= thresholds.historyTier1 ? 1 : 0);
+    if(targetHistoryTier > knowledge.discoveredHistoryTier){
+      knowledge.discoveredHistoryTier = targetHistoryTier;
+      knowledge.historyKnown = true;
+      messages.push(getAdvNodeHistoryText(node, detail));
+      changed = true;
+    }
+    const shouldKnowStateLabels = knowledge.stateLabelProgress >= thresholds.stateKnown;
+    const shouldKnowStateDetails = knowledge.stateLabelProgress >= thresholds.stateDetail;
+    if((shouldKnowStateLabels && !knowledge.discoveredStateLabel) || (shouldKnowStateDetails && !knowledge.stateLabelDetailKnown)){
+      knowledge.discoveredStateLabel = shouldKnowStateLabels || knowledge.discoveredStateLabel;
+      knowledge.stateLabelsKnown = knowledge.discoveredStateLabel;
+      knowledge.stateLabelDetailKnown = shouldKnowStateDetails || knowledge.stateLabelDetailKnown;
+      messages.push(getAdvNodeStateSummaryText(node, detail));
+      changed = true;
+    }
+    syncAdvKnowledgeFlags(knowledge, thresholds);
+    if(changed){
+      saveDetailedState();
+      return { changed: true, messages };
+    }
+    const totalFragments =
+      Math.max(0, Math.floor(toNumber(knowledge.nameProgress, 0))) +
+      Math.max(0, Math.floor(toNumber(knowledge.purposeProgress, 0))) +
+      Math.max(0, Math.floor(toNumber(knowledge.stateLabelProgress, 0))) +
+      Math.max(0, Math.floor(toNumber(knowledge.historyProgress, 0)));
+    return {
+      changed: false,
+      messages: [totalFragments > 0 ? "断片はあるが、照合にはまだ情報が足りない。" : "照合に使える断片がない。"],
+    };
+  }
+
+  function getAdvMapById(mapId){
+    const id = String(mapId || "").trim().toLowerCase();
+    if(id.length <= 0) return null;
+    for(let i = 0; i < ADV_NODE_CATALOG.length; i++){
+      const map = ADV_NODE_CATALOG[i];
+      if(String(map?.id || "").trim().toLowerCase() === id){
+        return map;
+      }
+    }
+    return null;
+  }
+
+  function getAdvMapIndexById(mapId){
+    const id = String(mapId || "").trim().toLowerCase();
+    if(id.length <= 0) return -1;
+    return getAdvMapCatalog().findIndex((map) => String(map?.id || "").trim().toLowerCase() === id);
+  }
+
+  function getFirstUnlockedAdvMap(){
+    const maps = getAdvMapCatalog();
+    return maps.find((map) => isAdvNodeUnlocked(map)) || maps[0] || null;
+  }
+
+  function createDefaultAdvRunEffects(){
+    return {
+      observeForecast: {},
+      bossProgress: 0,
+      unlockedNodeIds: [],
+      logs: [],
+      nextBattleDamageReduction: 0,
+      anomalyBuff: null,
+      pendingContaminateRisk: null,
+      zoneCleared: false,
+    };
+  }
+
+  function ensureAdvRunEffects(session){
+    if(!isRecord(session)) return createDefaultAdvRunEffects();
+    const base = createDefaultAdvRunEffects();
+    const src = isRecord(session.runEffects) ? session.runEffects : {};
+    const observeForecast = {};
+    const rawForecast = isRecord(src.observeForecast) ? src.observeForecast : {};
+    const forecastKeys = Object.keys(rawForecast);
+    for(let i = 0; i < forecastKeys.length; i++){
+      const key = String(forecastKeys[i] || "").trim().toLowerCase();
+      if(key.length <= 0) continue;
+      observeForecast[key] = Math.max(0, Math.floor(toNumber(rawForecast[key], 0)));
+    }
+    const unlockedSet = new Set(
+      (Array.isArray(src.unlockedNodeIds) ? src.unlockedNodeIds : base.unlockedNodeIds)
+        .map((id) => String(id || "").trim().toLowerCase())
+        .filter((id) => id.length > 0)
+    );
+    const logs = (Array.isArray(src.logs) ? src.logs : base.logs)
+      .map((entry) => String(entry || "").trim())
+      .filter((entry) => entry.length > 0)
+      .slice(-12);
+    const anomalyBuff = isRecord(src.anomalyBuff)
+      ? {
+          kind: String(src.anomalyBuff.kind || "").trim().toLowerCase(),
+          charges: Math.max(0, Math.floor(toNumber(src.anomalyBuff.charges, 0))),
+        }
+      : null;
+    const contaminateRisk = isRecord(src.pendingContaminateRisk)
+      ? {
+          kind: String(src.pendingContaminateRisk.kind || "").trim().toLowerCase(),
+          amount: Math.max(1, Math.floor(toNumber(src.pendingContaminateRisk.amount, 1))),
+        }
+      : null;
+    session.runEffects = {
+      observeForecast,
+      bossProgress: Math.max(0, Math.floor(toNumber(src.bossProgress, base.bossProgress))),
+      unlockedNodeIds: Array.from(unlockedSet),
+      logs,
+      nextBattleDamageReduction: clamp(toNumber(src.nextBattleDamageReduction, 0), 0, 1),
+      anomalyBuff: (anomalyBuff && anomalyBuff.kind.length > 0 && anomalyBuff.charges > 0) ? anomalyBuff : null,
+      pendingContaminateRisk: (
+        contaminateRisk &&
+        (contaminateRisk.kind === "hp" || contaminateRisk.kind === "stb") &&
+        contaminateRisk.amount > 0
+      ) ? contaminateRisk : null,
+      zoneCleared: Boolean(src.zoneCleared),
+    };
+    return session.runEffects;
+  }
+
+  function createAdvSession(nowMs = performance.now()){
+    const startedAtMs = Math.max(0, toNumber(nowMs, performance.now()));
+    const firstMap = getFirstUnlockedAdvMap();
+    const firstMapId = String(firstMap?.id || "").trim().toLowerCase();
+    return {
+      phase: ADV_PHASE.MAP_SELECT,
+      startedAtMs,
+      mapCursor: Math.max(0, getAdvMapIndexById(firstMapId)),
+      mapId: firstMapId,
+      areaIndex: 0,
+      choiceCursor: 0,
+      stepCount: 0,
+      traceLevel: 1,
+      inspectReady: true,
+      dungeon: null,
+      logs: ["ADV接続を起動。観測先を選択。"],
+      leadText: "",
+      noteText: "旧管理断面図を参照し、再構成領域を選定する。",
+      noticeText: "",
+      promptChoices: [],
+      fullMapOpen: false,
+      board: null,
+      resultPayload: null,
+      battleNodeId: "",
+      returnFromBattle: false,
+      returnToMapSelectAfterBattle: false,
+      knowledgeTypeTrailByMapId: {},
+      trial: null,
+      pointerId: null,
+      displaySeed: Math.floor(startedAtMs) % 9973,
+      runEffects: createDefaultAdvRunEffects(),
+    };
+  }
+
+  function getAdvSession(){
+    if(!isRecord(uiState.advSession)) return null;
+    ensureAdvRunEffects(uiState.advSession);
+    return uiState.advSession;
+  }
+
+  function getAdvMapCursor(sessionOverride = null){
+    const session = isRecord(sessionOverride) ? sessionOverride : getAdvSession();
+    const total = getAdvMapCatalog().length;
+    if(total <= 0 || !session) return 0;
+    const raw = Math.floor(toNumber(session.mapCursor, 0));
+    const normalized = ((raw % total) + total) % total;
+    session.mapCursor = normalized;
+    return normalized;
+  }
+
+  function setAdvMapCursor(index, sessionOverride = null){
+    const session = isRecord(sessionOverride) ? sessionOverride : getAdvSession();
+    const maps = getAdvMapCatalog();
+    const total = maps.length;
+    if(total <= 0 || !session) return 0;
+    const raw = Math.floor(toNumber(index, 0));
+    const normalized = ((raw % total) + total) % total;
+    session.mapCursor = normalized;
+    const selectedMap = maps[normalized] || null;
+    if(selectedMap){
+      session.mapId = String(selectedMap.id || "").trim().toLowerCase();
+    }
+    return normalized;
+  }
+
+  function moveAdvMapCursor(delta, sessionOverride = null){
+    const session = isRecord(sessionOverride) ? sessionOverride : getAdvSession();
+    if(!session) return false;
+    const step = Math.floor(toNumber(delta, 0));
+    if(step === 0) return false;
+    const before = getAdvMapCursor(session);
+    const after = setAdvMapCursor(before + step, session);
+    if(before === after) return false;
+    session.noticeText = "";
+    return true;
+  }
+
+  function getSelectedAdvMap(sessionOverride = null){
+    const session = isRecord(sessionOverride) ? sessionOverride : getAdvSession();
+    const maps = getAdvMapCatalog();
+    if(!session){
+      return getFirstUnlockedAdvMap();
+    }
+    const phase = normalizeAdvPhase(session.phase);
+    if(phase === ADV_PHASE.EXPLORE || phase === ADV_PHASE.RESULT){
+      return getAdvMapById(session.mapId) || maps[getAdvMapCursor(session)] || getFirstUnlockedAdvMap();
+    }
+    return maps[getAdvMapCursor(session)] || getFirstUnlockedAdvMap();
+  }
+
+  function getAdvChoiceCursor(sessionOverride = null){
+    const session = isRecord(sessionOverride) ? sessionOverride : getAdvSession();
+    const total = Array.isArray(session?.promptChoices) && session.promptChoices.length > 0
+      ? session.promptChoices.length
+      : ADV_COMMAND_CATALOG.length;
+    if(total <= 0 || !session) return 0;
+    const raw = Math.floor(toNumber(session.choiceCursor, 0));
+    const normalized = ((raw % total) + total) % total;
+    session.choiceCursor = normalized;
+    return normalized;
+  }
+
+  function setAdvChoiceCursor(index, sessionOverride = null){
+    const session = isRecord(sessionOverride) ? sessionOverride : getAdvSession();
+    const total = Array.isArray(session?.promptChoices) && session.promptChoices.length > 0
+      ? session.promptChoices.length
+      : ADV_COMMAND_CATALOG.length;
+    if(total <= 0 || !session) return 0;
+    const raw = Math.floor(toNumber(index, 0));
+    const normalized = ((raw % total) + total) % total;
+    session.choiceCursor = normalized;
+    return normalized;
+  }
+
+  function moveAdvChoiceCursor(delta, sessionOverride = null){
+    const session = isRecord(sessionOverride) ? sessionOverride : getAdvSession();
+    if(!session) return false;
+    const step = Math.floor(toNumber(delta, 0));
+    if(step === 0) return false;
+    const before = getAdvChoiceCursor(session);
+    const after = setAdvChoiceCursor(before + step, session);
+    return before !== after;
+  }
+
+  function getSelectedAdvCommand(sessionOverride = null){
+    const session = isRecord(sessionOverride) ? sessionOverride : getAdvSession();
+    if(!session || ADV_COMMAND_CATALOG.length <= 0) return null;
+    return ADV_COMMAND_CATALOG[getAdvChoiceCursor(session)] || null;
+  }
+
+  function getSelectedAdvChoiceItem(sessionOverride = null){
+    const session = isRecord(sessionOverride) ? sessionOverride : getAdvSession();
+    if(!session) return null;
+    const promptChoices = Array.isArray(session.promptChoices) ? session.promptChoices : [];
+    if(promptChoices.length > 0){
+      return promptChoices[getAdvChoiceCursor(session)] || null;
+    }
+    return ADV_COMMAND_CATALOG[getAdvChoiceCursor(session)] || null;
+  }
+
+  function clearAdvPromptChoices(sessionOverride = null){
+    const session = isRecord(sessionOverride) ? sessionOverride : getAdvSession();
+    if(!session) return;
+    session.promptChoices = [];
+    session.choiceCursor = 0;
+  }
+
+  function setAdvPromptChoices(choices, sessionOverride = null){
+    const session = isRecord(sessionOverride) ? sessionOverride : getAdvSession();
+    if(!session) return [];
+    session.promptChoices = Array.isArray(choices)
+      ? choices
+        .filter((choice) => isRecord(choice))
+        .map((choice) => ({
+          id: String(choice.id || "").trim().toLowerCase(),
+          label: String(choice.label || ""),
+          description: String(choice.description || ""),
+          nextX: Math.floor(toNumber(choice.nextX, -1)),
+          nextY: Math.floor(toNumber(choice.nextY, -1)),
+        }))
+      : [];
+    session.choiceCursor = 0;
+    return session.promptChoices;
+  }
+
+  function hashAdvSeed(value){
+    const text = String(value || "").trim();
+    let hash = 2166136261 >>> 0;
+    for(let i = 0; i < text.length; i++){
+      hash ^= text.charCodeAt(i);
+      hash = Math.imul(hash, 16777619);
+    }
+    return hash >>> 0;
+  }
+
+  function createAdvSeededRandom(seed){
+    let stateSeed = (Math.floor(toNumber(seed, 1)) >>> 0) || 1;
+    return () => {
+      stateSeed += 0x6D2B79F5;
+      let t = stateSeed;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function normalizeAdvBoardNodeType(value, fallback = ADV_BOARD_NODE_TYPE.OBSERVE){
+    const safe = String(value || "").trim().toLowerCase();
+    if(isRecord(ADV_BOARD_NODE_DISPLAY[safe])){
+      return safe;
+    }
+    return fallback;
+  }
+
+  function getAdvBoardNodeDisplay(type){
+    return ADV_BOARD_NODE_DISPLAY[normalizeAdvBoardNodeType(type)] || ADV_BOARD_NODE_DISPLAY[ADV_BOARD_NODE_TYPE.OBSERVE];
+  }
+
+  function getAdvBoardOutcomeKind(type){
+    return String(getAdvBoardNodeDisplay(type)?.outcome || "result").trim().toLowerCase();
+  }
+
+  function getAdvBoardDepthCount(map){
+    const danger = String(map?.danger || "").trim().toUpperCase();
+    return ADV_BOARD_DANGER_DEPTH[danger] || ADV_BOARD_DANGER_DEPTH.LOW;
+  }
+
+  function getAdvBoardZoneTypePool(map, depth, rng){
+    const zoneType = String(map?.zoneType || "").trim().toLowerCase();
+    const safeDepth = Math.max(0, Math.floor(toNumber(depth, 0)));
+    const depthBias = safeDepth >= Math.max(2, getAdvBoardDepthCount(map) - 2);
+    const pool = [];
+    if(zoneType === ADV_ZONE_TYPE.MAINTENANCE){
+      pool.push(
+        ADV_BOARD_NODE_TYPE.COLLECT,
+        ADV_BOARD_NODE_TYPE.COLLECT,
+        ADV_BOARD_NODE_TYPE.PRESERVE,
+        ADV_BOARD_NODE_TYPE.PRESERVE,
+        ADV_BOARD_NODE_TYPE.OBSERVE,
+        ADV_BOARD_NODE_TYPE.DEFENSE
+      );
+    }else if(zoneType === ADV_ZONE_TYPE.RECORD){
+      pool.push(
+        ADV_BOARD_NODE_TYPE.OBSERVE,
+        ADV_BOARD_NODE_TYPE.OBSERVE,
+        ADV_BOARD_NODE_TYPE.ANALYZE,
+        ADV_BOARD_NODE_TYPE.ANALYZE,
+        ADV_BOARD_NODE_TYPE.PRESERVE,
+        ADV_BOARD_NODE_TYPE.DEFENSE
+      );
+    }else if(zoneType === ADV_ZONE_TYPE.LINE){
+      pool.push(
+        ADV_BOARD_NODE_TYPE.OBSERVE,
+        ADV_BOARD_NODE_TYPE.ANALYZE,
+        ADV_BOARD_NODE_TYPE.ANALYZE,
+        ADV_BOARD_NODE_TYPE.CONTAMINATION,
+        ADV_BOARD_NODE_TYPE.DEFENSE,
+        ADV_BOARD_NODE_TYPE.ANOMALY
+      );
+    }else if(zoneType === ADV_ZONE_TYPE.CONTROL){
+      pool.push(
+        ADV_BOARD_NODE_TYPE.ANALYZE,
+        ADV_BOARD_NODE_TYPE.DEFENSE,
+        ADV_BOARD_NODE_TYPE.PRESERVE,
+        ADV_BOARD_NODE_TYPE.ANOMALY,
+        ADV_BOARD_NODE_TYPE.CONTAMINATION
+      );
+    }else if(zoneType === ADV_ZONE_TYPE.ECOLOGY){
+      pool.push(
+        ADV_BOARD_NODE_TYPE.COLLECT,
+        ADV_BOARD_NODE_TYPE.ANOMALY,
+        ADV_BOARD_NODE_TYPE.CONTAMINATION,
+        ADV_BOARD_NODE_TYPE.PRESERVE,
+        ADV_BOARD_NODE_TYPE.DEFENSE
+      );
+    }else{
+      pool.push(
+        ADV_BOARD_NODE_TYPE.OBSERVE,
+        ADV_BOARD_NODE_TYPE.COLLECT,
+        ADV_BOARD_NODE_TYPE.PRESERVE,
+        ADV_BOARD_NODE_TYPE.ANALYZE
+      );
+    }
+    const stateLabels = getAdvMapStateLabels(map);
+    if(stateLabels.includes(ADV_STATE_LABEL.DANGER)){
+      pool.push(ADV_BOARD_NODE_TYPE.DEFENSE, ADV_BOARD_NODE_TYPE.CONTAMINATION);
+    }
+    if(stateLabels.includes(ADV_STATE_LABEL.CONTAMINATION)){
+      pool.push(ADV_BOARD_NODE_TYPE.CONTAMINATION, ADV_BOARD_NODE_TYPE.ANOMALY);
+    }
+    if(stateLabels.includes(ADV_STATE_LABEL.ANOMALY)){
+      pool.push(ADV_BOARD_NODE_TYPE.ANOMALY, ADV_BOARD_NODE_TYPE.ANOMALY, ADV_BOARD_NODE_TYPE.ANALYZE);
+    }
+    if(depthBias){
+      pool.push(ADV_BOARD_NODE_TYPE.DEFENSE, ADV_BOARD_NODE_TYPE.CONTAMINATION);
+    }
+    if(typeof rng === "function" && rng() < 0.16){
+      pool.push(ADV_BOARD_NODE_TYPE.ANOMALY);
+    }
+    return pool.length > 0 ? pool : [ADV_BOARD_NODE_TYPE.OBSERVE];
+  }
+
+  function pickAdvBoardNodeType(map, depth, rng, options = {}){
+    const random = typeof rng === "function" ? rng : Math.random;
+    const forcedSafe = Boolean(options.safeOnly);
+    const pool = getAdvBoardZoneTypePool(map, depth, random)
+      .filter((type) => !forcedSafe || getAdvBoardOutcomeKind(type) === "result");
+    const list = pool.length > 0 ? pool : [ADV_BOARD_NODE_TYPE.OBSERVE];
+    const index = Math.floor(random() * list.length);
+    return normalizeAdvBoardNodeType(list[index], ADV_BOARD_NODE_TYPE.OBSERVE);
+  }
+
+  function createAdvBoardNode(id, depth, lane, type, xNorm, yNorm, outcomeKind = null){
+    const safeType = normalizeAdvBoardNodeType(type);
+    return {
+      id: String(id || "").trim().toLowerCase(),
+      depth: Math.max(0, Math.floor(toNumber(depth, 0))),
+      lane: Math.max(0, Math.floor(toNumber(lane, 0))),
+      type: safeType,
+      x: clamp(toNumber(xNorm, 0.5), 0.06, 0.94),
+      y: clamp(toNumber(yNorm, 0.5), 0.12, 0.88),
+      outcomeKind: String(outcomeKind || getAdvBoardOutcomeKind(safeType)).trim().toLowerCase(),
+    };
+  }
+
+  function getAdvBoardOutgoingNodeIds(board, nodeId){
+    const safeBoard = isRecord(board) ? board : null;
+    const fromId = String(nodeId || "").trim().toLowerCase();
+    if(!safeBoard || fromId.length <= 0 || !Array.isArray(safeBoard.connections)){
+      return [];
+    }
+    const ids = [];
+    for(let i = 0; i < safeBoard.connections.length; i++){
+      const connection = safeBoard.connections[i];
+      if(String(connection?.from || "").trim().toLowerCase() !== fromId) continue;
+      const toId = String(connection?.to || "").trim().toLowerCase();
+      if(toId.length <= 0 || ids.includes(toId)) continue;
+      ids.push(toId);
+    }
+    return ids;
+  }
+
+  function createAdvBoardState(map, options = {}){
+    const safeMap = isRecord(map) ? map : getFirstUnlockedAdvMap();
+    const seedBase = `${String(safeMap?.id || "adv")}::${Math.floor(toNumber(options.seed, Date.now()))}`;
+    const rng = createAdvSeededRandom(hashAdvSeed(seedBase));
+    const depthCount = clamp(getAdvBoardDepthCount(safeMap), 6, 8);
+    const layers = [];
+    const nodes = [];
+    const nodeById = {};
+    const chosenNodeIdByDepth = {};
+    const connections = [];
+
+    const pushNode = (node) => {
+      nodes.push(node);
+      nodeById[node.id] = node;
+      while(layers.length <= node.depth){
+        layers.push([]);
+      }
+      layers[node.depth].push(node.id);
+      return node;
+    };
+
+    const startType = pickAdvBoardNodeType(safeMap, 0, rng, { safeOnly: true });
+    pushNode(createAdvBoardNode("adv_start", 0, 0, startType, 0.50, 0.90, "result"));
+
+    for(let depth = 1; depth < depthCount - 1; depth++){
+      const depthRatio = depth / Math.max(1, depthCount - 1);
+      const yNorm = 0.90 - (depthRatio * 0.78);
+      const branchCount = 1 + Math.floor(rng() * 4);
+      const xOffsetsByCount = {
+        1: [0],
+        2: [-0.20, 0.20],
+        3: [-0.28, 0, 0.28],
+        4: [-0.34, -0.11, 0.11, 0.34],
+      };
+      const xOffsets = xOffsetsByCount[branchCount] || [0];
+      for(let lane = 0; lane < branchCount; lane++){
+        const xNorm = 0.50 + toNumber(xOffsets[lane], 0);
+        const type = pickAdvBoardNodeType(safeMap, depth, rng);
+        pushNode(createAdvBoardNode(
+          `adv_${depth}_${lane}`,
+          depth,
+          lane,
+          type,
+          xNorm + ((rng() - 0.5) * 0.028),
+          yNorm + ((rng() - 0.5) * 0.012)
+        ));
+      }
+    }
+
+    pushNode(createAdvBoardNode("adv_boss", depthCount - 1, 0, ADV_BOARD_NODE_TYPE.BOSS, 0.50, 0.10, "battle"));
+
+    const pickRandomIndex = (length) => {
+      if(length <= 1) return 0;
+      return Math.max(0, Math.min(length - 1, Math.floor(rng() * length)));
+    };
+    for(let depth = 0; depth < layers.length - 1; depth++){
+      const currentLayer = Array.isArray(layers[depth]) ? layers[depth] : [];
+      const nextLayer = Array.isArray(layers[depth + 1]) ? layers[depth + 1] : [];
+      if(currentLayer.length <= 0 || nextLayer.length <= 0) continue;
+      const outgoingByNode = new Map();
+      currentLayer.forEach((rawId) => {
+        const nodeId = String(rawId || "").trim().toLowerCase();
+        if(nodeId.length > 0){
+          outgoingByNode.set(nodeId, new Set());
+        }
+      });
+      nextLayer.forEach((rawNextId) => {
+        const nextNodeId = String(rawNextId || "").trim().toLowerCase();
+        if(nextNodeId.length <= 0) return;
+        const sourceId = String(currentLayer[pickRandomIndex(currentLayer.length)] || "").trim().toLowerCase();
+        if(sourceId.length > 0 && outgoingByNode.has(sourceId)){
+          outgoingByNode.get(sourceId).add(nextNodeId);
+        }
+      });
+      currentLayer.forEach((rawId) => {
+        const nodeId = String(rawId || "").trim().toLowerCase();
+        if(nodeId.length <= 0 || !outgoingByNode.has(nodeId)) return;
+        const targets = outgoingByNode.get(nodeId);
+        if(targets.size <= 0){
+          const fallbackTarget = String(nextLayer[pickRandomIndex(nextLayer.length)] || "").trim().toLowerCase();
+          if(fallbackTarget.length > 0){
+            targets.add(fallbackTarget);
+          }
+        }
+        const maxOutgoing = Math.min(4, nextLayer.length);
+        const desiredOutgoing = nextLayer.length === 1
+          ? 1
+          : clamp(1 + Math.floor(rng() * maxOutgoing), 1, maxOutgoing);
+        let guard = 0;
+        while(targets.size < desiredOutgoing && guard < 20){
+          guard += 1;
+          const targetId = String(nextLayer[pickRandomIndex(nextLayer.length)] || "").trim().toLowerCase();
+          if(targetId.length > 0){
+            targets.add(targetId);
+          }
+        }
+      });
+      outgoingByNode.forEach((targets, fromId) => {
+        targets.forEach((toId) => {
+          if(String(fromId || "").length > 0 && String(toId || "").length > 0){
+            connections.push({ from: fromId, to: toId });
+          }
+        });
+      });
+    }
+
+    const dedupedConnections = [];
+    const seenConnectionIds = new Set();
+    for(let i = 0; i < connections.length; i++){
+      const fromId = String(connections[i]?.from || "").trim().toLowerCase();
+      const toId = String(connections[i]?.to || "").trim().toLowerCase();
+      const connectionId = `${fromId}->${toId}`;
+      if(fromId.length <= 0 || toId.length <= 0 || seenConnectionIds.has(connectionId)) continue;
+      seenConnectionIds.add(connectionId);
+      dedupedConnections.push({ from: fromId, to: toId });
+    }
+
+    const currentNodeId = String(layers[0]?.[0] || "").trim().toLowerCase();
+    chosenNodeIdByDepth[0] = currentNodeId;
+    const availableNodeIds = getAdvBoardOutgoingNodeIds({ connections: dedupedConnections }, currentNodeId);
+
+    return {
+      seed: seedBase,
+      depthCount,
+      totalNodeCount: nodes.length,
+      nodes,
+      nodeById,
+      layers,
+      connections: dedupedConnections,
+      currentNodeId,
+      currentDepth: 0,
+      selectedNodeId: String(availableNodeIds[0] || currentNodeId),
+      availableNodeIds,
+      completedNodeIds: [],
+      lockedNodeIds: [],
+      chosenNodeIdByDepth,
+      visitedNodeIds: [currentNodeId],
+      zoneType: String(safeMap?.zoneType || "").trim().toLowerCase(),
+    };
+  }
+
+  function getAdvBoard(sessionOverride = null){
+    const session = isRecord(sessionOverride) ? sessionOverride : getAdvSession();
+    return isRecord(session?.board) ? session.board : null;
+  }
+
+  function getAdvBoardNodeById(board, nodeId){
+    const safeBoard = isRecord(board) ? board : null;
+    if(!safeBoard) return null;
+    const id = String(nodeId || "").trim().toLowerCase();
+    if(id.length <= 0) return null;
+    return isRecord(safeBoard.nodeById?.[id]) ? safeBoard.nodeById[id] : null;
+  }
+
+  function getAdvBoardCurrentNode(boardOverride = null){
+    const board = isRecord(boardOverride) ? boardOverride : getAdvBoard();
+    return getAdvBoardNodeById(board, board?.currentNodeId);
+  }
+
+  function getAdvBoardSelectedNode(boardOverride = null){
+    const board = isRecord(boardOverride) ? boardOverride : getAdvBoard();
+    return getAdvBoardNodeById(board, board?.selectedNodeId);
+  }
+
+  function getAdvBoardNodeStatus(boardOverride = null, nodeId = ""){
+    const board = isRecord(boardOverride) ? boardOverride : getAdvBoard();
+    const id = String(nodeId || "").trim().toLowerCase();
+    if(!board || id.length <= 0) return "unreached";
+    if(id === String(board.currentNodeId || "").trim().toLowerCase()) return "current";
+    if(Array.isArray(board.completedNodeIds) && board.completedNodeIds.includes(id)) return "completed";
+    if(Array.isArray(board.lockedNodeIds) && board.lockedNodeIds.includes(id)) return "locked";
+    if(Array.isArray(board.availableNodeIds) && board.availableNodeIds.includes(id)) return "available";
+    return "unreached";
+  }
+
+  function moveAdvBoardSelection(delta, sessionOverride = null){
+    const session = isRecord(sessionOverride) ? sessionOverride : getAdvSession();
+    const board = getAdvBoard(session);
+    if(!session || !board) return false;
+    const options = Array.isArray(board.availableNodeIds) ? board.availableNodeIds.slice() : [];
+    if(options.length <= 0) return false;
+    const step = Math.floor(toNumber(delta, 0));
+    if(step === 0) return false;
+    const currentId = String(board.selectedNodeId || options[0] || "").trim().toLowerCase();
+    const currentIndex = Math.max(0, options.indexOf(currentId));
+    const nextIndex = ((currentIndex + step) % options.length + options.length) % options.length;
+    const nextId = String(options[nextIndex] || "").trim().toLowerCase();
+    if(nextId.length <= 0 || nextId === currentId) return false;
+    board.selectedNodeId = nextId;
+    session.noticeText = "";
+    return true;
+  }
+
+  function lockAdvBoardSiblingNodes(board, depth, chosenNodeId){
+    const safeBoard = isRecord(board) ? board : null;
+    if(!safeBoard) return [];
+    const layer = Array.isArray(safeBoard.layers?.[depth]) ? safeBoard.layers[depth] : [];
+    const chosenId = String(chosenNodeId || "").trim().toLowerCase();
+    const lockedSet = new Set(Array.isArray(safeBoard.lockedNodeIds) ? safeBoard.lockedNodeIds : []);
+    for(let i = 0; i < layer.length; i++){
+      const nodeId = String(layer[i] || "").trim().toLowerCase();
+      if(nodeId.length <= 0 || nodeId === chosenId) continue;
+      lockedSet.add(nodeId);
+    }
+    safeBoard.lockedNodeIds = Array.from(lockedSet);
+    return safeBoard.lockedNodeIds;
+  }
+
+  function advanceAdvBoardToNode(session, nodeId){
+    const board = getAdvBoard(session);
+    const node = getAdvBoardNodeById(board, nodeId);
+    const currentNode = getAdvBoardCurrentNode(board);
+    if(!session || !board || !node || !currentNode) return null;
+    const nodeKey = String(node.id || "").trim().toLowerCase();
+    if(!Array.isArray(board.availableNodeIds) || !board.availableNodeIds.includes(nodeKey)){
+      return null;
+    }
+    const completedSet = new Set(Array.isArray(board.completedNodeIds) ? board.completedNodeIds : []);
+    completedSet.add(String(currentNode.id || "").trim().toLowerCase());
+    board.completedNodeIds = Array.from(completedSet);
+    board.currentNodeId = nodeKey;
+    board.currentDepth = Math.max(0, Math.floor(toNumber(node.depth, 0)));
+    board.chosenNodeIdByDepth[node.depth] = nodeKey;
+    const visitedSet = new Set(Array.isArray(board.visitedNodeIds) ? board.visitedNodeIds : []);
+    visitedSet.add(nodeKey);
+    board.visitedNodeIds = Array.from(visitedSet);
+    lockAdvBoardSiblingNodes(board, node.depth, nodeKey);
+    const nextNodeIds = getAdvBoardOutgoingNodeIds(board, nodeKey);
+    board.availableNodeIds = nextNodeIds;
+    board.selectedNodeId = String(nextNodeIds[0] || nodeKey);
+    return node;
+  }
+
+  function buildAdvBoardOutcomeNotice(map, node, outcome){
+    const mapName = getAdvMapDisplayName(map);
+    const nodeLabel = getAdvBoardNodeDisplay(node?.type).label;
+    const safeOutcome = String(outcome || "").trim().toUpperCase();
+    const safeType = normalizeAdvBoardNodeType(node?.type, ADV_BOARD_NODE_TYPE.OBSERVE);
+    if(safeType === ADV_BOARD_NODE_TYPE.BOSS){
+      if(safeOutcome === "WIN") return `${mapName} / 最奥反応を突破した。`;
+      if(safeOutcome === "ABORT") return `${mapName} / 最奥反応から離脱した。`;
+      if(safeOutcome === "LOSE") return `${mapName} / 最奥反応に押し返された。`;
+      return `${mapName} / 最奥反応を処理した。`;
+    }
+    if(safeType === ADV_BOARD_NODE_TYPE.CONTAMINATION){
+      if(safeOutcome === "WIN") return `${mapName} / 汚染反応を制圧した。`;
+      if(safeOutcome === "ABORT") return `${mapName} / 汚染反応から離脱した。`;
+      if(safeOutcome === "LOSE") return `${mapName} / 汚染反応の逆流を受けた。`;
+      return `${mapName} / 汚染反応を処理した。`;
+    }
+    if(safeType === ADV_BOARD_NODE_TYPE.DEFENSE){
+      if(safeOutcome === "WIN") return `${mapName} / 防衛反応を制圧した。`;
+      if(safeOutcome === "ABORT") return `${mapName} / 防衛反応から離脱した。`;
+      if(safeOutcome === "LOSE") return `${mapName} / 防衛反応の反撃を受けた。`;
+      return `${mapName} / 防衛反応を処理した。`;
+    }
+    if(safeType === ADV_BOARD_NODE_TYPE.ANOMALY){
+      if(safeOutcome === "WIN") return `${mapName} / 異常反応を収束させた。`;
+      if(safeOutcome === "ABORT") return `${mapName} / 異常反応から離脱した。`;
+      if(safeOutcome === "LOSE") return `${mapName} / 異常反応に呑まれた。`;
+      return `${mapName} / 異常反応を処理した。`;
+    }
+    if(safeOutcome === "WIN"){
+      return `${mapName} / ${nodeLabel} を制圧した。`;
+    }
+    if(safeOutcome === "ABORT"){
+      return `${mapName} / ${nodeLabel} から離脱した。`;
+    }
+    if(safeOutcome === "LOSE"){
+      return `${mapName} / ${nodeLabel} で反撃を受けた。`;
+    }
+    return `${mapName} / ${nodeLabel} を処理した。`;
+  }
+
+  function getAdvDangerRank(nodeOrId){
+    const node = isRecord(nodeOrId) ? nodeOrId : getAdvMapById(nodeOrId);
+    const danger = String(node?.danger || "").trim().toUpperCase();
+    if(danger === "HIGH") return 3;
+    if(danger === "MID") return 2;
+    return 1;
+  }
+
+  function getAdvCellKey(x, y){
+    return `${Math.floor(toNumber(x, 0))},${Math.floor(toNumber(y, 0))}`;
+  }
+
+  function normalizeAdvFacing(facing){
+    const safe = String(facing || "").trim().toLowerCase();
+    return ADV_DUNGEON_FACING_ORDER.includes(safe) ? safe : ADV_DUNGEON_FACING.NORTH;
+  }
+
+  function getAdvFacingVector(facing){
+    const safe = normalizeAdvFacing(facing);
+    if(safe === ADV_DUNGEON_FACING.EAST) return { dx: 1, dy: 0 };
+    if(safe === ADV_DUNGEON_FACING.SOUTH) return { dx: 0, dy: 1 };
+    if(safe === ADV_DUNGEON_FACING.WEST) return { dx: -1, dy: 0 };
+    return { dx: 0, dy: -1 };
+  }
+
+  function rotateAdvFacing(facing, step){
+    const safe = normalizeAdvFacing(facing);
+    const order = ADV_DUNGEON_FACING_ORDER;
+    const current = Math.max(0, order.indexOf(safe));
+    const offset = Math.floor(toNumber(step, 0));
+    return order[((current + offset) % order.length + order.length) % order.length] || ADV_DUNGEON_FACING.NORTH;
+  }
+
+  function getAdvDirectionBetweenPoints(fromPoint, toPoint){
+    const fromX = Math.floor(toNumber(fromPoint?.x, 0));
+    const fromY = Math.floor(toNumber(fromPoint?.y, 0));
+    const toX = Math.floor(toNumber(toPoint?.x, 0));
+    const toY = Math.floor(toNumber(toPoint?.y, 0));
+    if(toX > fromX) return ADV_DUNGEON_FACING.EAST;
+    if(toX < fromX) return ADV_DUNGEON_FACING.WEST;
+    if(toY > fromY) return ADV_DUNGEON_FACING.SOUTH;
+    return ADV_DUNGEON_FACING.NORTH;
+  }
+
+  function isAdvDungeonWalkable(dungeon, x, y){
+    if(!isRecord(dungeon) || !Array.isArray(dungeon.grid)) return false;
+    const yy = Math.floor(toNumber(y, -1));
+    const xx = Math.floor(toNumber(x, -1));
+    if(yy < 0 || xx < 0 || yy >= dungeon.grid.length) return false;
+    const row = dungeon.grid[yy];
+    return Array.isArray(row) && row[xx] === 1;
+  }
+
+  function listAdvDungeonFloorCells(grid){
+    const cells = [];
+    for(let y = 0; y < grid.length; y++){
+      const row = grid[y];
+      if(!Array.isArray(row)) continue;
+      for(let x = 0; x < row.length; x++){
+        if(row[x] === 1){
+          cells.push({ x, y });
+        }
+      }
+    }
+    return cells;
+  }
+
+  function shuffleAdvCells(list){
+    const out = Array.isArray(list) ? list.slice() : [];
+    for(let i = out.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      const tmp = out[i];
+      out[i] = out[j];
+      out[j] = tmp;
+    }
+    return out;
+  }
+
+  function findAdvDungeonFarthest(grid, startPoint){
+    const start = {
+      x: Math.floor(toNumber(startPoint?.x, 1)),
+      y: Math.floor(toNumber(startPoint?.y, 1)),
+    };
+    const queue = [start];
+    const visited = new Set([getAdvCellKey(start.x, start.y)]);
+    const prev = {};
+    const dist = {};
+    dist[getAdvCellKey(start.x, start.y)] = 0;
+    let farthest = start;
+    let farthestDistance = 0;
+    while(queue.length > 0){
+      const current = queue.shift();
+      const currentKey = getAdvCellKey(current.x, current.y);
+      const currentDist = Math.floor(toNumber(dist[currentKey], 0));
+      if(currentDist >= farthestDistance){
+        farthest = current;
+        farthestDistance = currentDist;
+      }
+      const neighbors = [
+        { x: current.x + 1, y: current.y },
+        { x: current.x - 1, y: current.y },
+        { x: current.x, y: current.y + 1 },
+        { x: current.x, y: current.y - 1 },
+      ];
+      for(let i = 0; i < neighbors.length; i++){
+        const next = neighbors[i];
+        const nextKey = getAdvCellKey(next.x, next.y);
+        if(visited.has(nextKey) || !isAdvDungeonWalkable({ grid }, next.x, next.y)){
+          continue;
+        }
+        visited.add(nextKey);
+        prev[nextKey] = currentKey;
+        dist[nextKey] = currentDist + 1;
+        queue.push(next);
+      }
+    }
+    return { point: farthest, distance: farthestDistance, prev };
+  }
+
+  function buildAdvDungeonPath(prevMap, startPoint, endPoint){
+    const startKey = getAdvCellKey(startPoint?.x, startPoint?.y);
+    const endKey = getAdvCellKey(endPoint?.x, endPoint?.y);
+    const path = [];
+    let cursor = endKey;
+    while(cursor){
+      const bits = String(cursor || "").split(",");
+      path.push({ x: Math.floor(toNumber(bits[0], 0)), y: Math.floor(toNumber(bits[1], 0)) });
+      if(cursor === startKey){
+        break;
+      }
+      cursor = String(prevMap?.[cursor] || "").trim();
+      if(cursor.length <= 0){
+        break;
+      }
+    }
+    return path.reverse();
+  }
+
+  function pickAdvDungeonCells(grid, count, reservedSet = new Set()){
+    const pool = shuffleAdvCells(listAdvDungeonFloorCells(grid))
+      .filter((cell) => !reservedSet.has(getAdvCellKey(cell.x, cell.y)));
+    const picks = [];
+    const limit = Math.max(0, Math.floor(toNumber(count, 0)));
+    for(let i = 0; i < pool.length && picks.length < limit; i++){
+      const cell = pool[i];
+      const key = getAdvCellKey(cell.x, cell.y);
+      if(reservedSet.has(key)) continue;
+      reservedSet.add(key);
+      picks.push(cell);
+    }
+    return picks;
+  }
+
+  function pickAdvDungeonEventType(map){
+    const zoneType = String(map?.zoneType || "").trim().toLowerCase();
+    if(zoneType === ADV_ZONE_TYPE.RECORD) return "archive";
+    if(zoneType === ADV_ZONE_TYPE.LINE) return "signal";
+    if(zoneType === ADV_ZONE_TYPE.MAINTENANCE) return "cache";
+    if(zoneType === ADV_ZONE_TYPE.CONTROL) return "control";
+    if(zoneType === ADV_ZONE_TYPE.ECOLOGY) return "biotic";
+    return "anomaly";
+  }
+
+  function createAdvRandomDungeonState(map){
+    const rank = getAdvDangerRank(map);
+    const width = Math.max(9, ((4 + (rank * 2) + Math.floor(Math.random() * 2)) * 2) + 1);
+    const height = Math.max(9, ((4 + (rank * 2) + Math.floor(Math.random() * 2)) * 2) + 1);
+    const grid = Array.from({ length: height }, () => Array.from({ length: width }, () => 0));
+    const stack = [{ x: 1, y: 1 }];
+    grid[1][1] = 1;
+    while(stack.length > 0){
+      const current = stack[stack.length - 1];
+      const directions = shuffleAdvCells([
+        { dx: 2, dy: 0 },
+        { dx: -2, dy: 0 },
+        { dx: 0, dy: 2 },
+        { dx: 0, dy: -2 },
+      ]);
+      let carved = false;
+      for(let i = 0; i < directions.length; i++){
+        const dir = directions[i];
+        const nextX = current.x + dir.dx;
+        const nextY = current.y + dir.dy;
+        if(nextX <= 0 || nextY <= 0 || nextX >= width - 1 || nextY >= height - 1){
+          continue;
+        }
+        if(grid[nextY][nextX] === 1){
+          continue;
+        }
+        grid[current.y + Math.floor(dir.dy * 0.5)][current.x + Math.floor(dir.dx * 0.5)] = 1;
+        grid[nextY][nextX] = 1;
+        stack.push({ x: nextX, y: nextY });
+        carved = true;
+        break;
+      }
+      if(!carved){
+        stack.pop();
+      }
+    }
+
+    const loopCandidates = [];
+    for(let y = 1; y < height - 1; y++){
+      for(let x = 1; x < width - 1; x++){
+        if(grid[y][x] === 1) continue;
+        const horizontal = grid[y][x - 1] === 1 && grid[y][x + 1] === 1 && grid[y - 1][x] === 0 && grid[y + 1][x] === 0;
+        const vertical = grid[y - 1][x] === 1 && grid[y + 1][x] === 1 && grid[y][x - 1] === 0 && grid[y][x + 1] === 0;
+        if(horizontal || vertical){
+          loopCandidates.push({ x, y });
+        }
+      }
+    }
+    const extraLoops = Math.max(1, rank + Math.floor((width + height) / 12));
+    const shuffledLoops = shuffleAdvCells(loopCandidates);
+    for(let i = 0; i < shuffledLoops.length && i < extraLoops; i++){
+      const cell = shuffledLoops[i];
+      grid[cell.y][cell.x] = 1;
+    }
+
+    const floorCells = listAdvDungeonFloorCells(grid);
+    const lowerBand = floorCells.filter((cell) => cell.y >= Math.floor(height * 0.55));
+    const start = (shuffleAdvCells(lowerBand)[0] || shuffleAdvCells(floorCells)[0] || { x: 1, y: 1 });
+    const farthestFromStart = findAdvDungeonFarthest(grid, start);
+    const goal = farthestFromStart.point || start;
+    const pathToGoal = buildAdvDungeonPath(farthestFromStart.prev, start, goal);
+    const facing = pathToGoal.length >= 2
+      ? getAdvDirectionBetweenPoints(pathToGoal[0], pathToGoal[1])
+      : ADV_DUNGEON_FACING.NORTH;
+    const reserved = new Set([getAdvCellKey(start.x, start.y), getAdvCellKey(goal.x, goal.y)]);
+    const itemCells = pickAdvDungeonCells(grid, 1 + rank, reserved).map((cell) => ({
+      x: cell.x,
+      y: cell.y,
+      claimed: false,
+      itemId: pickAdvRewardItemId(map),
+    }));
+    const eventType = pickAdvDungeonEventType(map);
+    const eventCells = pickAdvDungeonCells(grid, 1 + rank, reserved).map((cell) => ({
+      x: cell.x,
+      y: cell.y,
+      resolved: false,
+      eventType,
+    }));
+
+    return {
+      width,
+      height,
+      grid,
+      start: { x: start.x, y: start.y },
+      goal: { x: goal.x, y: goal.y },
+      player: { x: start.x, y: start.y },
+      facing,
+      visitedKeys: [getAdvCellKey(start.x, start.y)],
+      itemCells,
+      eventCells,
+      completed: false,
+    };
+  }
+
+  function getAdvDungeon(sessionOverride = null){
+    const session = isRecord(sessionOverride) ? sessionOverride : getAdvSession();
+    return isRecord(session?.dungeon) ? session.dungeon : null;
+  }
+
+  function getAdvDungeonPlayer(sessionOverride = null){
+    const dungeon = getAdvDungeon(sessionOverride);
+    return isRecord(dungeon?.player) ? dungeon.player : null;
+  }
+
+  function getAdvCellTypeAtPosition(dungeon, x, y){
+    if(!dungeon){
+      return { kind: "void", traceLevel: 1, inspectable: false };
+    }
+    const key = getAdvCellKey(x, y);
+    const isStart = key === getAdvCellKey(dungeon.start?.x, dungeon.start?.y);
+    const isGoal = key === getAdvCellKey(dungeon.goal?.x, dungeon.goal?.y);
+    const itemCell = Array.isArray(dungeon.itemCells)
+      ? dungeon.itemCells.find((cell) => !cell.claimed && getAdvCellKey(cell.x, cell.y) === key)
+      : null;
+    const eventCell = Array.isArray(dungeon.eventCells)
+      ? dungeon.eventCells.find((cell) => !cell.resolved && getAdvCellKey(cell.x, cell.y) === key)
+      : null;
+    if(isGoal){
+      return { kind: "goal", traceLevel: 3, inspectable: true, goal: true };
+    }
+    if(itemCell){
+      return { kind: "item", traceLevel: 2, inspectable: true, itemCell };
+    }
+    if(eventCell){
+      return { kind: "event", traceLevel: 2, inspectable: true, eventCell };
+    }
+    if(isStart){
+      return { kind: "start", traceLevel: 1, inspectable: false };
+    }
+    return { kind: "passage", traceLevel: 1, inspectable: false };
+  }
+
+  function getAdvCurrentCellType(sessionOverride = null){
+    const session = isRecord(sessionOverride) ? sessionOverride : getAdvSession();
+    const dungeon = getAdvDungeon(session);
+    const player = getAdvDungeonPlayer(session);
+    if(!dungeon || !player){
+      return { kind: "void", traceLevel: 1, inspectable: false };
+    }
+    return getAdvCellTypeAtPosition(dungeon, player.x, player.y);
+  }
+
+  function updateAdvCellPresentation(sessionOverride = null, mapOverride = null, fallbackLead = ""){
+    const session = isRecord(sessionOverride) ? sessionOverride : getAdvSession();
+    const map = isRecord(mapOverride) ? mapOverride : getSelectedAdvMap(session);
+    if(!session || !map) return null;
+    const cell = getAdvCurrentCellType(session);
+    const areaLabel = getAdvCurrentAreaLabel(session, map);
+    session.traceLevel = clamp(Math.floor(toNumber(cell?.traceLevel, 1)), 1, 3);
+    session.inspectReady = Boolean(cell?.inspectable);
+    if(cell?.kind === "goal"){
+      session.leadText = "終端接続点を検知。調べると探索を完了できる。";
+    }else if(cell?.kind === "item"){
+      session.leadText = "資材反応を検知。調べると断片や回収物が得られそうだ。";
+    }else if(cell?.kind === "event"){
+      session.leadText = "不安定な反応を検知。調べると追加情報を拾えそうだ。";
+    }else if(cell?.kind === "start"){
+      session.leadText = String(fallbackLead || `${getAdvMapDisplayName(map)} の接続起点。観測を始める。`);
+    }else{
+      session.leadText = String(fallbackLead || `${areaLabel} を観測中。次の行動を選ぶ。`);
+    }
+    session.noteText = `${getAdvNodePurposeText(map)} ${getAdvNodeStateSummaryText(map)}`.trim();
+    return cell;
+  }
+
+  function resolveAdvEventOutcome(map){
+    const zoneType = String(map?.zoneType || "").trim().toLowerCase();
+    if(zoneType === ADV_ZONE_TYPE.RECORD){
+      return {
+        log: "断片記録を照合した。",
+        itemId: "archive_fragment",
+      };
+    }
+    if(zoneType === ADV_ZONE_TYPE.LINE){
+      return {
+        log: "信号断片を回収した。",
+        itemId: "signal_probe",
+      };
+    }
+    if(zoneType === ADV_ZONE_TYPE.CONTROL){
+      return {
+        log: "制御断片を抽出した。",
+        itemId: "control_core_fragment",
+      };
+    }
+    if(zoneType === ADV_ZONE_TYPE.ECOLOGY){
+      return {
+        log: "生体保全タグを取得した。",
+        itemId: "bio_sample_tag",
+      };
+    }
+    return {
+      log: "補修資材の反応を拾った。",
+      itemId: "material_scrap",
+    };
+  }
+
+  function getAdvAreaLabels(map){
+    return Array.isArray(map?.areaLabels) && map.areaLabels.length > 0
+      ? map.areaLabels
+      : ["入口区画"];
+  }
+
+  function getAdvCurrentAreaLabel(sessionOverride = null, mapOverride = null){
+    const session = isRecord(sessionOverride) ? sessionOverride : getAdvSession();
+    const map = isRecord(mapOverride) ? mapOverride : getSelectedAdvMap(session);
+    const areas = getAdvAreaLabels(map);
+    if(!session){
+      return String(areas[0] || "--");
+    }
+    const raw = Math.floor(toNumber(session.areaIndex, 0));
+    const normalized = ((raw % areas.length) + areas.length) % areas.length;
+    session.areaIndex = normalized;
+    return String(areas[normalized] || "--");
+  }
+
+  function getAdvMoveDirectionLabel(fromPoint, toPoint){
+    const dx = Math.floor(toNumber(toPoint?.x, 0)) - Math.floor(toNumber(fromPoint?.x, 0));
+    const dy = Math.floor(toNumber(toPoint?.y, 0)) - Math.floor(toNumber(fromPoint?.y, 0));
+    if(dx > 0) return "東側通路";
+    if(dx < 0) return "西側通路";
+    if(dy > 0) return "南側通路";
+    return "北側通路";
+  }
+
+  function getAdvNeighborChoices(sessionOverride = null, mapOverride = null){
+    const session = isRecord(sessionOverride) ? sessionOverride : getAdvSession();
+    const map = isRecord(mapOverride) ? mapOverride : getSelectedAdvMap(session);
+    const dungeon = getAdvDungeon(session);
+    const player = getAdvDungeonPlayer(session);
+    if(!session || !map || !dungeon || !player){
+      return [];
+    }
+    const dirs = [
+      { dx: 0, dy: -1 },
+      { dx: 1, dy: 0 },
+      { dx: 0, dy: 1 },
+      { dx: -1, dy: 0 },
+    ];
+    const visited = new Set(Array.isArray(dungeon.visitedKeys) ? dungeon.visitedKeys : []);
+    return dirs
+      .map((dir) => {
+        const nextX = player.x + dir.dx;
+        const nextY = player.y + dir.dy;
+        if(!isAdvDungeonWalkable(dungeon, nextX, nextY)){
+          return null;
+        }
+        const nextCell = getAdvCellTypeAtPosition(dungeon, nextX, nextY);
+        const visitedKey = getAdvCellKey(nextX, nextY);
+        const discovered = visited.has(visitedKey);
+        const suffix = nextCell.kind === "goal"
+          ? " / 終端"
+          : nextCell.kind === "item"
+            ? " / 回収反応"
+            : nextCell.kind === "event"
+              ? " / 反応点"
+              : discovered
+                ? " / 既知"
+                : " / 未確認";
+        return {
+          id: `move_${nextX}_${nextY}`,
+          label: `${getAdvMoveDirectionLabel(player, { x: nextX, y: nextY })}${suffix}`,
+          description: discovered ? "既に接続済みの地点へ移る。" : "未確認地点へ接続を延ばす。",
+          nextX,
+          nextY,
+        };
+      })
+      .filter((choice) => isRecord(choice));
+  }
+
+  function moveAdvToCell(session, map, nextX, nextY, logPrefix = "接続先を更新"){
+    const dungeon = getAdvDungeon(session);
+    const player = getAdvDungeonPlayer(session);
+    if(!dungeon || !player) return { success: false, reason: "missing_dungeon" };
+    if(!isAdvDungeonWalkable(dungeon, nextX, nextY)){
+      updateAdvCellPresentation(session, map, "接続可能な地点ではない。");
+      return { success: false, reason: "blocked" };
+    }
+    player.x = nextX;
+    player.y = nextY;
+    session.areaIndex = Math.abs(nextX + nextY) % Math.max(1, getAdvAreaLabels(map).length);
+    session.stepCount = Math.max(0, Math.floor(toNumber(session.stepCount, 0))) + 1;
+    const visitedKey = getAdvCellKey(nextX, nextY);
+    const visited = Array.isArray(dungeon.visitedKeys) ? dungeon.visitedKeys.slice() : [];
+    if(!visited.includes(visitedKey)){
+      visited.push(visitedKey);
+    }
+    dungeon.visitedKeys = visited;
+    clearAdvPromptChoices(session);
+    pushAdvLog(session, String(logPrefix || "接続先を更新"));
+    const cell = updateAdvCellPresentation(session, map);
+    session.noticeText = "";
+    return { success: true, cell };
+  }
+
+  function pushAdvLog(session, text){
+    if(!isRecord(session)) return;
+    const message = String(text || "").trim();
+    if(message.length <= 0) return;
+    if(!Array.isArray(session.logs)){
+      session.logs = [];
+    }
+    session.logs.push(message);
+    if(session.logs.length > ADV_LOG_MAX){
+      session.logs.splice(0, session.logs.length - ADV_LOG_MAX);
+    }
+  }
+
+  function pushAdvRunEffectLog(session, text){
+    const message = String(text || "").trim();
+    if(message.length <= 0 || !isRecord(session)) return;
+    const runEffects = ensureAdvRunEffects(session);
+    runEffects.logs.push(message);
+    if(runEffects.logs.length > 12){
+      runEffects.logs.splice(0, runEffects.logs.length - 12);
+    }
+    pushAdvLog(session, message);
+  }
+
+  function getAdvRewardHintsText(map){
+    const hints = Array.isArray(map?.rewardHints) ? map.rewardHints.slice() : [];
+    const stateLabels = getAdvMapStateLabels(map);
+    if(stateLabels.includes(ADV_STATE_LABEL.CONTAMINATION)) hints.push("CLEAN");
+    if(stateLabels.includes(ADV_STATE_LABEL.ANOMALY)) hints.push("TRACE");
+    if(stateLabels.includes(ADV_STATE_LABEL.DANGER)) hints.push("ALERT");
+    const normalized = hints
+      .map((value) => String(value || "").trim().toUpperCase())
+      .filter((value) => value.length > 0);
+    return normalized.length > 0 ? normalized.join(" / ") : "HEAL";
+  }
+
+  function pickAdvRewardItemId(mapOverride = null){
+    const map = isRecord(mapOverride) ? mapOverride : getSelectedAdvMap();
+    const rewardIds = [];
+    if(Array.isArray(map?.rewardItemIds)){
+      rewardIds.push(...map.rewardItemIds);
+    }
+    const labels = getAdvMapStateLabels(map);
+    if(labels.includes(ADV_STATE_LABEL.CONTAMINATION)){
+      rewardIds.push("purge_filter_i", "material_scrap");
+    }
+    if(labels.includes(ADV_STATE_LABEL.ANOMALY)){
+      rewardIds.push("signal_probe", "signal_modulator", "archive_fragment");
+    }
+    if(labels.includes(ADV_STATE_LABEL.DANGER)){
+      rewardIds.push("patch_tape_i", "stabilizer_amp_i");
+    }
+    const pool = rewardIds
       .map((id) => getItemById(id))
       .filter((item) => isRecord(item));
     if(pool.length <= 0){
@@ -6470,30 +10143,4066 @@
     return String(pool[index]?.id || "patch_tape_i");
   }
 
-  function createAdvSession(nowMs = performance.now()){
-    const startedAtMs = Math.max(0, toNumber(nowMs, performance.now()));
+  function enterAdvMapSelect(sessionOverride = null, noticeText = ""){
+    const session = isRecord(sessionOverride) ? sessionOverride : getAdvSession();
+    if(!session) return null;
+    const map = getSelectedAdvMap(session);
+    if(map){
+      session.mapId = String(map.id || "").trim().toLowerCase();
+      session.mapCursor = Math.max(0, getAdvMapIndexById(map.id));
+    }
+    session.phase = ADV_PHASE.MAP_SELECT;
+    session.choiceCursor = 0;
+    session.noticeText = String(noticeText || "").trim();
+    session.leadText = "";
+    session.noteText = "旧管理断面図を参照し、再構成領域を選定する。";
+    session.promptChoices = [];
+    session.fullMapOpen = false;
+    session.board = null;
+    session.resultPayload = null;
+    session.battleNodeId = "";
+    session.returnFromBattle = false;
+    session.returnToMapSelectAfterBattle = false;
+    session.dungeon = null;
+    session.trial = null;
+    session.pointerId = null;
+    return session;
+  }
+
+  function startAdvExploreSession(sessionOverride = null, mapOverride = null){
+    const session = isRecord(sessionOverride) ? sessionOverride : getAdvSession();
+    const map = isRecord(mapOverride) ? mapOverride : getSelectedAdvMap(session);
+    if(!session || !map){
+      return { success: false, reason: "missing_map" };
+    }
+    if(!isAdvNodeUnlocked(map)){
+      session.noticeText = "未解放ノード。接続条件が足りない。";
+      return { success: false, reason: "locked" };
+    }
+    session.phase = ADV_PHASE.EXPLORE;
+    session.mapId = String(map.id || "").trim().toLowerCase();
+    session.mapCursor = Math.max(0, getAdvMapIndexById(map.id));
+    session.areaIndex = 0;
+    session.choiceCursor = 0;
+    session.stepCount = 0;
+    session.traceLevel = 1;
+    session.inspectReady = false;
+    session.board = createAdvBoardState(map, {
+      seed: hashAdvSeed(`${String(map.id || "")}:${Math.floor(performance.now())}:${Math.floor(Math.random() * 9999)}`),
+    });
+    session.dungeon = null;
+    session.logs = [];
+    session.noticeText = "";
+    const displayName = getAdvMapDisplayName(map);
+    session.leadText = `${displayName === "???" ? "未確定区画" : displayName} に接続。次ノードを選択。`;
+    session.noteText = getAdvMapDescriptionText(map);
+    clearAdvPromptChoices(session);
+    session.fullMapOpen = false;
+    session.resultPayload = null;
+    session.battleNodeId = "";
+    session.returnFromBattle = false;
+    session.returnToMapSelectAfterBattle = false;
+    session.pointerId = null;
+    session.trial = null;
+    pushAdvLog(session, `${displayName === "???" ? "未確定区画" : displayName} へ接続`);
+    pushAdvLog(session, "分岐盤面を展開");
+    return { success: true, map };
+  }
+
+  function getAdvBoardSelectionList(boardOverride = null){
+    const board = isRecord(boardOverride) ? boardOverride : getAdvBoard();
+    return Array.isArray(board?.availableNodeIds) ? board.availableNodeIds.slice() : [];
+  }
+
+  function resolveAdvBoardNodeOutcomeKind(node, map, boardOverride = null){
+    const safeNode = isRecord(node) ? node : null;
+    if(!safeNode) return "result";
+    const preset = String(safeNode.outcomeKind || "").trim().toLowerCase();
+    if(preset === "battle" || preset === "result"){
+      return preset;
+    }
+    if(safeNode.type !== ADV_BOARD_NODE_TYPE.ANOMALY){
+      return "result";
+    }
+    const board = isRecord(boardOverride) ? boardOverride : getAdvBoard();
+    const seed = hashAdvSeed(`${String(board?.seed || "")}:${String(safeNode.id || "")}:${String(map?.danger || "")}`);
+    const dangerRank = getAdvDangerRank(map);
+    const roll = (seed % 100) / 100;
+    return roll < (dangerRank >= 3 ? 0.7 : 0.45) ? "battle" : "result";
+  }
+
+  function getAdvKnowledgeFieldLabel(field){
+    const key = String(field || "").trim();
+    if(key === "nameProgress") return "名称断片";
+    if(key === "purposeProgress") return "用途照合";
+    if(key === "historyProgress") return "履歴断片";
+    if(key === "stateLabelProgress") return "状態解析";
+    return "断片";
+  }
+
+  function buildAdvKnowledgeGrantCounts(fields){
+    const counts = Object.create(null);
+    if(!Array.isArray(fields)) return counts;
+    for(let i = 0; i < fields.length; i++){
+      const key = String(fields[i] || "").trim();
+      if(key.length <= 0) continue;
+      counts[key] = (counts[key] || 0) + 1;
+    }
+    return counts;
+  }
+
+  function createAdvKnowledgeCountBag(){
+    return Object.create(null);
+  }
+
+  function addAdvKnowledgeCount(counts, field, delta = 1){
+    if(!isRecord(counts)) return counts;
+    const key = String(field || "").trim();
+    const value = Math.max(0, Math.floor(toNumber(delta, 0)));
+    if(key.length <= 0 || value <= 0) return counts;
+    counts[key] = Math.max(0, Math.floor(toNumber(counts[key], 0))) + value;
+    return counts;
+  }
+
+  function getAdvKnowledgeCountTotal(counts){
+    if(!isRecord(counts)) return 0;
+    let total = 0;
+    for(const value of Object.values(counts)){
+      total += Math.max(0, Math.floor(toNumber(value, 0)));
+    }
+    return total;
+  }
+
+  function mergeAdvKnowledgeCounts(baseCounts, bonusCounts){
+    const merged = createAdvKnowledgeCountBag();
+    const sources = [baseCounts, bonusCounts];
+    for(let i = 0; i < sources.length; i++){
+      const source = sources[i];
+      if(!isRecord(source)) continue;
+      for(const [field, amount] of Object.entries(source)){
+        addAdvKnowledgeCount(merged, field, amount);
+      }
+    }
+    return merged;
+  }
+
+  function getAdvKnowledgePrimaryFieldForNodeType(nodeType){
+    const safeType = normalizeAdvBoardNodeType(nodeType, ADV_BOARD_NODE_TYPE.OBSERVE);
+    if(safeType === ADV_BOARD_NODE_TYPE.OBSERVE) return "nameProgress";
+    if(safeType === ADV_BOARD_NODE_TYPE.COLLECT) return "purposeProgress";
+    if(safeType === ADV_BOARD_NODE_TYPE.PRESERVE) return "purposeProgress";
+    if(safeType === ADV_BOARD_NODE_TYPE.DEFENSE) return "stateLabelProgress";
+    if(safeType === ADV_BOARD_NODE_TYPE.CONTAMINATION) return "stateLabelProgress";
+    if(safeType === ADV_BOARD_NODE_TYPE.ANALYZE) return "purposeProgress";
+    if(safeType === ADV_BOARD_NODE_TYPE.ANOMALY) return "stateLabelProgress";
+    if(safeType === ADV_BOARD_NODE_TYPE.BOSS) return "historyProgress";
+    return "nameProgress";
+  }
+
+  function buildAdvBoardBaseKnowledgeCounts(session, map, node){
+    const counts = createAdvKnowledgeCountBag();
+    const safeType = normalizeAdvBoardNodeType(node?.type, ADV_BOARD_NODE_TYPE.OBSERVE);
+    const board = getAdvBoard(session);
+    const rng = createAdvSeededRandom(
+      hashAdvSeed(`${String(board?.seed || map?.id || "")}:${String(node?.id || "")}:knowledge_base`)
+    );
+    if(safeType === ADV_BOARD_NODE_TYPE.OBSERVE){
+      addAdvKnowledgeCount(counts, "nameProgress", 1);
+      addAdvKnowledgeCount(counts, "historyProgress", 1);
+    }else if(safeType === ADV_BOARD_NODE_TYPE.COLLECT){
+      if(rng() < 0.28){
+        addAdvKnowledgeCount(counts, "purposeProgress", 1);
+      }
+    }else if(safeType === ADV_BOARD_NODE_TYPE.PRESERVE){
+      addAdvKnowledgeCount(counts, "purposeProgress", 1);
+      addAdvKnowledgeCount(counts, "historyProgress", 1);
+    }else if(safeType === ADV_BOARD_NODE_TYPE.DEFENSE){
+      addAdvKnowledgeCount(counts, "stateLabelProgress", 1);
+      addAdvKnowledgeCount(counts, "purposeProgress", 1);
+    }else if(safeType === ADV_BOARD_NODE_TYPE.CONTAMINATION){
+      addAdvKnowledgeCount(counts, "stateLabelProgress", 2);
+      addAdvKnowledgeCount(counts, "historyProgress", 1);
+    }else if(safeType === ADV_BOARD_NODE_TYPE.ANALYZE){
+      addAdvKnowledgeCount(counts, "purposeProgress", 2);
+      addAdvKnowledgeCount(counts, "stateLabelProgress", 1);
+    }else if(safeType === ADV_BOARD_NODE_TYPE.ANOMALY){
+      addAdvKnowledgeCount(counts, "historyProgress", 1);
+      addAdvKnowledgeCount(counts, "stateLabelProgress", 2);
+    }else if(safeType === ADV_BOARD_NODE_TYPE.BOSS){
+      addAdvKnowledgeCount(counts, "nameProgress", 1);
+      addAdvKnowledgeCount(counts, "purposeProgress", 1);
+      addAdvKnowledgeCount(counts, "historyProgress", 2);
+      addAdvKnowledgeCount(counts, "stateLabelProgress", 1);
+    }
+    if(getAdvKnowledgeCountTotal(counts) <= 0){
+      addAdvKnowledgeCount(counts, getAdvKnowledgePrimaryFieldForNodeType(safeType), 1);
+    }
+    return counts;
+  }
+
+  function buildAdvBoardZoneKnowledgeBonusCounts(map, node){
+    const counts = createAdvKnowledgeCountBag();
+    const safeType = normalizeAdvBoardNodeType(node?.type, ADV_BOARD_NODE_TYPE.OBSERVE);
+    const zoneType = String(map?.zoneType || "").trim().toLowerCase();
+    if(zoneType === ADV_ZONE_TYPE.MAINTENANCE){
+      if(safeType === ADV_BOARD_NODE_TYPE.PRESERVE) addAdvKnowledgeCount(counts, "purposeProgress", 1);
+      if(safeType === ADV_BOARD_NODE_TYPE.COLLECT) addAdvKnowledgeCount(counts, "purposeProgress", 1);
+      if(safeType === ADV_BOARD_NODE_TYPE.OBSERVE) addAdvKnowledgeCount(counts, "historyProgress", 1);
+    }else if(zoneType === ADV_ZONE_TYPE.RECORD){
+      if(safeType === ADV_BOARD_NODE_TYPE.OBSERVE) addAdvKnowledgeCount(counts, "nameProgress", 1);
+      if(safeType === ADV_BOARD_NODE_TYPE.ANALYZE) addAdvKnowledgeCount(counts, "purposeProgress", 1);
+      if(safeType === ADV_BOARD_NODE_TYPE.COLLECT) addAdvKnowledgeCount(counts, "historyProgress", 1);
+    }else if(zoneType === ADV_ZONE_TYPE.LINE){
+      if(safeType === ADV_BOARD_NODE_TYPE.ANALYZE) addAdvKnowledgeCount(counts, "stateLabelProgress", 1);
+      if(safeType === ADV_BOARD_NODE_TYPE.OBSERVE) addAdvKnowledgeCount(counts, "purposeProgress", 1);
+      if(safeType === ADV_BOARD_NODE_TYPE.DEFENSE) addAdvKnowledgeCount(counts, "stateLabelProgress", 1);
+    }else if(zoneType === ADV_ZONE_TYPE.CONTROL){
+      if(safeType === ADV_BOARD_NODE_TYPE.ANALYZE) addAdvKnowledgeCount(counts, "purposeProgress", 1);
+      if(safeType === ADV_BOARD_NODE_TYPE.DEFENSE) addAdvKnowledgeCount(counts, "purposeProgress", 1);
+      if(safeType === ADV_BOARD_NODE_TYPE.ANOMALY) addAdvKnowledgeCount(counts, "historyProgress", 1);
+    }else if(zoneType === ADV_ZONE_TYPE.ECOLOGY){
+      if(safeType === ADV_BOARD_NODE_TYPE.OBSERVE) addAdvKnowledgeCount(counts, "stateLabelProgress", 1);
+      if(safeType === ADV_BOARD_NODE_TYPE.ANOMALY) addAdvKnowledgeCount(counts, "historyProgress", 1);
+      if(safeType === ADV_BOARD_NODE_TYPE.CONTAMINATION) addAdvKnowledgeCount(counts, "stateLabelProgress", 1);
+      if(safeType === ADV_BOARD_NODE_TYPE.COLLECT) addAdvKnowledgeCount(counts, "purposeProgress", 1);
+    }
+    return counts;
+  }
+
+  function buildAdvBoardStateLabelBonusCounts(map, node){
+    const counts = createAdvKnowledgeCountBag();
+    const safeType = normalizeAdvBoardNodeType(node?.type, ADV_BOARD_NODE_TYPE.OBSERVE);
+    const labels = getAdvMapStateLabels(map);
+    if(labels.includes(ADV_STATE_LABEL.CONTAMINATION)){
+      if(safeType === ADV_BOARD_NODE_TYPE.ANALYZE) addAdvKnowledgeCount(counts, "stateLabelProgress", 1);
+      if(safeType === ADV_BOARD_NODE_TYPE.CONTAMINATION) addAdvKnowledgeCount(counts, "historyProgress", 1);
+      if(safeType === ADV_BOARD_NODE_TYPE.OBSERVE) addAdvKnowledgeCount(counts, "stateLabelProgress", 1);
+    }
+    if(labels.includes(ADV_STATE_LABEL.ANOMALY)){
+      if(safeType === ADV_BOARD_NODE_TYPE.ANOMALY) addAdvKnowledgeCount(counts, "historyProgress", 1);
+      if(safeType === ADV_BOARD_NODE_TYPE.OBSERVE) addAdvKnowledgeCount(counts, "historyProgress", 1);
+      if(safeType === ADV_BOARD_NODE_TYPE.ANALYZE) addAdvKnowledgeCount(counts, "stateLabelProgress", 1);
+    }
+    if(labels.includes(ADV_STATE_LABEL.DANGER)){
+      if(safeType === ADV_BOARD_NODE_TYPE.DEFENSE) addAdvKnowledgeCount(counts, "purposeProgress", 1);
+      if(safeType === ADV_BOARD_NODE_TYPE.OBSERVE) addAdvKnowledgeCount(counts, "stateLabelProgress", 1);
+      if(safeType === ADV_BOARD_NODE_TYPE.BOSS) addAdvKnowledgeCount(counts, "historyProgress", 1);
+    }
+    return counts;
+  }
+
+  function reduceAdvKnowledgeBonusCounts(counts, preferredField = ""){
+    if(!isRecord(counts)) return false;
+    const keys = Object.keys(counts).filter((field) => Math.max(0, Math.floor(toNumber(counts[field], 0))) > 0);
+    if(keys.length <= 0) return false;
+    let target = String(preferredField || "").trim();
+    if(!(target && Math.max(0, Math.floor(toNumber(counts[target], 0))) > 0)){
+      const fieldPriority = ["nameProgress", "purposeProgress", "historyProgress", "stateLabelProgress"];
+      keys.sort((a, b) => {
+        const diff = Math.floor(toNumber(counts[b], 0)) - Math.floor(toNumber(counts[a], 0));
+        if(diff !== 0) return diff;
+        return fieldPriority.indexOf(a) - fieldPriority.indexOf(b);
+      });
+      target = keys[0];
+    }
+    counts[target] = Math.max(0, Math.floor(toNumber(counts[target], 0)) - 1);
+    if(counts[target] <= 0){
+      delete counts[target];
+    }
+    return true;
+  }
+
+  function getAdvSessionKnowledgeTrail(session, map){
+    if(!isRecord(session)) return "";
+    if(!isRecord(session.knowledgeTypeTrailByMapId)){
+      session.knowledgeTypeTrailByMapId = {};
+    }
+    const mapId = String(map?.id || "").trim().toLowerCase();
+    return String(session.knowledgeTypeTrailByMapId[mapId] || "").trim().toLowerCase();
+  }
+
+  function setAdvSessionKnowledgeTrail(session, map, nodeType){
+    if(!isRecord(session) || !isRecord(map)) return;
+    if(!isRecord(session.knowledgeTypeTrailByMapId)){
+      session.knowledgeTypeTrailByMapId = {};
+    }
+    const mapId = String(map.id || "").trim().toLowerCase();
+    if(mapId.length <= 0) return;
+    session.knowledgeTypeTrailByMapId[mapId] = normalizeAdvBoardNodeType(nodeType, "");
+  }
+
+  function applyAdvBoardKnowledgeRewards(session, map, node){
+    const safeType = normalizeAdvBoardNodeType(node?.type, ADV_BOARD_NODE_TYPE.OBSERVE);
+    const knowledge = getAdvNodeKnowledgeState(map);
+    const primaryField = getAdvKnowledgePrimaryFieldForNodeType(safeType);
+    const baseCounts = buildAdvBoardBaseKnowledgeCounts(session, map, node);
+    const bonusCounts = mergeAdvKnowledgeCounts(
+      buildAdvBoardZoneKnowledgeBonusCounts(map, node),
+      buildAdvBoardStateLabelBonusCounts(map, node)
+    );
+    const firstTypeBonus = !Boolean(knowledge?.seenNodeTypes?.[safeType]);
+    if(firstTypeBonus){
+      addAdvKnowledgeCount(bonusCounts, primaryField, 1);
+    }
+    const repeatPenaltyApplied = getAdvSessionKnowledgeTrail(session, map) === safeType
+      ? reduceAdvKnowledgeBonusCounts(bonusCounts, primaryField)
+      : false;
+    const totalCounts = mergeAdvKnowledgeCounts(baseCounts, bonusCounts);
+    const totalKeys = Object.keys(totalCounts);
+    for(let i = 0; i < totalKeys.length; i++){
+      const field = totalKeys[i];
+      addAdvNodeKnowledgeProgress(map, field, totalCounts[field]);
+    }
+    if(isRecord(knowledge)){
+      knowledge.seenNodeTypes[safeType] = true;
+      syncAdvKnowledgeFlags(knowledge);
+    }
+    setAdvSessionKnowledgeTrail(session, map, safeType);
+    const correlate = correlateAdvNodeKnowledge(map);
+    saveDetailedState();
     return {
-      phase: ADV_PHASE.SEARCH,
-      startedAtMs,
-      resolveAtMs: startedAtMs + ADV_SEARCHING_MS,
-      rewardItemId: pickAdvRewardItemId(),
-      rewardResult: null,
-      resultText: "",
+      baseCounts,
+      bonusCounts,
+      totalCounts,
+      firstTypeBonus,
+      repeatPenaltyApplied,
+      correlate,
     };
   }
 
-  function getAdvSession(){
-    return isRecord(uiState.advSession) ? uiState.advSession : null;
+  function getAdvBoardNodeResultFields(map, node){
+    const safeType = normalizeAdvBoardNodeType(node?.type, ADV_BOARD_NODE_TYPE.OBSERVE);
+    const zoneType = String(map?.zoneType || "").trim().toLowerCase();
+    if(safeType === ADV_BOARD_NODE_TYPE.OBSERVE){
+      if(zoneType === ADV_ZONE_TYPE.RECORD) return ["nameProgress", "historyProgress", "historyProgress"];
+      if(zoneType === ADV_ZONE_TYPE.LINE) return ["nameProgress", "stateLabelProgress"];
+      if(zoneType === ADV_ZONE_TYPE.CONTROL) return ["purposeProgress", "historyProgress"];
+      if(zoneType === ADV_ZONE_TYPE.ECOLOGY) return ["historyProgress", "stateLabelProgress"];
+      return ["nameProgress", "historyProgress"];
+    }
+    if(safeType === ADV_BOARD_NODE_TYPE.COLLECT){
+      if(zoneType === ADV_ZONE_TYPE.MAINTENANCE) return ["nameProgress", "purposeProgress"];
+      if(zoneType === ADV_ZONE_TYPE.RECORD) return ["nameProgress", "historyProgress"];
+      if(zoneType === ADV_ZONE_TYPE.LINE) return ["nameProgress", "stateLabelProgress"];
+      if(zoneType === ADV_ZONE_TYPE.CONTROL) return ["purposeProgress", "historyProgress"];
+      if(zoneType === ADV_ZONE_TYPE.ECOLOGY) return ["purposeProgress", "stateLabelProgress"];
+      return ["nameProgress"];
+    }
+    if(safeType === ADV_BOARD_NODE_TYPE.PRESERVE){
+      if(zoneType === ADV_ZONE_TYPE.LINE) return ["purposeProgress", "stateLabelProgress"];
+      if(zoneType === ADV_ZONE_TYPE.CONTROL) return ["purposeProgress", "purposeProgress"];
+      if(zoneType === ADV_ZONE_TYPE.ECOLOGY) return ["purposeProgress", "stateLabelProgress"];
+      return ["purposeProgress", "historyProgress"];
+    }
+    if(safeType === ADV_BOARD_NODE_TYPE.ANALYZE){
+      if(zoneType === ADV_ZONE_TYPE.RECORD) return ["purposeProgress", "historyProgress", "stateLabelProgress"];
+      if(zoneType === ADV_ZONE_TYPE.LINE) return ["purposeProgress", "stateLabelProgress", "stateLabelProgress"];
+      if(zoneType === ADV_ZONE_TYPE.CONTROL) return ["purposeProgress", "purposeProgress", "historyProgress"];
+      if(zoneType === ADV_ZONE_TYPE.ECOLOGY) return ["stateLabelProgress", "stateLabelProgress", "historyProgress"];
+      return ["purposeProgress", "stateLabelProgress"];
+    }
+    if(safeType === ADV_BOARD_NODE_TYPE.ANOMALY){
+      if(zoneType === ADV_ZONE_TYPE.ECOLOGY) return ["stateLabelProgress", "stateLabelProgress", "historyProgress", "historyProgress"];
+      return ["stateLabelProgress", "historyProgress"];
+    }
+    return ["historyProgress"];
+  }
+
+  function buildAdvBoardNodeDescription(map, node){
+    const nodeDisplay = getAdvBoardNodeDisplay(node?.type);
+    if(node?.type === ADV_BOARD_NODE_TYPE.OBSERVE){
+      return "輪郭や痕跡を拾いやすい観測点。";
+    }
+    if(node?.type === ADV_BOARD_NODE_TYPE.COLLECT){
+      return "資源断片の回収に向く採取点。";
+    }
+    if(node?.type === ADV_BOARD_NODE_TYPE.PRESERVE){
+      return "保全処理や安定化材に寄った支援点。";
+    }
+    if(node?.type === ADV_BOARD_NODE_TYPE.DEFENSE){
+      return "防衛反応が濃い危険点。戦闘接続の可能性が高い。";
+    }
+    if(node?.type === ADV_BOARD_NODE_TYPE.CONTAMINATION){
+      return "汚染反応が強い危険点。";
+    }
+    if(node?.type === ADV_BOARD_NODE_TYPE.ANALYZE){
+      return "用途や状態の解読に向く解析点。";
+    }
+    if(node?.type === ADV_BOARD_NODE_TYPE.ANOMALY){
+      return "異常反応。結果処理にも戦闘にも振れうる。";
+    }
+    if(node?.type === ADV_BOARD_NODE_TYPE.BOSS){
+      return "最奥反応。突破できれば区画処理が進む。";
+    }
+    return String(nodeDisplay.detail || "ノード情報なし。");
+  }
+
+  function buildAdvBoardNodeFlavor(map, node){
+    const safeType = normalizeAdvBoardNodeType(node?.type, ADV_BOARD_NODE_TYPE.OBSERVE);
+    const zoneType = String(map?.zoneType || "").trim().toLowerCase();
+    if(safeType === ADV_BOARD_NODE_TYPE.OBSERVE){
+      if(zoneType === ADV_ZONE_TYPE.LINE) return "回線反応の輪郭を抽出した。";
+      if(zoneType === ADV_ZONE_TYPE.RECORD) return "記録断片の輪郭を抽出した。";
+      if(zoneType === ADV_ZONE_TYPE.ECOLOGY) return "生体系反応の痕跡を抽出した。";
+      return "観測ログを抽出した。";
+    }
+    if(safeType === ADV_BOARD_NODE_TYPE.COLLECT){
+      if(zoneType === ADV_ZONE_TYPE.MAINTENANCE) return "補修材を回収した。";
+      if(zoneType === ADV_ZONE_TYPE.RECORD) return "記録媒体を回収した。";
+      if(zoneType === ADV_ZONE_TYPE.LINE) return "信号器材を回収した。";
+      if(zoneType === ADV_ZONE_TYPE.ECOLOGY) return "生体保全材を回収した。";
+      return "資源を回収した。";
+    }
+    if(safeType === ADV_BOARD_NODE_TYPE.PRESERVE){
+      if(zoneType === ADV_ZONE_TYPE.MAINTENANCE) return "保全処理と補修材確保を実行した。";
+      if(zoneType === ADV_ZONE_TYPE.RECORD) return "保全処理と記録保護を進めた。";
+      if(zoneType === ADV_ZONE_TYPE.LINE) return "安定化と浄化処理を進めた。";
+      if(zoneType === ADV_ZONE_TYPE.ECOLOGY) return "保全処理と浄化処理を進めた。";
+      return "保全処理を実行した。";
+    }
+    if(safeType === ADV_BOARD_NODE_TYPE.ANALYZE){
+      if(zoneType === ADV_ZONE_TYPE.RECORD) return "記録照合と解析を進めた。";
+      if(zoneType === ADV_ZONE_TYPE.LINE) return "信号照合と解析を進めた。";
+      if(zoneType === ADV_ZONE_TYPE.CONTROL) return "制御断片の照合を進めた。";
+      if(zoneType === ADV_ZONE_TYPE.ECOLOGY) return "保全異常の解析を進めた。";
+      return "照合解析を進めた。";
+    }
+    if(safeType === ADV_BOARD_NODE_TYPE.ANOMALY){
+      if(zoneType === ADV_ZONE_TYPE.ECOLOGY) return "異常生体断片を隔離記録した。";
+      return "異常断片を記録した。";
+    }
+    return `${getAdvMapDisplayName(map)} の反応を処理した。`;
+  }
+
+  function getAdvBoardRewardPoolIds(map, node){
+    const safeType = normalizeAdvBoardNodeType(node?.type, ADV_BOARD_NODE_TYPE.OBSERVE);
+    const zoneType = String(map?.zoneType || "").trim().toLowerCase();
+    const pool = [];
+    const pushIds = (...ids) => {
+      for(let i = 0; i < ids.length; i++){
+        const id = String(ids[i] || "").trim().toLowerCase();
+        if(id.length > 0 && getItemById(id)){
+          pool.push(id);
+        }
+      }
+    };
+
+    if(safeType === ADV_BOARD_NODE_TYPE.OBSERVE){
+      if(zoneType === ADV_ZONE_TYPE.MAINTENANCE){
+        pushIds("archive_fragment", "material_scrap", "patch_tape_i");
+      }else if(zoneType === ADV_ZONE_TYPE.RECORD){
+        pushIds("archive_fragment", "archive_fragment", "stabilizer_amp_i", "material_scrap");
+      }else if(zoneType === ADV_ZONE_TYPE.LINE){
+        pushIds("signal_probe", "signal_modulator", "signal_modulator", "archive_fragment");
+      }else if(zoneType === ADV_ZONE_TYPE.CONTROL){
+        pushIds("archive_fragment", "control_core_fragment", "signal_modulator");
+      }else if(zoneType === ADV_ZONE_TYPE.ECOLOGY){
+        pushIds("bio_sample_tag", "archive_fragment", "purge_filter_i");
+      }
+    }else if(safeType === ADV_BOARD_NODE_TYPE.COLLECT){
+      if(zoneType === ADV_ZONE_TYPE.MAINTENANCE){
+        pushIds("patch_tape_i", "material_scrap", "material_plate", "stabilizer_amp_i");
+      }else if(zoneType === ADV_ZONE_TYPE.RECORD){
+        pushIds("archive_fragment", "material_scrap", "stabilizer_amp_i");
+      }else if(zoneType === ADV_ZONE_TYPE.LINE){
+        pushIds("purge_filter_i", "signal_probe", "material_scrap", "signal_modulator");
+      }else if(zoneType === ADV_ZONE_TYPE.CONTROL){
+        pushIds("control_core_fragment", "material_plate", "archive_fragment");
+      }else if(zoneType === ADV_ZONE_TYPE.ECOLOGY){
+        pushIds("bio_sample_tag", "bio_sample_tag", "material_plate", "purge_filter_i");
+      }
+    }else if(safeType === ADV_BOARD_NODE_TYPE.PRESERVE){
+      if(zoneType === ADV_ZONE_TYPE.MAINTENANCE){
+        pushIds("patch_tape_i", "patch_tape_i", "stabilizer_amp_i", "material_plate");
+      }else if(zoneType === ADV_ZONE_TYPE.RECORD){
+        pushIds("stabilizer_amp_i", "archive_fragment", "material_scrap");
+      }else if(zoneType === ADV_ZONE_TYPE.LINE){
+        pushIds("purge_filter_i", "stabilizer_amp_i", "signal_probe");
+      }else if(zoneType === ADV_ZONE_TYPE.CONTROL){
+        pushIds("stabilizer_amp_i", "patch_tape_i", "control_core_fragment");
+      }else if(zoneType === ADV_ZONE_TYPE.ECOLOGY){
+        pushIds("purge_filter_i", "stabilizer_amp_i", "bio_sample_tag", "material_plate");
+      }
+    }else if(safeType === ADV_BOARD_NODE_TYPE.ANALYZE){
+      if(zoneType === ADV_ZONE_TYPE.MAINTENANCE){
+        pushIds("archive_fragment", "material_plate", "stabilizer_amp_i");
+      }else if(zoneType === ADV_ZONE_TYPE.RECORD){
+        pushIds("archive_fragment", "archive_fragment", "signal_probe", "material_scrap");
+      }else if(zoneType === ADV_ZONE_TYPE.LINE){
+        pushIds("signal_probe", "signal_modulator", "signal_modulator", "archive_fragment");
+      }else if(zoneType === ADV_ZONE_TYPE.CONTROL){
+        pushIds("control_core_fragment", "archive_fragment", "signal_modulator", "control_core_fragment");
+      }else if(zoneType === ADV_ZONE_TYPE.ECOLOGY){
+        pushIds("bio_sample_tag", "archive_fragment", "purge_filter_i", "signal_probe");
+      }
+    }else if(safeType === ADV_BOARD_NODE_TYPE.ANOMALY){
+      if(zoneType === ADV_ZONE_TYPE.MAINTENANCE){
+        pushIds("purge_filter_i", "archive_fragment", "material_scrap", "signal_probe");
+      }else if(zoneType === ADV_ZONE_TYPE.RECORD){
+        pushIds("archive_fragment", "signal_modulator", "purge_filter_i", "material_scrap");
+      }else if(zoneType === ADV_ZONE_TYPE.LINE){
+        pushIds("signal_modulator", "signal_probe", "purge_filter_i", "archive_fragment");
+      }else if(zoneType === ADV_ZONE_TYPE.CONTROL){
+        pushIds("control_core_fragment", "signal_modulator", "archive_fragment", "purge_filter_i");
+      }else if(zoneType === ADV_ZONE_TYPE.ECOLOGY){
+        pushIds("bio_sample_tag", "purge_filter_i", "archive_fragment", "material_scrap");
+      }
+    }
+
+    if(Array.isArray(map?.rewardItemIds)){
+      pushIds(...map.rewardItemIds);
+    }
+    const labels = getAdvMapStateLabels(map);
+    if(labels.includes(ADV_STATE_LABEL.CONTAMINATION)){
+      pushIds("purge_filter_i", "material_scrap", "bio_sample_tag");
+    }
+    if(labels.includes(ADV_STATE_LABEL.ANOMALY)){
+      pushIds("signal_probe", "signal_modulator", "archive_fragment");
+    }
+    if(labels.includes(ADV_STATE_LABEL.DANGER)){
+      pushIds("patch_tape_i", "stabilizer_amp_i", "material_plate");
+    }
+    return pool.length > 0 ? pool : [pickAdvRewardItemId(map)];
+  }
+
+  function getAdvBoardResultRewardCount(map, node, rng = null){
+    const safeType = normalizeAdvBoardNodeType(node?.type, ADV_BOARD_NODE_TYPE.OBSERVE);
+    const zoneType = String(map?.zoneType || "").trim().toLowerCase();
+    if(safeType === ADV_BOARD_NODE_TYPE.COLLECT){
+      const roll = typeof rng === "function" ? rng() : Math.random();
+      return 1 + (roll < ADV_RUN_COLLECT_BONUS_CHANCE ? 1 : 0);
+    }
+    if(safeType === ADV_BOARD_NODE_TYPE.ANALYZE){
+      return (zoneType === ADV_ZONE_TYPE.RECORD || zoneType === ADV_ZONE_TYPE.CONTROL) ? 2 : 1;
+    }
+    if(safeType === ADV_BOARD_NODE_TYPE.ANOMALY){
+      return getAdvDangerRank(map) >= 3 ? 2 : 1;
+    }
+    return 1;
+  }
+
+  function consumeAdvAnomalyRewardBonus(session){
+    const runEffects = ensureAdvRunEffects(session);
+    const buff = isRecord(runEffects?.anomalyBuff) ? runEffects.anomalyBuff : null;
+    if(!buff || String(buff.kind || "").trim().toLowerCase() !== "next_reward_bonus"){
+      return { bonusCount: 0, effectLine: "" };
+    }
+    const charges = Math.max(0, Math.floor(toNumber(buff.charges, 0)));
+    if(charges <= 0){
+      runEffects.anomalyBuff = null;
+      return { bonusCount: 0, effectLine: "" };
+    }
+    buff.charges = charges - 1;
+    runEffects.anomalyBuff = buff.charges > 0 ? buff : null;
+    pushAdvRunEffectLog(session, "反応偏向を消費");
+    return { bonusCount: 1, effectLine: "反応偏向により抽出数+1" };
+  }
+
+  function resolveAdvBoardRewardGrants(session, map, node, bonusDrawCount = 0){
+    const board = getAdvBoard(session);
+    const safeNode = isRecord(node) ? node : null;
+    const safeMap = isRecord(map) ? map : null;
+    const pool = getAdvBoardRewardPoolIds(safeMap, safeNode);
+    const grantsById = new Map();
+    const uniquePoolSize = new Set(pool).size;
+    let workingPool = pool.slice();
+    const rng = createAdvSeededRandom(
+      hashAdvSeed(`${String(board?.seed || "")}:${String(safeNode?.id || "")}:adv_result_reward`)
+    );
+    const drawCount = Math.max(
+      1,
+      getAdvBoardResultRewardCount(safeMap, safeNode, rng) + Math.max(0, Math.floor(toNumber(bonusDrawCount, 0)))
+    );
+    for(let i = 0; i < drawCount; i++){
+      if(workingPool.length <= 0){
+        workingPool = pool.slice();
+      }
+      const index = Math.floor(rng() * workingPool.length);
+      const rewardId = String(workingPool[index] || pickAdvRewardItemId(safeMap)).trim().toLowerCase() || pickAdvRewardItemId(safeMap);
+      grantsById.set(rewardId, (grantsById.get(rewardId) || 0) + 1);
+      if(i < uniquePoolSize - 1){
+        workingPool = workingPool.filter((id) => String(id || "").trim().toLowerCase() !== rewardId);
+      }
+    }
+    return Array.from(grantsById.entries()).map(([itemId, count]) => ({ itemId, count }));
+  }
+
+  function resolveAdvBattleRewardGrants(session, map, node, minCount = 1, extraChance = 0){
+    const board = getAdvBoard(session);
+    const safeNode = isRecord(node) ? node : null;
+    const safeMap = isRecord(map) ? map : null;
+    const pool = getAdvBoardRewardPoolIds(safeMap, safeNode);
+    const grantsById = new Map();
+    const uniquePoolSize = new Set(pool).size;
+    let workingPool = pool.slice();
+    const rng = createAdvSeededRandom(
+      hashAdvSeed(`${String(board?.seed || "")}:${String(safeNode?.id || "")}:adv_battle_reward`)
+    );
+    const drawCount = Math.max(1, Math.floor(toNumber(minCount, 1))) + (rng() < clamp(toNumber(extraChance, 0), 0, 1) ? 1 : 0);
+    for(let i = 0; i < drawCount; i++){
+      if(workingPool.length <= 0){
+        workingPool = pool.slice();
+      }
+      const index = Math.floor(rng() * workingPool.length);
+      const rewardId = String(workingPool[index] || pickAdvRewardItemId(safeMap)).trim().toLowerCase() || pickAdvRewardItemId(safeMap);
+      grantsById.set(rewardId, (grantsById.get(rewardId) || 0) + 1);
+      if(i < uniquePoolSize - 1){
+        workingPool = workingPool.filter((id) => String(id || "").trim().toLowerCase() !== rewardId);
+      }
+    }
+    return Array.from(grantsById.entries()).map(([itemId, count]) => ({ itemId, count }));
+  }
+
+  function applyAdvGrantedRewards(session, rewardGrants){
+    const grants = Array.isArray(rewardGrants) ? rewardGrants : [];
+    if(grants.length <= 0){
+      return [];
+    }
+    const rewardResult = grantDetailedInventoryRewards(grants);
+    const lines = [];
+    const resultGrants = Array.isArray(rewardResult?.grants) ? rewardResult.grants : [];
+    for(let i = 0; i < resultGrants.length; i++){
+      const grant = resultGrants[i];
+      const item = getItemById(grant?.itemId);
+      const appliedCount = Math.max(0, Math.floor(toNumber(grant?.appliedCount, grant?.count)));
+      if(!item || appliedCount <= 0) continue;
+      const label = String(item.label || item.id);
+      const line = appliedCount > 1 ? `${label} x${appliedCount}` : `${label}を取得`;
+      lines.push(line);
+      pushAdvRunEffectLog(session, line);
+    }
+    return lines;
+  }
+
+  function applyAdvBattleNodeOutcome(session, map, node, battleResult, ctxBattle = null){
+    const runEffects = ensureAdvRunEffects(session);
+    const board = getAdvBoard(session);
+    const safeResultRaw = String(battleResult || "").trim().toUpperCase();
+    const safeResult = (safeResultRaw === "WIN" || safeResultRaw === "ABORT") ? safeResultRaw : "LOSE";
+    const safeType = normalizeAdvBoardNodeType(node?.type, ADV_BOARD_NODE_TYPE.OBSERVE);
+    const lines = [];
+    const hadDamageReduction = toNumber(ctxBattle?.advDamageReduction, 0) > 0;
+    if(hadDamageReduction){
+      runEffects.nextBattleDamageReduction = 0;
+    }
+
+    if(safeType === ADV_BOARD_NODE_TYPE.DEFENSE){
+      if(safeResult === "WIN"){
+        runEffects.nextBattleDamageReduction = 0.75;
+        lines.push("防護反応を保持");
+        lines.push("次戦被害軽減");
+        pushAdvRunEffectLog(session, "防護反応を保持");
+        pushAdvRunEffectLog(session, "次戦被害軽減");
+      }
+    }else if(safeType === ADV_BOARD_NODE_TYPE.CONTAMINATION){
+      const rewardLines = applyAdvGrantedRewards(
+        session,
+        resolveAdvBattleRewardGrants(session, map, node, 1, 0.5)
+      );
+      lines.push("汚染片を抽出");
+      pushAdvRunEffectLog(session, "汚染片を抽出");
+      for(let i = 0; i < rewardLines.length; i++){
+        lines.push(rewardLines[i]);
+      }
+      const riskRng = createAdvSeededRandom(
+        hashAdvSeed(`${String(board?.seed || "")}:${String(node?.id || "")}:adv_contaminate_risk:${safeResult}`)
+      );
+      runEffects.pendingContaminateRisk = null;
+      if(riskRng() < 0.5){
+        const risk = riskRng() < 0.5
+          ? { kind: "hp", amount: 1 }
+          : { kind: "stb", amount: 1 };
+        runEffects.pendingContaminateRisk = risk;
+        if(risk.kind === "hp"){
+          const hpMax = getRuntimeMax("hp", 100);
+          const hpNow = clamp(Math.floor(toNumber(getRuntimeStat("hp", hpMax), hpMax)), 0, hpMax);
+          const hpNext = clamp(hpNow - risk.amount, 0, hpMax);
+          setRuntimeStat("hp", hpNext);
+          lines.push(`HP -${risk.amount}`);
+          pushAdvRunEffectLog(session, "損傷増加");
+        }else{
+          const stbMax = Math.max(1, toPositiveInt(state.stats?.stabilityMax, 10));
+          const stbNow = clamp(toNumber(state.stats?.stability, stbMax), 0, stbMax);
+          const stbNext = clamp(stbNow - risk.amount, 0, stbMax);
+          state.stats.stability = stbNext;
+          lines.push(`STB -${risk.amount}`);
+          pushAdvRunEffectLog(session, "安定度低下");
+        }
+        runEffects.pendingContaminateRisk = null;
+      }
+    }else if(safeType === ADV_BOARD_NODE_TYPE.ANOMALY){
+      runEffects.anomalyBuff = null;
+      if(safeResult === "WIN"){
+        runEffects.anomalyBuff = { kind: "next_reward_bonus", charges: 1 };
+        lines.push("反応偏向を保持");
+        lines.push("異常断片を記録");
+        pushAdvRunEffectLog(session, "反応偏向を保持");
+        pushAdvRunEffectLog(session, "異常断片を記録");
+      }else if(safeResult === "ABORT"){
+        runEffects.anomalyBuff = { kind: "next_reward_bonus", charges: 1 };
+        lines.push("反応偏向を保持");
+        pushAdvRunEffectLog(session, "反応偏向を保持");
+      }else{
+        const stbMax = Math.max(1, toPositiveInt(state.stats?.stabilityMax, 10));
+        const stbNow = clamp(toNumber(state.stats?.stability, stbMax), 0, stbMax);
+        const stbNext = clamp(stbNow - 1, 0, stbMax);
+        state.stats.stability = stbNext;
+        lines.push("異常反応が残留");
+        lines.push("STB -1");
+        pushAdvRunEffectLog(session, "異常反応が残留");
+      }
+    }else if(safeType === ADV_BOARD_NODE_TYPE.BOSS){
+      if(safeResult === "WIN"){
+        runEffects.zoneCleared = true;
+        lines.push("区画踏破完了");
+        pushAdvRunEffectLog(session, "区画踏破完了");
+      }
+    }
+
+    const baseNotice = buildAdvBoardOutcomeNotice(map, node, safeResult);
+    const noticeText = [baseNotice, ...lines].filter((line) => String(line || "").trim().length > 0).join(" / ");
+    return { lines, noticeText };
+  }
+
+  function getAdvBoardVisibleNextNodeIds(session){
+    const board = getAdvBoard(session);
+    return Array.isArray(board?.availableNodeIds) ? board.availableNodeIds.slice() : [];
+  }
+
+  function applyAdvMaintainNodeEffects(session){
+    const effectLines = [];
+    const hpMax = getRuntimeMax("hp", 100);
+    const hpNow = clamp(toNumber(getRuntimeStat("hp", hpMax), hpMax), 0, hpMax);
+    const hpNext = clamp(hpNow + ADV_RUN_MAINTAIN_HP_GAIN, 0, hpMax);
+    const hpDelta = hpNext - hpNow;
+    setRuntimeStat("hp", hpNext);
+
+    const staMax = getRuntimeMax("stamina", 100);
+    const staNow = clamp(toNumber(getRuntimeStat("stamina", staMax), staMax), 0, staMax);
+    const staNext = clamp(staNow + ADV_RUN_MAINTAIN_STA_GAIN, 0, staMax);
+    const staDelta = staNext - staNow;
+    setRuntimeStat("stamina", staNext);
+
+    const stbMax = Math.max(1, toPositiveInt(state.stats?.stabilityMax, 10));
+    const stbNow = clamp(toNumber(state.stats?.stability, stbMax), 0, stbMax);
+    const stbNext = clamp(stbNow + ADV_RUN_MAINTAIN_STB_GAIN, 0, stbMax);
+    const stbDelta = stbNext - stbNow;
+    state.stats.stability = stbNext;
+
+    effectLines.push(`HP ${formatUiDeltaValue(hpDelta)} / STA ${formatUiDeltaValue(staDelta)} / STB ${formatUiDeltaValue(stbDelta)}`);
+    pushAdvRunEffectLog(session, "状態を安定化");
+    return effectLines;
+  }
+
+  function findAdvAnalyzeUnlockTarget(session){
+    const board = getAdvBoard(session);
+    if(!isRecord(board)) return null;
+    const currentDepth = Math.max(0, Math.floor(toNumber(board.currentDepth, 0)));
+    const lockedNodeIds = Array.isArray(board.lockedNodeIds) ? board.lockedNodeIds.slice() : [];
+    if(lockedNodeIds.length <= 0) return null;
+    let target = null;
+    let targetDepth = Number.POSITIVE_INFINITY;
+    for(let i = 0; i < lockedNodeIds.length; i++){
+      const candidate = getAdvBoardNodeById(board, lockedNodeIds[i]);
+      if(!candidate) continue;
+      const depth = Math.max(0, Math.floor(toNumber(candidate.depth, 0)));
+      if(depth < currentDepth) continue;
+      if(depth < targetDepth){
+        target = candidate;
+        targetDepth = depth;
+      }
+    }
+    if(!target){
+      target = getAdvBoardNodeById(board, lockedNodeIds[0]);
+    }
+    if(!target){
+      const completedSet = new Set(Array.isArray(board.completedNodeIds) ? board.completedNodeIds : []);
+      const availableSet = new Set(Array.isArray(board.availableNodeIds) ? board.availableNodeIds : []);
+      const currentId = String(board.currentNodeId || "").trim().toLowerCase();
+      for(let i = 0; i < board.nodes.length; i++){
+        const candidate = board.nodes[i];
+        const candidateId = String(candidate?.id || "").trim().toLowerCase();
+        if(candidateId.length <= 0 || candidateId === currentId) continue;
+        if(completedSet.has(candidateId) || availableSet.has(candidateId)) continue;
+        target = candidate;
+        break;
+      }
+    }
+    if(!target) return null;
+    const targetId = String(target.id || "").trim().toLowerCase();
+    board.lockedNodeIds = lockedNodeIds.filter((id) => String(id || "").trim().toLowerCase() !== targetId);
+    if(Math.max(0, Math.floor(toNumber(target.depth, 0))) === currentDepth + 1){
+      const nextIds = Array.isArray(board.availableNodeIds) ? board.availableNodeIds.slice() : [];
+      if(!nextIds.includes(targetId)){
+        nextIds.push(targetId);
+        board.availableNodeIds = nextIds;
+      }
+    }
+    return target;
+  }
+
+  function applyAdvObserveNodeEffects(session){
+    const runEffects = ensureAdvRunEffects(session);
+    const nextNodeIds = getAdvBoardVisibleNextNodeIds(session);
+    for(let i = 0; i < nextNodeIds.length; i++){
+      const nextNodeId = String(nextNodeIds[i] || "").trim().toLowerCase();
+      if(nextNodeId.length <= 0) continue;
+      runEffects.observeForecast[nextNodeId] = getAdvBoardOutgoingNodeIds(getAdvBoard(session), nextNodeId).length;
+    }
+    pushAdvRunEffectLog(session, "先行分岐反応を検出");
+    pushAdvRunEffectLog(session, "上位接続数を記録");
+    return ["先行分岐反応を検出", "上位接続数を記録"];
+  }
+
+  function applyAdvAnalyzeNodeEffects(session){
+    const runEffects = ensureAdvRunEffects(session);
+    const effectLines = [];
+    const unlockedNode = findAdvAnalyzeUnlockTarget(session);
+    if(unlockedNode){
+      const unlockedId = String(unlockedNode.id || "").trim().toLowerCase();
+      if(!runEffects.unlockedNodeIds.includes(unlockedId)){
+        runEffects.unlockedNodeIds.push(unlockedId);
+      }
+      effectLines.push("封鎖解除");
+      pushAdvRunEffectLog(session, "封鎖解除");
+    }else{
+      effectLines.push("封鎖反応なし");
+      pushAdvRunEffectLog(session, "封鎖反応なし");
+    }
+    runEffects.bossProgress = Math.max(0, Math.floor(toNumber(runEffects.bossProgress, 0))) + 1;
+    effectLines.push("中枢照合進行 +1");
+    pushAdvRunEffectLog(session, "中枢照合進行");
+    return effectLines;
+  }
+
+  function applyAdvNonBattleRunEffects(session, map, node){
+    const safeType = normalizeAdvBoardNodeType(node?.type, ADV_BOARD_NODE_TYPE.OBSERVE);
+    if(safeType === ADV_BOARD_NODE_TYPE.OBSERVE){
+      return { effectLines: applyAdvObserveNodeEffects(session) };
+    }
+    if(safeType === ADV_BOARD_NODE_TYPE.COLLECT){
+      pushAdvRunEffectLog(session, "資源回収を実行");
+      return { effectLines: [] };
+    }
+    if(safeType === ADV_BOARD_NODE_TYPE.PRESERVE){
+      return { effectLines: applyAdvMaintainNodeEffects(session) };
+    }
+    if(safeType === ADV_BOARD_NODE_TYPE.ANALYZE){
+      return { effectLines: applyAdvAnalyzeNodeEffects(session) };
+    }
+    return { effectLines: [] };
+  }
+
+  function executeAdvBoardResultNode(session, map, node, knowledgeReward = null, options = null){
+    const payloadLines = [];
+    const config = isRecord(options) ? options : {};
+    const anomalyRewardBonus = Array.isArray(config.rewardGrants)
+      ? { bonusCount: 0, effectLine: "" }
+      : consumeAdvAnomalyRewardBonus(session);
+    const rewardGrants = Array.isArray(config.rewardGrants)
+      ? config.rewardGrants
+      : resolveAdvBoardRewardGrants(session, map, node, anomalyRewardBonus.bonusCount);
+    const rewardResult = grantDetailedInventoryRewards(rewardGrants);
+    const grants = Array.isArray(rewardResult?.grants) ? rewardResult.grants : [];
+    for(let i = 0; i < grants.length; i++){
+      const grant = grants[i];
+      const item = getItemById(grant?.itemId);
+      const appliedCount = Math.max(0, Math.floor(toNumber(grant?.appliedCount, grant?.count)));
+      if(!item || appliedCount <= 0) continue;
+      const label = String(item.label || item.id);
+      payloadLines.push(appliedCount > 1 ? `${label} x${appliedCount}` : `${label} を取得`);
+      pushAdvLog(session, appliedCount > 1 ? `${label} x${appliedCount}を取得` : `${label}を取得`);
+    }
+
+    const effectLines = Array.isArray(config.effectLines) ? config.effectLines : [];
+    const anomalyEffectLine = String(anomalyRewardBonus.effectLine || "").trim();
+    if(anomalyEffectLine.length > 0){
+      payloadLines.push(anomalyEffectLine);
+    }
+    for(let i = 0; i < effectLines.length; i++){
+      const line = String(effectLines[i] || "").trim();
+      if(line.length <= 0) continue;
+      payloadLines.push(line);
+    }
+
+    const rewardInfo = isRecord(knowledgeReward) ? knowledgeReward : applyAdvBoardKnowledgeRewards(session, map, node);
+    const fieldCounts = isRecord(rewardInfo?.totalCounts) ? rewardInfo.totalCounts : createAdvKnowledgeCountBag();
+    const fieldKeys = Object.keys(fieldCounts);
+    for(let i = 0; i < fieldKeys.length; i++){
+      const field = fieldKeys[i];
+      const count = Math.max(1, Math.floor(toNumber(fieldCounts[field], 1)));
+      payloadLines.push(`${getAdvKnowledgeFieldLabel(field)} +${count}`);
+    }
+    const correlate = isRecord(rewardInfo?.correlate) ? rewardInfo.correlate : { changed: false, messages: [] };
+    if(Array.isArray(correlate.messages)){
+      for(let i = 0; i < correlate.messages.length; i++){
+        const message = String(correlate.messages[i] || "").trim();
+        if(message.length <= 0) continue;
+        payloadLines.push(message);
+        pushAdvLog(session, message);
+      }
+    }
+    saveDetailedState();
+    const payload = {
+      title: "ADV RESULT",
+      lines: [
+        `${getAdvBoardNodeDisplay(node?.type).label} ノード処理完了`,
+        buildAdvBoardNodeFlavor(map, node),
+        ...payloadLines,
+      ],
+    };
+    session.resultPayload = payload;
+    session.phase = ADV_PHASE.RESULT;
+    session.noticeText = "";
+    session.leadText = buildAdvBoardNodeDescription(map, node);
+    return payload;
+  }
+
+  function executeAdvBoardNodeSelection(nowMs = performance.now(), sessionOverride = null){
+    const session = isRecord(sessionOverride) ? sessionOverride : getAdvSession();
+    const map = getSelectedAdvMap(session);
+    const board = getAdvBoard(session);
+    const selectedNode = getAdvBoardSelectedNode(board);
+    if(!session || !map || !board || !selectedNode){
+      return { success: false, reason: "missing_state" };
+    }
+    const enteredNode = advanceAdvBoardToNode(session, selectedNode.id);
+    if(!enteredNode){
+      return { success: false, reason: "invalid_target" };
+    }
+    pushAdvLog(session, `${getAdvBoardNodeDisplay(enteredNode.type).label} ノードへ進行`);
+    session.leadText = buildAdvBoardNodeDescription(map, enteredNode);
+    session.noteText = getAdvMapDescriptionText(map);
+    const outcomeKind = resolveAdvBoardNodeOutcomeKind(enteredNode, map, board);
+    if(outcomeKind === "battle"){
+      const runEffects = ensureAdvRunEffects(session);
+      session.resultPayload = null;
+      session.battleNodeId = String(enteredNode.id || "").trim().toLowerCase();
+      session.returnFromBattle = true;
+      session.returnToMapSelectAfterBattle = enteredNode.type === ADV_BOARD_NODE_TYPE.BOSS;
+      const knowledgeReward = applyAdvBoardKnowledgeRewards(session, map, enteredNode);
+      if(Array.isArray(knowledgeReward?.correlate?.messages)){
+        for(let i = 0; i < knowledgeReward.correlate.messages.length; i++){
+          const message = String(knowledgeReward.correlate.messages[i] || "").trim();
+          if(message.length > 0){
+            pushAdvLog(session, message);
+          }
+        }
+      }
+      session.noticeText = "";
+      startBttlBattle({
+        introType: (
+          enteredNode.type === ADV_BOARD_NODE_TYPE.BOSS ||
+          enteredNode.type === ADV_BOARD_NODE_TYPE.CONTAMINATION ||
+          enteredNode.type === ADV_BOARD_NODE_TYPE.ANOMALY
+        ) ? "warning" : "",
+        advBattleNodeId: session.battleNodeId,
+        advBattleNodeType: enteredNode.type,
+        advDamageReduction: toNumber(runEffects.nextBattleDamageReduction, 0),
+      });
+      return { success: true, transition: "battle", node: enteredNode };
+    }
+    const knowledgeReward = applyAdvBoardKnowledgeRewards(session, map, enteredNode);
+    const nonBattleEffect = applyAdvNonBattleRunEffects(session, map, enteredNode);
+    executeAdvBoardResultNode(session, map, enteredNode, knowledgeReward, nonBattleEffect);
+    triggerMenuResultReveal(nowMs);
+    return { success: true, transition: "result", node: enteredNode };
+  }
+
+  function getAdvProtoLayoutRects(){
+    const header = ADV_UI_LAYOUT.header;
+    const scan = ADV_UI_LAYOUT.scan;
+    const sync = ADV_UI_LAYOUT.sync;
+    const hud = ADV_UI_LAYOUT.hud;
+    return {
+      header,
+      scan,
+      sync,
+      hud,
+      scanGauge: Object.freeze({
+        x: scan.x + 6,
+        y: scan.y + 24,
+        w: 14,
+        h: 86,
+      }),
+      scanArena: Object.freeze({
+        x: scan.x + 28,
+        y: scan.y + 8,
+        w: scan.w - 36,
+        h: scan.h - 14,
+      }),
+      scanLock: Object.freeze({
+        x: scan.x + Math.floor((scan.w - 38) * 0.5),
+        y: scan.y + 44,
+        w: 38,
+        h: 38,
+      }),
+      syncArena: Object.freeze({
+        x: sync.x + 8,
+        y: sync.y + 18,
+        w: sync.w - 16,
+        h: sync.h - 26,
+      }),
+    };
+  }
+
+  function advRectContainsPoint(rect, x, y){
+    if(!isRecord(rect)) return false;
+    const px = toNumber(x, NaN);
+    const py = toNumber(y, NaN);
+    if(!Number.isFinite(px) || !Number.isFinite(py)) return false;
+    return px >= rect.x && py >= rect.y && px <= (rect.x + rect.w) && py <= (rect.y + rect.h);
+  }
+
+  function lerpNumber(a, b, t){
+    const ratio = clamp(toNumber(t, 0), 0, 1);
+    return toNumber(a, 0) + ((toNumber(b, 0) - toNumber(a, 0)) * ratio);
+  }
+
+  function normalizeAdvNodeKind(value, fallback = ADV_NODE_KIND.OBSERVE){
+    const safe = String(value || "").trim().toLowerCase();
+    if(ADV_NODE_KIND_DISPLAY[safe]){
+      return safe;
+    }
+    return fallback;
+  }
+
+  function getAdvNodeKindDisplay(nodeKind){
+    return ADV_NODE_KIND_DISPLAY[normalizeAdvNodeKind(nodeKind)] || ADV_NODE_KIND_DISPLAY[ADV_NODE_KIND.OBSERVE];
+  }
+
+  function getAdvNodeKindFocusFields(nodeKind){
+    const safe = normalizeAdvNodeKind(nodeKind);
+    if(safe === ADV_NODE_KIND.CONTACT){
+      return ["purposeProgress", "stateLabelProgress"];
+    }
+    if(safe === ADV_NODE_KIND.COLLECT){
+      return ["purposeProgress", "nameProgress"];
+    }
+    if(safe === ADV_NODE_KIND.HAZARD){
+      return ["stateLabelProgress", "historyProgress"];
+    }
+    if(safe === ADV_NODE_KIND.ANOMALY){
+      return ["stateLabelProgress", "purposeProgress", "historyProgress"];
+    }
+    return ["nameProgress", "historyProgress"];
+  }
+
+  function getAdvObservationKindPool(map){
+    const zoneType = String(map?.zoneType || "").trim().toLowerCase();
+    const pool = [];
+    if(zoneType === ADV_ZONE_TYPE.MAINTENANCE){
+      pool.push(ADV_NODE_KIND.COLLECT, ADV_NODE_KIND.OBSERVE, ADV_NODE_KIND.CONTACT);
+    }else if(zoneType === ADV_ZONE_TYPE.RECORD){
+      pool.push(ADV_NODE_KIND.OBSERVE, ADV_NODE_KIND.CONTACT, ADV_NODE_KIND.COLLECT);
+    }else if(zoneType === ADV_ZONE_TYPE.LINE){
+      pool.push(ADV_NODE_KIND.CONTACT, ADV_NODE_KIND.OBSERVE, ADV_NODE_KIND.COLLECT);
+    }else{
+      pool.push(ADV_NODE_KIND.OBSERVE, ADV_NODE_KIND.CONTACT, ADV_NODE_KIND.COLLECT);
+    }
+    const stateLabels = getAdvMapStateLabels(map);
+    if(stateLabels.includes(ADV_STATE_LABEL.DANGER)){
+      pool.push(ADV_NODE_KIND.HAZARD, ADV_NODE_KIND.HAZARD);
+    }
+    if(stateLabels.includes(ADV_STATE_LABEL.ANOMALY)){
+      pool.push(ADV_NODE_KIND.ANOMALY, ADV_NODE_KIND.ANOMALY);
+    }
+    return pool.length > 0 ? pool : [ADV_NODE_KIND.OBSERVE];
+  }
+
+  function pickAdvObservationNodeKind(map){
+    const pool = getAdvObservationKindPool(map);
+    const index = Math.floor(Math.random() * pool.length);
+    return normalizeAdvNodeKind(pool[index], ADV_NODE_KIND.OBSERVE);
+  }
+
+  function getAdvZoneBiasRect(map){
+    const zoneType = String(map?.zoneType || "").trim().toLowerCase();
+    if(zoneType === ADV_ZONE_TYPE.MAINTENANCE){
+      return { xMin: 0.16, xMax: 0.44, yMin: 0.54, yMax: 0.84 };
+    }
+    if(zoneType === ADV_ZONE_TYPE.RECORD){
+      return { xMin: 0.34, xMax: 0.66, yMin: 0.24, yMax: 0.56 };
+    }
+    if(zoneType === ADV_ZONE_TYPE.LINE){
+      return { xMin: 0.54, xMax: 0.86, yMin: 0.16, yMax: 0.48 };
+    }
+    if(zoneType === ADV_ZONE_TYPE.CONTROL){
+      return { xMin: 0.38, xMax: 0.62, yMin: 0.56, yMax: 0.82 };
+    }
+    return { xMin: 0.58, xMax: 0.84, yMin: 0.56, yMax: 0.84 };
+  }
+
+  function randomAdvSignalPosition(bounds, biasRect = null){
+    const localBias = isRecord(biasRect) ? biasRect : { xMin: 0.18, xMax: 0.82, yMin: 0.18, yMax: 0.82 };
+    return {
+      x: lerpNumber(bounds.x + 14, bounds.x + bounds.w - 14, localBias.xMin + ((localBias.xMax - localBias.xMin) * Math.random())),
+      y: lerpNumber(bounds.y + 14, bounds.y + bounds.h - 14, localBias.yMin + ((localBias.yMax - localBias.yMin) * Math.random())),
+    };
+  }
+
+  function buildAdvObservationSignals(map, nodeKind){
+    const layout = getAdvProtoLayoutRects();
+    const bounds = layout.scanArena;
+    const dangerRank = getAdvDangerRank(map);
+    const biasRect = getAdvZoneBiasRect(map);
+    const kind = normalizeAdvNodeKind(nodeKind);
+    const signals = [];
+    const truePos = randomAdvSignalPosition(bounds, biasRect);
+    signals.push({
+      id: "signal_true",
+      kind: "true",
+      x: truePos.x,
+      y: truePos.y,
+      vx: (Math.random() - 0.5) * (18 + (dangerRank * 6)),
+      vy: (Math.random() - 0.5) * (14 + (dangerRank * 5)),
+      radius: 8,
+      drift: 1,
+      holdMs: 0,
+      pulse: Math.random() * Math.PI * 2,
+    });
+    const dummyCount = 2 + dangerRank + (kind === ADV_NODE_KIND.ANOMALY ? 1 : 0);
+    for(let i = 0; i < dummyCount; i++){
+      const pos = randomAdvSignalPosition(bounds, null);
+      signals.push({
+        id: `signal_dummy_${i}`,
+        kind: i === 0 && kind === ADV_NODE_KIND.ANOMALY ? "echo" : "dummy",
+        x: pos.x,
+        y: pos.y,
+        vx: (Math.random() - 0.5) * (20 + (dangerRank * 5)),
+        vy: (Math.random() - 0.5) * (16 + (dangerRank * 5)),
+        radius: 6 + (Math.random() * 2),
+        drift: 0.8 + (Math.random() * 0.45),
+        holdMs: 0,
+        pulse: Math.random() * Math.PI * 2,
+      });
+    }
+    if(kind === ADV_NODE_KIND.HAZARD || kind === ADV_NODE_KIND.ANOMALY || dangerRank >= 3){
+      const lureCount = kind === ADV_NODE_KIND.ANOMALY ? 2 : 1;
+      for(let i = 0; i < lureCount; i++){
+        const pos = randomAdvSignalPosition(bounds, null);
+        signals.push({
+          id: `signal_lure_${i}`,
+          kind: "lure",
+          x: pos.x,
+          y: pos.y,
+          vx: (Math.random() - 0.5) * (26 + (dangerRank * 7)),
+          vy: (Math.random() - 0.5) * (22 + (dangerRank * 7)),
+          radius: 7,
+          drift: 1.15,
+          holdMs: 0,
+          pulse: Math.random() * Math.PI * 2,
+        });
+      }
+    }
+    return signals;
+  }
+
+  function createAdvObservationTrialState(map, nowMs = performance.now()){
+    const safeNow = Math.max(0, toNumber(nowMs, performance.now()));
+    const nodeKind = pickAdvObservationNodeKind(map);
+    const layout = getAdvProtoLayoutRects();
+    const display = getAdvNodeKindDisplay(nodeKind);
+    const dangerRank = getAdvDangerRank(map);
+    const knowledge = getAdvNodeKnowledgeState(map);
+    const nameProgress = Math.max(0, Math.floor(toNumber(knowledge?.nameProgress, 0)));
+    const signals = buildAdvObservationSignals(map, nodeKind);
+    return {
+      nodeKind,
+      startedAtMs: safeNow,
+      lastUpdateMs: safeNow,
+      stage: ADV_PROTO_STAGE.SCAN,
+      cursorX: layout.scanLock.x + Math.floor(layout.scanLock.w * 0.5),
+      cursorY: layout.scanLock.y + Math.floor(layout.scanLock.h * 0.5),
+      hoverSignalId: "",
+      lockValue: 0,
+      noiseValue: 0,
+      errValue: 0,
+      stableLockMs: 0,
+      lockHintMs: 0,
+      displayProgress: 0,
+      carriedLockRatio: 0,
+      signals,
+      syncProgress: 0,
+      syncHits: 0,
+      syncMisses: 0,
+      syncDangerHits: 0,
+      syncStartedAtMs: 0,
+      syncCycleMs: 1580 + (dangerRank * 80),
+      syncZoneCenter: 0.42,
+      syncZoneWidth: 0.16,
+      dangerCenter: 0.79,
+      dangerWidth: 0.12,
+      waveSeed: Math.random() * Math.PI * 2,
+      waveChaos: 0.35,
+      lastTapMs: 0,
+      tapFlashUntilMs: 0,
+      tapResult: "",
+      tapXNorm: 0,
+      rewardItemId: pickAdvRewardItemId(map),
+      reactionIconId: String(display.reactionIconId || "interest"),
+      result: null,
+      knowledgeSnapshot: nameProgress,
+    };
+  }
+
+  function getAdvObservationTrial(sessionOverride = null){
+    const session = isRecord(sessionOverride) ? sessionOverride : getAdvSession();
+    return isRecord(session?.trial) ? session.trial : null;
+  }
+
+  function getAdvHudIntValue(map){
+    const knowledge = getAdvNodeKnowledgeState(map);
+    const total =
+      Math.max(0, Math.floor(toNumber(knowledge?.nameProgress, 0))) +
+      Math.max(0, Math.floor(toNumber(knowledge?.purposeProgress, 0))) +
+      Math.max(0, Math.floor(toNumber(knowledge?.historyProgress, 0))) +
+      Math.max(0, Math.floor(toNumber(knowledge?.stateLabelProgress, 0)));
+    return clamp(3 + (total * 4), 3, 99);
+  }
+
+  function getAdvHudSnapshot(map){
+    const hpMax = getRuntimeMax("hp", 100);
+    const hpNow = clamp(Math.floor(getRuntimeStat("hp", hpMax)), 0, hpMax);
+    const staMax = getRuntimeMax("stamina", 100);
+    const staNow = clamp(Math.floor(getRuntimeStat("stamina", staMax)), 0, staMax);
+    const stbMax = Math.max(1, toPositiveInt(state.stats?.stabilityMax, 10));
+    const stbNow = clamp(Math.floor(toNumber(state.stats?.stability, stbMax)), 0, stbMax);
+    return {
+      hp: hpNow,
+      sta: staNow,
+      stb: stbNow,
+      int: getAdvHudIntValue(map),
+    };
+  }
+
+  function getAdvObservationLockStability(nodeKind){
+    const safe = normalizeAdvNodeKind(nodeKind);
+    if(safe === ADV_NODE_KIND.COLLECT) return 1.12;
+    if(safe === ADV_NODE_KIND.OBSERVE) return 1.05;
+    if(safe === ADV_NODE_KIND.CONTACT) return 0.97;
+    if(safe === ADV_NODE_KIND.HAZARD) return 0.86;
+    if(safe === ADV_NODE_KIND.ANOMALY) return 0.78;
+    return 1;
+  }
+
+  function retuneAdvSyncBand(trial){
+    if(!isRecord(trial)) return;
+    trial.syncZoneCenter = clamp(0.34 + (Math.random() * 0.18), 0.28, 0.58);
+    trial.dangerCenter = clamp(0.68 + (Math.random() * 0.18), 0.64, 0.90);
+    if((trial.dangerCenter - trial.syncZoneCenter) < ((trial.syncZoneWidth + trial.dangerWidth) * 0.7)){
+      trial.dangerCenter = clamp(trial.syncZoneCenter + ((trial.syncZoneWidth + trial.dangerWidth) * 0.85), 0.66, 0.92);
+    }
+  }
+
+  function beginAdvObservationSync(session, map, nowMs = performance.now()){
+    const trial = getAdvObservationTrial(session);
+    if(!trial || trial.stage !== ADV_PROTO_STAGE.SCAN){
+      return false;
+    }
+    const dangerRank = getAdvDangerRank(map);
+    const lockRatio = clamp(toNumber(trial.lockValue, 0) / 100, 0, 1);
+    const noiseRatio = clamp(toNumber(trial.noiseValue, 0) / 100, 0, 1);
+    trial.stage = ADV_PROTO_STAGE.SYNC;
+    trial.carriedLockRatio = lockRatio;
+    trial.syncStartedAtMs = Math.max(0, toNumber(nowMs, performance.now()));
+    trial.syncProgress = clamp(lockRatio * 26, 0, 32);
+    trial.syncHits = 0;
+    trial.syncMisses = 0;
+    trial.syncDangerHits = 0;
+    trial.tapFlashUntilMs = 0;
+    trial.tapResult = "";
+    trial.syncZoneWidth = clamp(0.12 + (lockRatio * 0.11) - (noiseRatio * 0.03) - (dangerRank * 0.01), 0.08, 0.26);
+    trial.dangerWidth = clamp(0.10 + (noiseRatio * 0.04) + (dangerRank * 0.018), 0.08, 0.22);
+    trial.syncCycleMs = clamp(1700 - (lockRatio * 260) + (dangerRank * 90) + (noiseRatio * 170), 1100, 2200);
+    trial.waveChaos = clamp((1 - lockRatio) * 0.46 + (noiseRatio * 0.52) + (normalizeAdvNodeKind(trial.nodeKind) === ADV_NODE_KIND.ANOMALY ? 0.24 : 0), 0.16, 1.12);
+    retuneAdvSyncBand(trial);
+    pushAdvLog(session, lockRatio >= 1 ? "完全ロック成立" : "仮ロック成立");
+    pushAdvLog(session, "同期処理へ移行");
+    return true;
+  }
+
+  function buildAdvObservationResultNotice(map, result){
+    const mapName = getAdvMapDisplayName(map);
+    if(!isRecord(result)){
+      return `${mapName} の処理を完了。`;
+    }
+    if(String(result.outcome || "") === "stable" && String(result.rewardLabel || "").length > 0){
+      return `${mapName} から ${result.rewardLabel} を回収した。`;
+    }
+    if(String(result.outcome || "") === "partial"){
+      return `${mapName} の断片照合を一部進めた。`;
+    }
+    return `${mapName} の接続を記録した。`;
+  }
+
+  function finalizeAdvObservationTrial(session, map, nowMs = performance.now(), forcedFailure = false){
+    const trial = getAdvObservationTrial(session);
+    if(!trial || trial.stage === ADV_PROTO_STAGE.RESULT){
+      return false;
+    }
+    const scoreRaw =
+      Math.max(0, toNumber(trial.syncProgress, 0)) +
+      (Math.max(0, toNumber(trial.syncHits, 0)) * 10) +
+      (clamp(toNumber(trial.carriedLockRatio, 0), 0, 1) * 24) -
+      (Math.max(0, toNumber(trial.syncDangerHits, 0)) * 20) -
+      (Math.max(0, toNumber(trial.syncMisses, 0)) * 8) -
+      (Math.max(0, toNumber(trial.noiseValue, 0)) * 0.10) -
+      (forcedFailure ? 24 : 0);
+    const score = clamp(Math.round(scoreRaw), 0, 100);
+    const outcome = forcedFailure
+      ? "failed"
+      : (score >= 76 ? "stable" : (score >= 46 ? "partial" : "failed"));
+    const focusFields = getAdvNodeKindFocusFields(trial.nodeKind);
+    const primaryDelta = outcome === "stable" ? 2 : (outcome === "partial" ? 1 : 0);
+    const secondaryDelta = outcome === "stable" ? 1 : 0;
+    for(let i = 0; i < focusFields.length; i++){
+      const delta = i === 0 ? primaryDelta : secondaryDelta;
+      if(delta > 0){
+        addAdvNodeKnowledgeProgress(map, focusFields[i], delta);
+      }
+    }
+    let rewardLabel = "";
+    if(outcome !== "failed"){
+      const rewardItemId = String(trial.rewardItemId || pickAdvRewardItemId(map)).trim().toLowerCase() || pickAdvRewardItemId(map);
+      const rewardResult = grantDetailedInventoryRewards([{ itemId: rewardItemId, count: 1 }]);
+      const grant = Array.isArray(rewardResult?.grants) ? rewardResult.grants[0] : null;
+      const item = getItemById(grant?.itemId || rewardItemId);
+      const appliedCount = Math.max(0, Math.floor(toNumber(grant?.appliedCount, 0)));
+      if(item && appliedCount > 0){
+        rewardLabel = String(item.label || item.id);
+      }
+    }else{
+      saveDetailedState();
+    }
+    const correlateResult = outcome !== "failed"
+      ? correlateAdvNodeKnowledge(map)
+      : { changed: false, messages: ["断片は得たが、同期が浅く照合に届かなかった。"] };
+    const title = outcome === "stable"
+      ? "SYNC COMPLETE"
+      : (outcome === "partial" ? "SYNC PARTIAL" : "SYNC LOST");
+    const lines = [];
+    if(outcome === "stable"){
+      lines.push("観測対象を安定化。");
+    }else if(outcome === "partial"){
+      lines.push("断片同期に成功。深度は浅い。");
+    }else{
+      lines.push("同期が乱れた。記録のみ保持。");
+    }
+    if(rewardLabel.length > 0){
+      lines.push(`${rewardLabel} を確保。`);
+    }
+    if(Array.isArray(correlateResult?.messages)){
+      for(let i = 0; i < correlateResult.messages.length && lines.length < 3; i++){
+        const text = String(correlateResult.messages[i] || "").trim();
+        if(text.length > 0){
+          lines.push(text);
+        }
+      }
+    }
+    trial.stage = ADV_PROTO_STAGE.RESULT;
+    trial.result = {
+      outcome,
+      score,
+      title,
+      lines,
+      rewardLabel,
+      endedAtMs: Math.max(0, toNumber(nowMs, performance.now())),
+    };
+    pushAdvLog(session, title);
+    for(let i = 0; i < lines.length; i++){
+      pushAdvLog(session, lines[i]);
+    }
+    session.noticeText = buildAdvObservationResultNotice(map, trial.result);
+    return true;
+  }
+
+  function updateAdvObservationTrialState(session, map, nowMs = performance.now()){
+    const trial = getAdvObservationTrial(session);
+    if(!trial){
+      session.trial = createAdvObservationTrialState(map, nowMs);
+      return;
+    }
+    const safeNow = Math.max(0, toNumber(nowMs, performance.now()));
+    const prevUpdate = Math.max(0, toNumber(trial.lastUpdateMs, safeNow));
+    const dtSec = clamp((safeNow - prevUpdate) / 1000, 0, 0.05);
+    trial.lastUpdateMs = safeNow;
+    const layout = getAdvProtoLayoutRects();
+    const arena = layout.scanArena;
+    const lockRect = layout.scanLock;
+    const cursorRadius = 14 + (trial.reactionIconId === "interest" ? 3 : 0);
+    if(trial.stage === ADV_PROTO_STAGE.SCAN){
+      let hovered = null;
+      let closestDist = Number.MAX_SAFE_INTEGER;
+      const lockStability = getAdvObservationLockStability(trial.nodeKind);
+      for(let i = 0; i < trial.signals.length; i++){
+        const signal = trial.signals[i];
+        if(!isRecord(signal)) continue;
+        const distX = toNumber(signal.x, arena.x) - toNumber(trial.cursorX, arena.x);
+        const distY = toNumber(signal.y, arena.y) - toNumber(trial.cursorY, arena.y);
+        const dist = Math.hypot(distX, distY);
+        const hoveredNow = dist <= (cursorRadius + toNumber(signal.radius, 6));
+        if(hoveredNow && dist < closestDist){
+          hovered = signal;
+          closestDist = dist;
+        }
+        const followT = hoveredNow ? clamp(dtSec * (5.2 + (signal.kind === "true" ? 1.4 : 0.6)), 0, 1) : 0;
+        if(followT > 0){
+          signal.x = lerpNumber(signal.x, trial.cursorX, followT);
+          signal.y = lerpNumber(signal.y, trial.cursorY, followT);
+          signal.holdMs = Math.max(0, toNumber(signal.holdMs, 0)) + (dtSec * 1000);
+        }else{
+          signal.holdMs = Math.max(0, toNumber(signal.holdMs, 0) - (dtSec * 220));
+          const wave = 1 + (Math.sin((safeNow / 240) + toNumber(signal.pulse, 0)) * 0.18);
+          signal.x = toNumber(signal.x, arena.x) + (toNumber(signal.vx, 0) * dtSec * toNumber(signal.drift, 1) * wave);
+          signal.y = toNumber(signal.y, arena.y) + (toNumber(signal.vy, 0) * dtSec * toNumber(signal.drift, 1) * wave);
+        }
+        if(signal.x < arena.x + 6 || signal.x > arena.x + arena.w - 6){
+          signal.vx = -toNumber(signal.vx, 0);
+          signal.x = clamp(signal.x, arena.x + 6, arena.x + arena.w - 6);
+        }
+        if(signal.y < arena.y + 6 || signal.y > arena.y + arena.h - 6){
+          signal.vy = -toNumber(signal.vy, 0);
+          signal.y = clamp(signal.y, arena.y + 6, arena.y + arena.h - 6);
+        }
+      }
+      trial.hoverSignalId = String(hovered?.id || "");
+      let lockPerSec = -12;
+      let noisePerSec = -10;
+      let errPerSec = -4;
+      const centeredHovered = hovered && advRectContainsPoint(lockRect, hovered.x, hovered.y);
+      if(hovered){
+        if(hovered.kind === "true"){
+          lockPerSec = centeredHovered ? (44 * lockStability) : 8;
+          noisePerSec = centeredHovered ? -14 : -4;
+          errPerSec = -6;
+        }else if(hovered.kind === "dummy"){
+          lockPerSec = centeredHovered ? 14 : 3;
+          noisePerSec = -2;
+          errPerSec = 2;
+        }else if(hovered.kind === "echo"){
+          const echoBoost = Math.max(0, 1 - (toNumber(hovered.holdMs, 0) / 520));
+          lockPerSec = centeredHovered ? ((28 * echoBoost) - 8) : 2;
+          noisePerSec = 6;
+          errPerSec = 3;
+        }else if(hovered.kind === "lure"){
+          lockPerSec = centeredHovered ? 5 : 1;
+          noisePerSec = 28;
+          errPerSec = 16;
+        }
+      }
+      trial.lockValue = clamp(toNumber(trial.lockValue, 0) + (lockPerSec * dtSec), 0, 100);
+      if(hovered?.kind === "dummy"){
+        trial.lockValue = Math.min(trial.lockValue, 82);
+      }else if(hovered?.kind === "lure"){
+        trial.lockValue = Math.min(trial.lockValue, 62);
+      }
+      trial.noiseValue = clamp(toNumber(trial.noiseValue, 0) + (noisePerSec * dtSec), 0, 100);
+      trial.errValue = clamp(toNumber(trial.errValue, 0) + (errPerSec * dtSec), 0, 100);
+      if(centeredHovered && hovered?.kind === "true"){
+        trial.stableLockMs = Math.max(0, toNumber(trial.stableLockMs, 0)) + (dtSec * 1000);
+        trial.lockHintMs = Math.max(0, toNumber(trial.lockHintMs, 0)) + (dtSec * 1000);
+      }else{
+        trial.stableLockMs = Math.max(0, toNumber(trial.stableLockMs, 0) - (dtSec * 220));
+        trial.lockHintMs = Math.max(0, toNumber(trial.lockHintMs, 0) - (dtSec * 320));
+      }
+      if(
+        toNumber(trial.lockValue, 0) >= ADV_OBSERVE_LOCK_TEMP_THRESHOLD &&
+        centeredHovered &&
+        hovered?.kind === "true" &&
+        (toNumber(trial.lockValue, 0) >= ADV_OBSERVE_LOCK_FULL_THRESHOLD || toNumber(trial.lockHintMs, 0) >= 840)
+      ){
+        beginAdvObservationSync(session, map, safeNow);
+      }
+    }else if(trial.stage === ADV_PROTO_STAGE.SYNC){
+      if((safeNow - toNumber(trial.syncStartedAtMs, safeNow)) >= 12000){
+        finalizeAdvObservationTrial(session, map, safeNow, true);
+      }
+    }
+    const targetProgress = trial.stage === ADV_PROTO_STAGE.SCAN
+      ? toNumber(trial.lockValue, 0)
+      : (trial.stage === ADV_PROTO_STAGE.SYNC
+        ? toNumber(trial.syncProgress, 0)
+        : toNumber(trial.result?.score, 0));
+    trial.displayProgress = lerpNumber(toNumber(trial.displayProgress, 0), targetProgress, clamp(dtSec * 6.4, 0, 1));
+  }
+
+  function moveAdvObservationCursorByKeys(dx, dy, sessionOverride = null){
+    const session = isRecord(sessionOverride) ? sessionOverride : getAdvSession();
+    const trial = getAdvObservationTrial(session);
+    if(!trial || trial.stage !== ADV_PROTO_STAGE.SCAN){
+      return false;
+    }
+    const layout = getAdvProtoLayoutRects();
+    const arena = layout.scanArena;
+    const stepX = Math.floor(toNumber(dx, 0));
+    const stepY = Math.floor(toNumber(dy, 0));
+    if(stepX === 0 && stepY === 0){
+      return false;
+    }
+    const nextX = clamp(toNumber(trial.cursorX, arena.x + 8) + stepX, arena.x + 8, arena.x + arena.w - 8);
+    const nextY = clamp(toNumber(trial.cursorY, arena.y + 8) + stepY, arena.y + 8, arena.y + arena.h - 8);
+    const moved = nextX !== toNumber(trial.cursorX, nextX) || nextY !== toNumber(trial.cursorY, nextY);
+    trial.cursorX = nextX;
+    trial.cursorY = nextY;
+    return moved;
+  }
+
+  function handleAdvObservationPointerMove(point, pointerType = "mouse", pointerId = null){
+    const session = getAdvSession();
+    const trial = getAdvObservationTrial(session);
+    if(state.screen !== "adv" || normalizeAdvPhase(session?.phase) !== ADV_PHASE.EXPLORE || !trial){
+      return false;
+    }
+    if(trial.stage !== ADV_PROTO_STAGE.SCAN){
+      return false;
+    }
+    const layout = getAdvProtoLayoutRects();
+    const arena = layout.scanArena;
+    const isTouchLike = String(pointerType || "").toLowerCase() !== "mouse";
+    if(isTouchLike && pointerId != null && pointerId !== session.pointerId){
+      return false;
+    }
+    if(!advRectContainsPoint(arena, point?.x, point?.y)){
+      return false;
+    }
+    trial.cursorX = clamp(toNumber(point?.x, arena.x + 8), arena.x + 8, arena.x + arena.w - 8);
+    trial.cursorY = clamp(toNumber(point?.y, arena.y + 8), arena.y + 8, arena.y + arena.h - 8);
+    return true;
+  }
+
+  function handleAdvObservationPointerDown(point, pointerType = "mouse", pointerId = null, nowMs = performance.now()){
+    const session = getAdvSession();
+    const map = getSelectedAdvMap(session);
+    const trial = getAdvObservationTrial(session);
+    if(state.screen !== "adv" || normalizeAdvPhase(session?.phase) !== ADV_PHASE.EXPLORE || !trial || !map){
+      return false;
+    }
+    if(trial.stage === ADV_PROTO_STAGE.RESULT){
+      enterAdvMapSelect(session, buildAdvObservationResultNotice(map, trial.result));
+      return true;
+    }
+    const layout = getAdvProtoLayoutRects();
+    if(trial.stage === ADV_PROTO_STAGE.SCAN){
+      if(advRectContainsPoint(layout.scanArena, point?.x, point?.y)){
+        session.pointerId = pointerId;
+        trial.cursorX = clamp(toNumber(point?.x, layout.scanArena.x + 8), layout.scanArena.x + 8, layout.scanArena.x + layout.scanArena.w - 8);
+        trial.cursorY = clamp(toNumber(point?.y, layout.scanArena.y + 8), layout.scanArena.y + 8, layout.scanArena.y + layout.scanArena.h - 8);
+        return true;
+      }
+      return false;
+    }
+    if(trial.stage === ADV_PROTO_STAGE.SYNC && advRectContainsPoint(layout.sync, point?.x, point?.y)){
+      return attemptAdvSyncTap(session, map, nowMs);
+    }
+    return false;
+  }
+
+  function handleAdvObservationPointerUp(pointerId = null){
+    const session = getAdvSession();
+    if(state.screen !== "adv" || !isRecord(session)){
+      return false;
+    }
+    if(pointerId == null || pointerId === session.pointerId){
+      session.pointerId = null;
+    }
+    return true;
+  }
+
+  function attemptAdvSyncTap(sessionOverride = null, mapOverride = null, nowMs = performance.now()){
+    const session = isRecord(sessionOverride) ? sessionOverride : getAdvSession();
+    const map = isRecord(mapOverride) ? mapOverride : getSelectedAdvMap(session);
+    const trial = getAdvObservationTrial(session);
+    if(!session || !map || !trial || trial.stage !== ADV_PROTO_STAGE.SYNC){
+      return false;
+    }
+    const safeNow = Math.max(0, toNumber(nowMs, performance.now()));
+    if((safeNow - Math.max(0, toNumber(trial.lastTapMs, 0))) < 120){
+      return false;
+    }
+    trial.lastTapMs = safeNow;
+    const elapsed = Math.max(0, safeNow - Math.max(0, toNumber(trial.syncStartedAtMs, safeNow)));
+    const t = ((elapsed % Math.max(400, toNumber(trial.syncCycleMs, 1600))) / Math.max(400, toNumber(trial.syncCycleMs, 1600)));
+    const syncHit = Math.abs(t - toNumber(trial.syncZoneCenter, 0.42)) <= (toNumber(trial.syncZoneWidth, 0.16) * 0.5);
+    const dangerHit = Math.abs(t - toNumber(trial.dangerCenter, 0.78)) <= (toNumber(trial.dangerWidth, 0.12) * 0.5);
+    trial.tapXNorm = t;
+    trial.tapFlashUntilMs = safeNow + 180;
+    if(syncHit && !dangerHit){
+      trial.tapResult = "sync";
+      trial.syncHits = Math.max(0, Math.floor(toNumber(trial.syncHits, 0))) + 1;
+      trial.syncProgress = clamp(toNumber(trial.syncProgress, 0) + 28, 0, 100);
+      trial.noiseValue = clamp(toNumber(trial.noiseValue, 0) - 8, 0, 100);
+      retuneAdvSyncBand(trial);
+      pushAdvLog(session, "同期点を捕捉");
+      if(trial.syncHits >= ADV_OBSERVE_REQUIRED_SYNC_HITS || trial.syncProgress >= 100){
+        finalizeAdvObservationTrial(session, map, safeNow, false);
+      }
+      return true;
+    }
+    if(dangerHit){
+      trial.tapResult = "danger";
+      trial.syncDangerHits = Math.max(0, Math.floor(toNumber(trial.syncDangerHits, 0))) + 1;
+      trial.syncProgress = clamp(toNumber(trial.syncProgress, 0) - 18, 0, 100);
+      trial.noiseValue = clamp(toNumber(trial.noiseValue, 0) + 10, 0, 100);
+      pushAdvLog(session, "危険帯へ接触");
+      if(trial.syncDangerHits >= ADV_OBSERVE_FAIL_DANGER_HITS){
+        finalizeAdvObservationTrial(session, map, safeNow, true);
+      }
+      return true;
+    }
+    trial.tapResult = "miss";
+    trial.syncMisses = Math.max(0, Math.floor(toNumber(trial.syncMisses, 0))) + 1;
+    trial.syncProgress = clamp(toNumber(trial.syncProgress, 0) - 10, 0, 100);
+    pushAdvLog(session, "同期が外れた");
+    if(trial.syncMisses >= ADV_OBSERVE_FAIL_MISS_COUNT){
+      finalizeAdvObservationTrial(session, map, safeNow, true);
+    }
+    return true;
+  }
+
+  function executeAdvAdvance(session, map){
+    if(!isRecord(session) || !isRecord(map)){
+      return { success: false, reason: "missing_state" };
+    }
+    const choices = getAdvNeighborChoices(session, map);
+    if(choices.length <= 0){
+      pushAdvLog(session, "接続候補が見つからない");
+      updateAdvCellPresentation(session, map, "この地点から伸ばせる観測接続がない。");
+      session.noticeText = "";
+      return { success: false, action: "advance", reason: "blocked" };
+    }
+    if(choices.length === 1){
+      const only = choices[0];
+      const result = moveAdvToCell(session, map, only.nextX, only.nextY, "接続先を更新");
+      if(result.success){
+        pushAdvLog(session, only.label);
+      }
+      return { ...result, action: "advance" };
+    }
+    setAdvPromptChoices(choices, session);
+    session.leadText = "接続先を選ぶ。";
+    session.noteText = "隣接地点の候補を選び、観測接続を伸ばす。";
+    return { success: true, action: "advance", prompt: true };
+  }
+
+  function executeAdvPromptChoice(session, map){
+    if(!isRecord(session) || !isRecord(map)){
+      return { success: false, reason: "missing_state" };
+    }
+    const choice = getSelectedAdvChoiceItem(session);
+    if(!choice){
+      return { success: false, reason: "missing_choice" };
+    }
+    const nextX = Math.floor(toNumber(choice.nextX, -1));
+    const nextY = Math.floor(toNumber(choice.nextY, -1));
+    const result = moveAdvToCell(session, map, nextX, nextY, "接続先を更新");
+    if(result.success){
+      pushAdvLog(session, `${choice.label} へ遷移`);
+    }
+    return { ...result, action: "move_choice" };
+  }
+
+  function executeAdvBackstep(session, map){
+    if(!isRecord(session) || !isRecord(map)){
+      return { success: false, reason: "missing_state" };
+    }
+    const dungeon = getAdvDungeon(session);
+    const player = getAdvDungeonPlayer(session);
+    if(!dungeon || !player){
+      return { success: false, reason: "missing_dungeon" };
+    }
+    const vector = getAdvFacingVector(dungeon.facing);
+    const nextX = player.x - vector.dx;
+    const nextY = player.y - vector.dy;
+    if(!isAdvDungeonWalkable(dungeon, nextX, nextY)){
+      pushAdvLog(session, "背後は閉塞している");
+      updateAdvCellPresentation(session, map, "背後は閉塞している。向きを変えるか、前進する。");
+      session.noticeText = "";
+      return { success: false, action: "backstep", reason: "blocked" };
+    }
+
+    player.x = nextX;
+    player.y = nextY;
+    session.stepCount = Math.max(0, Math.floor(toNumber(session.stepCount, 0))) + 1;
+    const visitedKey = getAdvCellKey(nextX, nextY);
+    const visited = Array.isArray(dungeon.visitedKeys) ? dungeon.visitedKeys.slice() : [];
+    if(!visited.includes(visitedKey)){
+      visited.push(visitedKey);
+    }
+    dungeon.visitedKeys = visited;
+    pushAdvLog(session, `${nextX},${nextY} へ後退`);
+    const flavor = getAdvNodeFlavorLog(map, "");
+    if(flavor.length > 0 && Math.random() < 0.22){
+      pushAdvLog(session, flavor);
+    }
+    const cell = updateAdvCellPresentation(session, map);
+    if(cell?.kind === "goal"){
+      pushAdvLog(session, "終端反応を捕捉");
+    }else if(cell?.kind === "item"){
+      pushAdvLog(session, "回収反応を検知");
+    }else if(cell?.kind === "event"){
+      pushAdvLog(session, "イベント反応を検知");
+    }
+    session.noticeText = "";
+    return { success: true, action: "backstep", cell };
+  }
+
+  function executeAdvTurn(session, map, delta){
+    if(!isRecord(session) || !isRecord(map)){
+      return { success: false, reason: "missing_state" };
+    }
+    const dungeon = getAdvDungeon(session);
+    if(!dungeon){
+      return { success: false, reason: "missing_dungeon" };
+    }
+    const step = Math.floor(toNumber(delta, 0));
+    if(step === 0){
+      return { success: false, reason: "invalid_turn" };
+    }
+    const turnLeft = step < 0;
+    dungeon.facing = rotateAdvFacing(dungeon.facing, turnLeft ? -1 : 1);
+    pushAdvLog(session, turnLeft ? "左へ旋回" : "右へ旋回");
+    updateAdvCellPresentation(session, map, turnLeft ? "左へ向きを変えた。" : "右へ向きを変えた。");
+    session.noticeText = "";
+    return { success: true, action: turnLeft ? "turn_left" : "turn_right" };
+  }
+
+  function executeAdvInspect(session, map, nowMs = performance.now()){
+    if(!isRecord(session) || !isRecord(map)){
+      return { success: false, reason: "missing_state" };
+    }
+    const dungeon = getAdvDungeon(session);
+    const player = getAdvDungeonPlayer(session);
+    if(!dungeon || !player){
+      return { success: false, reason: "missing_dungeon" };
+    }
+    const cell = getAdvCurrentCellType(session);
+    const focusFields = resolveAdvKnowledgeFocus(cell);
+    for(let i = 0; i < focusFields.length; i++){
+      addAdvNodeKnowledgeProgress(map, focusFields[i], i === 0 ? 1 : 0);
+    }
+    saveDetailedState();
+
+    if(cell?.kind === "item" && isRecord(cell.itemCell)){
+      const rewardItemId = String(cell.itemCell.itemId || pickAdvRewardItemId(map)).trim().toLowerCase() || pickAdvRewardItemId(map);
+      const rewardResult = grantDetailedInventoryRewards([{ itemId: rewardItemId, count: 1 }]);
+      const grant = Array.isArray(rewardResult?.grants) ? rewardResult.grants[0] : null;
+      const item = getItemById(grant?.itemId || rewardItemId);
+      const appliedCount = Math.max(0, Math.floor(toNumber(grant?.appliedCount, 0)));
+      cell.itemCell.claimed = true;
+      session.noticeText = "";
+      if(item && appliedCount > 0){
+        pushAdvLog(session, `${String(item.label || item.id)}を回収`);
+        pushAdvLog(session, "保守断片を採取");
+        updateAdvCellPresentation(session, map, `${String(item.label || item.id)}を回収した。断片照合を進められそうだ。`);
+        triggerMenuResultReveal(nowMs);
+        return { success: true, action: "inspect", found: true, item, rewardResult };
+      }
+    }
+
+    if(cell?.kind === "event" && isRecord(cell.eventCell)){
+      const outcome = resolveAdvEventOutcome(map);
+      const rewardResult = grantDetailedInventoryRewards([{ itemId: outcome.itemId, count: 1 }]);
+      const grant = Array.isArray(rewardResult?.grants) ? rewardResult.grants[0] : null;
+      const item = getItemById(grant?.itemId || outcome.itemId);
+      cell.eventCell.resolved = true;
+      session.noticeText = "";
+      pushAdvLog(session, outcome.log);
+      if(item){
+        pushAdvLog(session, `${String(item.label || item.id)}を取得`);
+      }
+      pushAdvLog(session, "照合用の断片ログを取得");
+      updateAdvCellPresentation(session, map, "反応点を調査した。照合で意味を確定できるかもしれない。");
+      triggerMenuResultReveal(nowMs);
+      return { success: true, action: "inspect", found: true, item, rewardResult };
+    }
+
+    if(cell?.kind === "goal"){
+      const rewardItemId = pickAdvRewardItemId(map);
+      const rewardResult = grantDetailedInventoryRewards([{ itemId: rewardItemId, count: 1 }]);
+      const grant = Array.isArray(rewardResult?.grants) ? rewardResult.grants[0] : null;
+      const item = getItemById(grant?.itemId || rewardItemId);
+      dungeon.completed = true;
+      pushAdvLog(session, "終端へ到達。探索を完了");
+      if(item){
+        pushAdvLog(session, `${String(item.label || item.id)}を回収`);
+      }
+      triggerMenuResultReveal(nowMs);
+      enterAdvMapSelect(session, `${getAdvMapDisplayName(map)} の終端に到達した。`);
+      return { success: true, action: "goal", found: true, item, rewardResult };
+    }
+
+    pushAdvLog(session, "小さな観測断片を採取");
+    session.noticeText = "";
+    updateAdvCellPresentation(session, map, "有意な物資はないが、断片照合に使えそうな記録を得た。");
+    return { success: true, action: "inspect", found: false };
+  }
+
+  function executeAdvCorrelate(session, map){
+    if(!isRecord(session) || !isRecord(map)){
+      return { success: false, reason: "missing_state" };
+    }
+    const result = correlateAdvNodeKnowledge(map);
+    session.noticeText = "";
+    if(Array.isArray(result.messages)){
+      for(let i = 0; i < result.messages.length; i++){
+        pushAdvLog(session, result.messages[i]);
+      }
+    }
+    updateAdvCellPresentation(session, map, result.changed ? "照合が進んだ。区画理解が更新された。" : "照合を試みたが、新しい一致は出なかった。");
+    return { success: true, action: "correlate", changed: result.changed };
+  }
+
+  function confirmAdvAction(nowMs = performance.now(), sessionOverride = null){
+    const session = isRecord(sessionOverride) ? sessionOverride : getAdvSession();
+    if(!session){
+      return { success: false, reason: "missing_session" };
+    }
+    if(normalizeAdvPhase(session.phase) === ADV_PHASE.MAP_SELECT){
+      const map = getSelectedAdvMap(session);
+      return startAdvExploreSession(session, map);
+    }
+    const map = getSelectedAdvMap(session);
+    if(!map){
+      return { success: false, reason: "missing_state" };
+    }
+    if(Array.isArray(session.promptChoices) && session.promptChoices.length > 0){
+      return executeAdvPromptChoice(session, map);
+    }
+    const command = getSelectedAdvChoiceItem(session);
+    if(!command){
+      return { success: false, reason: "missing_state" };
+    }
+    if(command.id === "advance"){
+      return executeAdvAdvance(session, map);
+    }
+    if(command.id === "inspect"){
+      return executeAdvInspect(session, map, nowMs);
+    }
+    if(command.id === "correlate"){
+      return executeAdvCorrelate(session, map);
+    }
+    if(command.id === "retreat"){
+      enterAdvMapSelect(session, `${getAdvMapDisplayName(map)} から接続を解除した。`);
+      return { success: true, action: "retreat" };
+    }
+    return { success: false, reason: "invalid_command" };
+  }
+
+  function getAdvSelectedCommandNote(sessionOverride = null){
+    const session = isRecord(sessionOverride) ? sessionOverride : getAdvSession();
+    if(normalizeAdvPhase(session?.phase) !== ADV_PHASE.EXPLORE){
+      return "観測接続先を選び、再構成領域を確定する。";
+    }
+    const command = getSelectedAdvChoiceItem(session);
+    return String(command?.description || "どうする？");
+  }
+
+  function getAdvPromptChoices(sessionOverride = null){
+    const session = isRecord(sessionOverride) ? sessionOverride : getAdvSession();
+    return Array.isArray(session?.promptChoices) ? session.promptChoices.slice() : [];
+  }
+
+  function shouldShowAdvExploreBottomPane(sessionOverride = null){
+    const session = isRecord(sessionOverride) ? sessionOverride : getAdvSession();
+    return normalizeAdvPhase(session?.phase) === ADV_PHASE.EXPLORE;
+  }
+
+  function createAdvMainCanvasElement(session, map, nowMs = performance.now()){
+    const canvasEl = document.createElement("canvas");
+    canvasEl.className = "overlay-adv-main-canvas";
+    canvasEl.width = 304;
+    canvasEl.height = 188;
+    const ctx2d = canvasEl.getContext("2d");
+    if(!ctx2d){
+      return canvasEl;
+    }
+
+    const w = canvasEl.width;
+    const h = canvasEl.height;
+    const now = Math.max(0, toNumber(nowMs, performance.now()));
+    const dungeon = getAdvDungeon(session);
+    const player = getAdvDungeonPlayer(session);
+    const currentCell = getAdvCurrentCellType(session);
+    const facing = normalizeAdvFacing(dungeon?.facing);
+    const inspectReady = Boolean(session?.inspectReady);
+    const pulse = 0.5 + (Math.sin(now * 0.0078) * 0.5);
+    const frame = { left: 10, top: 10, right: w - 10, bottom: h - 10 };
+    const levels = [
+      { left: 10, top: 10, right: w - 10, bottom: h - 10 },
+      { left: 42, top: 20, right: w - 42, bottom: h - 20 },
+      { left: 74, top: 34, right: w - 74, bottom: h - 32 },
+      { left: 98, top: 46, right: w - 98, bottom: h - 42 },
+    ];
+    const corridorAlpha = 0.36 + (clamp(Math.floor(toNumber(session?.traceLevel, 1)), 1, 3) * 0.04);
+    const zoneType = String(map?.zoneType || "").trim().toLowerCase();
+    const stateLabels = getAdvMapStateLabels(map);
+    const hasDanger = stateLabels.includes(ADV_STATE_LABEL.DANGER);
+    const hasContamination = stateLabels.includes(ADV_STATE_LABEL.CONTAMINATION);
+    const hasAnomaly = stateLabels.includes(ADV_STATE_LABEL.ANOMALY);
+
+    ctx2d.clearRect(0, 0, w, h);
+    ctx2d.fillStyle = "rgba(14,20,15,0.02)";
+    ctx2d.fillRect(0, 0, w, h);
+    ctx2d.lineWidth = 1;
+    ctx2d.lineJoin = "round";
+    ctx2d.lineCap = "round";
+
+    const tone = (alpha = corridorAlpha) => `rgba(14,20,15,${clamp(toNumber(alpha, corridorAlpha), 0.02, 0.92).toFixed(3)})`;
+    const strokeLine = (x1, y1, x2, y2, alpha = corridorAlpha) => {
+      ctx2d.strokeStyle = tone(alpha);
+      ctx2d.beginPath();
+      ctx2d.moveTo(Math.round(x1) + 0.5, Math.round(y1) + 0.5);
+      ctx2d.lineTo(Math.round(x2) + 0.5, Math.round(y2) + 0.5);
+      ctx2d.stroke();
+    };
+    const strokeRect = (left, top, right, bottom, alpha = corridorAlpha) => {
+      ctx2d.strokeStyle = tone(alpha);
+      ctx2d.strokeRect(
+        Math.round(left) + 0.5,
+        Math.round(top) + 0.5,
+        Math.max(1, Math.round(right - left) - 1),
+        Math.max(1, Math.round(bottom - top) - 1)
+      );
+    };
+    const buildPolygonPath = (points) => {
+      if(!Array.isArray(points) || points.length <= 0) return false;
+      ctx2d.beginPath();
+      ctx2d.moveTo(points[0].x, points[0].y);
+      for(let i = 1; i < points.length; i++){
+        ctx2d.lineTo(points[i].x, points[i].y);
+      }
+      ctx2d.closePath();
+      return true;
+    };
+    const fillPolygon = (points, alpha = 0.08) => {
+      if(!buildPolygonPath(points)) return;
+      ctx2d.fillStyle = tone(alpha);
+      ctx2d.fill();
+    };
+    const withPolygonClip = (points, drawFn) => {
+      if(typeof drawFn !== "function" || !buildPolygonPath(points)) return;
+      ctx2d.save();
+      ctx2d.clip();
+      drawFn();
+      ctx2d.restore();
+    };
+    const getPolygonBounds = (points) => {
+      const xs = points.map((point) => toNumber(point?.x, 0));
+      const ys = points.map((point) => toNumber(point?.y, 0));
+      return {
+        left: Math.min(...xs),
+        right: Math.max(...xs),
+        top: Math.min(...ys),
+        bottom: Math.max(...ys),
+        width: Math.max(1, Math.max(...xs) - Math.min(...xs)),
+        height: Math.max(1, Math.max(...ys) - Math.min(...ys)),
+      };
+    };
+    const fillRectAlpha = (left, top, width, height, alpha = 0.08) => {
+      ctx2d.fillStyle = tone(alpha);
+      ctx2d.fillRect(left, top, Math.max(1, width), Math.max(1, height));
+    };
+    const drawZoneTexture = (surface) => {
+      if(!isRecord(surface) || !Array.isArray(surface.points)) return;
+      const bounds = getPolygonBounds(surface.points);
+      const depthAlpha = clamp(0.05 + (surface.depth * 0.018), 0.04, 0.22);
+      withPolygonClip(surface.points, () => {
+        if(zoneType === ADV_ZONE_TYPE.MAINTENANCE){
+          if(surface.kind === "floor"){
+            const seamStep = Math.max(10, Math.floor(bounds.height * 0.22));
+            for(let y = bounds.top + seamStep; y < bounds.bottom; y += seamStep){
+              strokeLine(bounds.left + 6, y, bounds.right - 6, y, depthAlpha * 0.72);
+            }
+            const railLeft = bounds.left + (bounds.width * 0.34);
+            const railRight = bounds.left + (bounds.width * 0.66);
+            strokeLine(railLeft, bounds.top, railLeft - 10, bounds.bottom, depthAlpha * 1.12);
+            strokeLine(railRight, bounds.top, railRight + 10, bounds.bottom, depthAlpha * 1.12);
+            strokeLine(bounds.left + 10, bounds.bottom - 8, bounds.right - 10, bounds.bottom - 8, depthAlpha * 0.44);
+          }else if(surface.kind === "wall"){
+            for(let y = bounds.top + 10; y < bounds.bottom - 6; y += 12){
+              strokeLine(bounds.left + 4, y, bounds.right - 4, y, depthAlpha * 0.78);
+            }
+            const pipeX = surface.side === "left" ? bounds.right - 8 : bounds.left + 8;
+            strokeLine(pipeX, bounds.top + 4, pipeX, bounds.bottom - 4, depthAlpha * 1.04);
+            strokeRect(
+              bounds.left + 6,
+              bounds.top + 12,
+              Math.min(bounds.right - 8, bounds.left + 26),
+              Math.min(bounds.bottom - 12, bounds.top + 28),
+              depthAlpha * 0.86
+            );
+          }else{
+            strokeRect(bounds.left + 12, bounds.top + 10, bounds.right - 12, bounds.bottom - 8, depthAlpha * 1.02);
+            strokeRect(bounds.left + 22, bounds.top + 18, bounds.right - 22, bounds.bottom - 18, depthAlpha * 0.72);
+            strokeLine(bounds.left + 26, bounds.top + 26, bounds.right - 26, bounds.top + 26, depthAlpha * 0.78);
+            strokeLine(bounds.left + 10, bounds.top + 8, bounds.left + 10, bounds.bottom - 8, depthAlpha * 0.54);
+            strokeLine(bounds.right - 10, bounds.top + 8, bounds.right - 10, bounds.bottom - 8, depthAlpha * 0.54);
+          }
+        }else if(zoneType === ADV_ZONE_TYPE.RECORD){
+          if(surface.kind === "floor"){
+            for(let y = bounds.top + 8; y < bounds.bottom; y += 10){
+              strokeLine(bounds.left + 4, y, bounds.right - 4, y, depthAlpha * 0.58);
+            }
+            for(let x = bounds.left + 12; x < bounds.right; x += 16){
+              strokeLine(x, bounds.top + 2, x, bounds.bottom - 4, depthAlpha * 0.38);
+            }
+          }else if(surface.kind === "wall"){
+            for(let y = bounds.top + 10; y < bounds.bottom - 4; y += 11){
+              strokeLine(bounds.left + 4, y, bounds.right - 4, y, depthAlpha * 0.54);
+            }
+            for(let x = bounds.left + 8; x < bounds.right - 4; x += 14){
+              strokeLine(x, bounds.top + 6, x, bounds.bottom - 6, depthAlpha * 0.38);
+            }
+          }else{
+            const colStep = Math.max(18, Math.floor(bounds.width * 0.22));
+            for(let x = bounds.left + 12; x < bounds.right - 8; x += colStep){
+              strokeLine(x, bounds.top + 10, x, bounds.bottom - 10, depthAlpha * 0.62);
+              for(let y = bounds.top + 16; y < bounds.bottom - 10; y += 12){
+                strokeRect(x + 2, y, Math.min(bounds.right - 8, x + colStep - 4), Math.min(bounds.bottom - 10, y + 8), depthAlpha * 0.52);
+              }
+            }
+            strokeRect(bounds.left + 10, bounds.top + 18, bounds.left + 30, bounds.top + 34, depthAlpha * 0.84);
+            fillRectAlpha(bounds.left + 14, bounds.top + 22, 12, 8, depthAlpha * 0.86);
+          }
+        }else if(zoneType === ADV_ZONE_TYPE.LINE){
+          if(surface.kind === "floor"){
+            for(let x = bounds.left + 12; x < bounds.right - 10; x += 14){
+              strokeLine(x, bounds.top + 2, x - 5, bounds.bottom - 2, depthAlpha * 0.46);
+            }
+            strokeLine(bounds.left + 10, bounds.bottom - 8, bounds.right - 12, bounds.bottom - 14, depthAlpha * 0.70);
+            strokeLine(bounds.left + 18, bounds.top + 4, bounds.right - 18, bounds.top + 6, depthAlpha * 0.44);
+          }else if(surface.kind === "wall"){
+            const cableX = surface.side === "left" ? bounds.right - 8 : bounds.left + 8;
+            strokeLine(cableX, bounds.top + 2, cableX, bounds.bottom - 4, depthAlpha * 1.06);
+            strokeLine(cableX, bounds.top + 10, cableX + (surface.side === "left" ? -12 : 12), bounds.top + 18, depthAlpha * 0.78);
+            strokeLine(cableX, bounds.top + 26, cableX + (surface.side === "left" ? -10 : 10), bounds.top + 34, depthAlpha * 0.70);
+            fillRectAlpha(cableX - 2, bounds.top + 16, 4, 4, depthAlpha * 0.92);
+            fillRectAlpha(cableX - 2, bounds.top + 30, 4, 4, depthAlpha * 0.72);
+          }else{
+            const centerX = bounds.left + (bounds.width * 0.5);
+            const centerY = bounds.top + (bounds.height * 0.48);
+            strokeRect(centerX - 10, centerY - 8, centerX + 10, centerY + 8, depthAlpha * 1.04);
+            strokeLine(centerX, bounds.top + 8, centerX, centerY - 8, depthAlpha * 0.84);
+            strokeLine(centerX, centerY + 8, centerX, bounds.bottom - 8, depthAlpha * 0.84);
+            strokeLine(centerX - 10, centerY, bounds.left + 12, centerY - 10, depthAlpha * 0.68);
+            strokeLine(centerX + 10, centerY, bounds.right - 12, centerY - 6, depthAlpha * 0.68);
+            fillRectAlpha(centerX - 1, centerY - 1, 3, 3, depthAlpha * 1.08);
+          }
+        }else if(zoneType === ADV_ZONE_TYPE.CONTROL){
+          if(surface.kind === "floor"){
+            for(let x = bounds.left + 16; x < bounds.right - 12; x += 18){
+              strokeLine(x, bounds.top + 2, x, bounds.bottom - 4, depthAlpha * 0.56);
+            }
+          }else if(surface.kind === "wall"){
+            strokeLine(bounds.left + 8, bounds.top + 4, bounds.left + 8, bounds.bottom - 4, depthAlpha * 0.92);
+            strokeLine(bounds.right - 8, bounds.top + 4, bounds.right - 8, bounds.bottom - 4, depthAlpha * 0.92);
+          }else{
+            strokeRect(bounds.left + 10, bounds.top + 8, bounds.right - 10, bounds.bottom - 8, depthAlpha * 0.92);
+            strokeLine(bounds.left + (bounds.width * 0.5), bounds.top + 8, bounds.left + (bounds.width * 0.5), bounds.bottom - 8, depthAlpha * 0.92);
+          }
+        }else if(zoneType === ADV_ZONE_TYPE.ECOLOGY){
+          if(surface.kind === "floor"){
+            for(let x = bounds.left + 12; x < bounds.right - 8; x += 18){
+              strokeLine(x, bounds.top + 4, x - 3, bounds.bottom - 2, depthAlpha * 0.34);
+            }
+          }else if(surface.kind === "wall"){
+            strokeRect(bounds.left + 8, bounds.top + 12, bounds.right - 12, bounds.top + 28, depthAlpha * 0.56);
+            fillRectAlpha(bounds.left + 10, bounds.top + 22, Math.max(6, bounds.width - 24), 4, depthAlpha * 0.42);
+          }else{
+            strokeRect(bounds.left + 16, bounds.top + 10, bounds.right - 16, bounds.bottom - 10, depthAlpha * 0.62);
+          }
+        }
+
+        if(hasContamination){
+          const dotCount = surface.kind === "front" ? 6 : 4;
+          for(let i = 0; i < dotCount; i++){
+            const dotX = bounds.left + 6 + ((i * 17) % Math.max(10, Math.floor(bounds.width - 12)));
+            const dotY = bounds.top + 6 + ((i * 13) % Math.max(10, Math.floor(bounds.height - 12)));
+            fillRectAlpha(dotX, dotY, 3, 3, depthAlpha * 0.68);
+          }
+        }
+        if(hasAnomaly){
+          const offsetY = bounds.top + 8 + ((surface.depth * 7) % Math.max(12, Math.floor(bounds.height - 16)));
+          strokeLine(bounds.left + 8, offsetY, bounds.right - 8, offsetY - 3, depthAlpha * 0.42);
+          strokeRect(bounds.left + 12, bounds.top + 10, Math.min(bounds.right - 10, bounds.left + 28), Math.min(bounds.bottom - 10, bounds.top + 24), depthAlpha * 0.34);
+        }
+      });
+    };
+    const drawInspectMarkers = () => {
+      if(!inspectReady || visibleGoalDepth >= 0) return;
+      const markers = zoneType === ADV_ZONE_TYPE.LINE
+        ? [
+            { x: farFrame.right - 22, y: farFrame.top + 16 },
+            { x: farFrame.left + 18, y: farFrame.bottom - 22 },
+          ]
+        : zoneType === ADV_ZONE_TYPE.RECORD
+          ? [{ x: farFrame.left + 22, y: farFrame.top + 18 }]
+          : [{ x: farFrame.right - 24, y: farFrame.bottom - 20 }];
+      for(let i = 0; i < markers.length; i++){
+        const marker = markers[i];
+        const alpha = 0.16 + (pulse * 0.16) - (i * 0.03);
+        strokeRect(marker.x - 4, marker.y - 4, marker.x + 4, marker.y + 4, alpha);
+        fillRectAlpha(marker.x - 1, marker.y - 1, 3, 3, alpha + 0.06);
+      }
+    };
+    const drawDungeonMapPanel = (options = {}) => {
+      if(!dungeon || !player) return;
+      const mapBox = {
+        left: Math.round(toNumber(options.left, frame.left + 6)),
+        top: Math.round(toNumber(options.top, frame.top + 6)),
+        width: Math.max(32, Math.round(toNumber(options.width, 88))),
+        height: Math.max(32, Math.round(toNumber(options.height, 82))),
+      };
+      const full = Boolean(options.full);
+      const titleHeight = 0;
+      const pad = 4;
+      const innerWidth = mapBox.width - (pad * 2);
+      const innerHeight = mapBox.height - titleHeight - (pad * 2);
+      const visited = new Set(Array.isArray(dungeon.visitedKeys) ? dungeon.visitedKeys : []);
+      const visitedPoints = [];
+      visited.forEach((key) => {
+        const bits = String(key || "").split(",");
+        if(bits.length < 2) return;
+        visitedPoints.push({
+          x: Math.floor(toNumber(bits[0], 0)),
+          y: Math.floor(toNumber(bits[1], 0)),
+        });
+      });
+      if(visitedPoints.length <= 0){
+        visitedPoints.push({ x: player.x, y: player.y });
+      }
+      let minVisitedX = player.x;
+      let maxVisitedX = player.x;
+      let minVisitedY = player.y;
+      let maxVisitedY = player.y;
+      for(let i = 0; i < visitedPoints.length; i++){
+        const point = visitedPoints[i];
+        minVisitedX = Math.min(minVisitedX, point.x);
+        maxVisitedX = Math.max(maxVisitedX, point.x);
+        minVisitedY = Math.min(minVisitedY, point.y);
+        maxVisitedY = Math.max(maxVisitedY, point.y);
+      }
+
+      const visitedWidth = Math.max(1, (maxVisitedX - minVisitedX) + 1);
+      const visitedHeight = Math.max(1, (maxVisitedY - minVisitedY) + 1);
+      const viewportWidth = full
+        ? Math.max(1, dungeon.width)
+        : Math.max(1, Math.min(Math.max(7, Math.floor(innerWidth / 6)), dungeon.width, 11));
+      const viewportHeight = full
+        ? Math.max(1, dungeon.height)
+        : Math.max(1, Math.min(Math.max(7, Math.floor(innerHeight / 6)), dungeon.height, 11));
+      const viewStartX = full
+        ? 0
+        : clamp(player.x - Math.floor(viewportWidth * 0.5), 0, Math.max(0, dungeon.width - viewportWidth));
+      const viewStartY = full
+        ? 0
+        : clamp(player.y - Math.floor(viewportHeight * 0.5), 0, Math.max(0, dungeon.height - viewportHeight));
+      const scale = Math.max(full ? 1 : 2, Math.floor(Math.min(innerWidth / viewportWidth, innerHeight / viewportHeight)));
+      const gridWidth = scale * viewportWidth;
+      const gridHeight = scale * viewportHeight;
+      const offsetX = mapBox.left + pad + Math.floor((innerWidth - gridWidth) * 0.5);
+      const offsetY = mapBox.top + titleHeight + pad + Math.floor((innerHeight - gridHeight) * 0.5);
+
+      ctx2d.fillStyle = full ? "rgba(200,214,194,0.74)" : "rgba(200,214,194,0.58)";
+      ctx2d.fillRect(mapBox.left, mapBox.top, mapBox.width, mapBox.height);
+      ctx2d.fillStyle = full ? "rgba(200,214,194,0.34)" : "rgba(200,214,194,0.26)";
+      ctx2d.fillRect(mapBox.left + 2, mapBox.top + 2, mapBox.width - 4, mapBox.height - 4);
+      strokeRect(mapBox.left, mapBox.top, mapBox.left + mapBox.width, mapBox.top + mapBox.height, full ? 0.54 : 0.40);
+      strokeRect(mapBox.left + 2, mapBox.top + 2, mapBox.left + mapBox.width - 2, mapBox.top + mapBox.height - 2, full ? 0.24 : 0.18);
+
+      for(let y = viewStartY; y < viewStartY + viewportHeight; y++){
+        const row = Array.isArray(dungeon.grid?.[y]) ? dungeon.grid[y] : [];
+        for(let x = viewStartX; x < viewStartX + viewportWidth; x++){
+          if(row[x] !== 1) continue;
+          if(!visited.has(getAdvCellKey(x, y))) continue;
+          const cellLeft = offsetX + ((x - viewStartX) * scale);
+          const cellTop = offsetY + ((y - viewStartY) * scale);
+          ctx2d.fillStyle = full ? "rgba(14,20,15,0.42)" : "rgba(14,20,15,0.34)";
+          ctx2d.fillRect(cellLeft, cellTop, scale, scale);
+        }
+      }
+
+      const playerLeft = offsetX + ((player.x - viewStartX) * scale);
+      const playerTop = offsetY + ((player.y - viewStartY) * scale);
+      const playerCenterX = playerLeft + Math.floor(scale * 0.5);
+      const playerCenterY = playerTop + Math.floor(scale * 0.5);
+      const facingVector = getAdvFacingVector(facing);
+      const playerPulse = 0.44 + (pulse * 0.40);
+
+      ctx2d.fillStyle = `rgba(14,20,15,${(playerPulse + 0.06).toFixed(3)})`;
+      ctx2d.fillRect(playerLeft - 1, playerTop - 1, scale + 2, scale + 2);
+      ctx2d.strokeStyle = "rgba(200,214,194,0.72)";
+      ctx2d.strokeRect(playerLeft - 1.5, playerTop - 1.5, scale + 2, scale + 2);
+      strokeLine(
+        playerCenterX,
+        playerCenterY,
+        playerCenterX + (facingVector.dx * Math.max(3, scale + 1)),
+        playerCenterY + (facingVector.dy * Math.max(3, scale + 1)),
+        0.62
+      );
+    };
+    const drawMiniMap = () => {
+      drawDungeonMapPanel({
+        left: frame.left + 1,
+        top: frame.top + 1,
+        width: 88,
+        height: 82,
+      });
+    };
+    const drawFullMapOverlay = () => {
+      ctx2d.fillStyle = "rgba(200,214,194,0.58)";
+      ctx2d.fillRect(frame.left, frame.top, frame.right - frame.left, frame.bottom - frame.top);
+      drawDungeonMapPanel({
+        left: frame.left + 4,
+        top: frame.top + 4,
+        width: (frame.right - frame.left) - 8,
+        height: (frame.bottom - frame.top) - 8,
+        full: true,
+      });
+    };
+    const drawGoalEntrance = (left, top, right, bottom, alpha = 0.42) => {
+      const width = Math.max(30, right - left);
+      const height = Math.max(32, bottom - top);
+      const outerLeft = left + 4;
+      const outerRight = right - 4;
+      const outerTop = top + 4;
+      const outerBottom = bottom - 2;
+      const chamfer = Math.max(4, Math.floor(width * 0.10));
+      const centerX = Math.round((outerLeft + outerRight) * 0.5);
+      const seamHalf = 2;
+      const leafPad = 4;
+      const leafTop = outerTop + 10;
+      const leafBottom = outerBottom - 4;
+      const leftLeafLeft = outerLeft + leafPad;
+      const leftLeafRight = centerX - seamHalf - 2;
+      const rightLeafLeft = centerX + seamHalf + 2;
+      const rightLeafRight = outerRight - leafPad;
+      const ventTop = leafTop + 5;
+      const fillAlpha = clamp(alpha * 0.34, 0.10, 0.28);
+
+      strokeLine(outerLeft + chamfer, outerTop, outerRight - chamfer, outerTop, alpha);
+      strokeLine(outerLeft, outerTop + chamfer, outerLeft, outerBottom, alpha);
+      strokeLine(outerRight, outerTop + chamfer, outerRight, outerBottom, alpha);
+      strokeLine(outerLeft + chamfer, outerTop, outerLeft, outerTop + chamfer, alpha);
+      strokeLine(outerRight - chamfer, outerTop, outerRight, outerTop + chamfer, alpha);
+      strokeLine(outerLeft, outerBottom, outerRight, outerBottom, alpha);
+
+      ctx2d.fillStyle = `rgba(14,20,15,${fillAlpha.toFixed(3)})`;
+      ctx2d.fillRect(leftLeafLeft + 1, leafTop + 1, Math.max(1, leftLeafRight - leftLeafLeft - 1), Math.max(1, leafBottom - leafTop - 1));
+      ctx2d.fillRect(rightLeafLeft + 1, leafTop + 1, Math.max(1, rightLeafRight - rightLeafLeft - 1), Math.max(1, leafBottom - leafTop - 1));
+      ctx2d.fillStyle = `rgba(14,20,15,${clamp(fillAlpha + 0.08, 0.16, 0.36).toFixed(3)})`;
+      ctx2d.fillRect(centerX - seamHalf, outerTop + 6, (seamHalf * 2) + 1, Math.max(1, outerBottom - outerTop - 8));
+
+      strokeRect(leftLeafLeft, leafTop, leftLeafRight, leafBottom, alpha * 0.82);
+      strokeRect(rightLeafLeft, leafTop, rightLeafRight, leafBottom, alpha * 0.82);
+
+      strokeRect(leftLeafLeft + 4, leafTop + 10, leftLeafRight - 4, leafBottom - 10, alpha * 0.54);
+      strokeRect(rightLeafLeft + 4, leafTop + 10, rightLeafRight - 4, leafBottom - 10, alpha * 0.54);
+
+      strokeLine(leftLeafLeft + 4, ventTop, leftLeafRight - 4, ventTop, alpha * 0.66);
+      strokeLine(leftLeafLeft + 4, ventTop + 3, leftLeafRight - 4, ventTop + 3, alpha * 0.48);
+      strokeLine(rightLeafLeft + 4, ventTop, rightLeafRight - 4, ventTop, alpha * 0.66);
+      strokeLine(rightLeafLeft + 4, ventTop + 3, rightLeafRight - 4, ventTop + 3, alpha * 0.48);
+
+      strokeLine(centerX - seamHalf, outerTop + 6, centerX - seamHalf, outerBottom - 2, alpha * 0.90);
+      strokeLine(centerX + seamHalf, outerTop + 6, centerX + seamHalf, outerBottom - 2, alpha * 0.90);
+      strokeRect(centerX - 3, leafTop + 18, centerX + 3, leafBottom - 18, alpha * 0.50);
+
+      for(let i = 0; i < 3; i++){
+        const ribY = outerTop + 12 + (i * 7);
+        strokeLine(outerLeft + 2, ribY, outerLeft + 8, ribY, alpha * 0.42);
+        strokeLine(outerRight - 8, ribY, outerRight - 2, ribY, alpha * 0.42);
+      }
+    };
+
+    if(!dungeon || !player){
+      strokeRect(frame.left, frame.top, frame.right, frame.bottom, corridorAlpha);
+      return canvasEl;
+    }
+
+    const lateral = getAdvFacingVector(rotateAdvFacing(facing, 1));
+    const sampleWalkable = (forwardSteps, sideSteps = 0) => {
+      const x = player.x + (getAdvFacingVector(facing).dx * forwardSteps) + (lateral.dx * sideSteps);
+      const y = player.y + (getAdvFacingVector(facing).dy * forwardSteps) + (lateral.dy * sideSteps);
+      return isAdvDungeonWalkable(dungeon, x, y);
+    };
+    const isGoalAt = (forwardSteps, sideSteps = 0) => {
+      const x = player.x + (getAdvFacingVector(facing).dx * forwardSteps) + (lateral.dx * sideSteps);
+      const y = player.y + (getAdvFacingVector(facing).dy * forwardSteps) + (lateral.dy * sideSteps);
+      return getAdvCellKey(x, y) === getAdvCellKey(dungeon.goal?.x, dungeon.goal?.y);
+    };
+    const getVisibleGoalDepth = () => {
+      if(currentCell?.kind === "goal"){
+        return 0;
+      }
+      for(let depth = 1; depth <= levels.length; depth++){
+        if(isGoalAt(depth, 0)){
+          return depth;
+        }
+        if(!sampleWalkable(depth, 0)){
+          break;
+        }
+      }
+      return -1;
+    };
+    const drawSideOpening = (outer, inner, side, alpha) => {
+      const dir = side === "left" ? -1 : 1;
+      const edgeX = side === "left" ? inner.left : inner.right;
+      const branchOuterX = edgeX + (dir * 18);
+      strokeLine(edgeX, inner.top, branchOuterX, inner.top - 6, alpha);
+      strokeLine(edgeX, inner.bottom, branchOuterX, inner.bottom + 6, alpha);
+      strokeLine(branchOuterX, inner.top - 6, branchOuterX, inner.bottom + 6, alpha * 0.72);
+      strokeLine(branchOuterX, inner.top - 6, edgeX + (dir * 34), inner.top - 6, alpha * 0.44);
+      strokeLine(branchOuterX, inner.bottom + 6, edgeX + (dir * 34), inner.bottom + 6, alpha * 0.44);
+    };
+    const visibleGoalDepth = getVisibleGoalDepth();
+    const depthRecords = [];
+    const surfaceRecords = [];
+    let farFrame = levels[levels.length - 1];
+    let blockedAtFront = false;
+
+    fillRectAlpha(frame.left, frame.top, frame.right - frame.left, frame.bottom - frame.top, zoneType === ADV_ZONE_TYPE.LINE ? 0.08 : 0.06);
+
+    for(let depth = 0; depth < levels.length - 1; depth++){
+      const outer = levels[depth];
+      const inner = levels[depth + 1];
+      const alpha = corridorAlpha + (depth * 0.08);
+      const leftOpen = sampleWalkable(depth, -1);
+      const rightOpen = sampleWalkable(depth, 1);
+      const frontOpen = sampleWalkable(depth + 1, 0);
+      depthRecords.push({ outer, inner, alpha, leftOpen, rightOpen, frontOpen, depth });
+
+      const floorPoints = [
+        { x: outer.left, y: outer.bottom },
+        { x: outer.right, y: outer.bottom },
+        { x: inner.right, y: inner.bottom },
+        { x: inner.left, y: inner.bottom },
+      ];
+      fillPolygon(floorPoints, 0.05 + (depth * 0.018));
+      surfaceRecords.push({ kind: "floor", points: floorPoints, depth });
+
+      if(!leftOpen){
+        const leftWallPoints = [
+          { x: outer.left, y: outer.top },
+          { x: inner.left, y: inner.top },
+          { x: inner.left, y: inner.bottom },
+          { x: outer.left, y: outer.bottom },
+        ];
+        fillPolygon(leftWallPoints, 0.08 + (depth * 0.018));
+        surfaceRecords.push({ kind: "wall", side: "left", points: leftWallPoints, depth });
+      }
+      if(!rightOpen){
+        const rightWallPoints = [
+          { x: outer.right, y: outer.top },
+          { x: inner.right, y: inner.top },
+          { x: inner.right, y: inner.bottom },
+          { x: outer.right, y: outer.bottom },
+        ];
+        fillPolygon(rightWallPoints, 0.08 + (depth * 0.018));
+        surfaceRecords.push({ kind: "wall", side: "right", points: rightWallPoints, depth });
+      }
+      if(!frontOpen){
+        const frontPoints = [
+          { x: inner.left, y: inner.top },
+          { x: inner.right, y: inner.top },
+          { x: inner.right, y: inner.bottom },
+          { x: inner.left, y: inner.bottom },
+        ];
+        fillPolygon(frontPoints, 0.12 + (depth * 0.022));
+        surfaceRecords.push({ kind: "front", points: frontPoints, depth });
+        farFrame = inner;
+        blockedAtFront = true;
+        break;
+      }
+      farFrame = inner;
+    }
+
+    if(!blockedAtFront){
+      const farPoints = [
+        { x: farFrame.left, y: farFrame.top },
+        { x: farFrame.right, y: farFrame.top },
+        { x: farFrame.right, y: farFrame.bottom },
+        { x: farFrame.left, y: farFrame.bottom },
+      ];
+      fillPolygon(farPoints, 0.11 + (pulse * 0.02));
+      surfaceRecords.push({ kind: "front", points: farPoints, depth: levels.length });
+    }
+
+    for(let i = 0; i < surfaceRecords.length; i++){
+      drawZoneTexture(surfaceRecords[i]);
+    }
+
+    for(let i = 0; i < depthRecords.length; i++){
+      const record = depthRecords[i];
+      const { outer, inner, alpha, leftOpen, rightOpen, frontOpen } = record;
+      if(leftOpen){
+        drawSideOpening(outer, inner, "left", alpha * 0.78);
+      }else{
+        strokeLine(outer.left, outer.top, inner.left, inner.top, alpha);
+        strokeLine(outer.left, outer.bottom, inner.left, inner.bottom, alpha);
+        strokeLine(inner.left, inner.top, inner.left, inner.bottom, alpha);
+      }
+
+      if(rightOpen){
+        drawSideOpening(outer, inner, "right", alpha * 0.78);
+      }else{
+        strokeLine(outer.right, outer.top, inner.right, inner.top, alpha);
+        strokeLine(outer.right, outer.bottom, inner.right, inner.bottom, alpha);
+        strokeLine(inner.right, inner.top, inner.right, inner.bottom, alpha);
+      }
+
+      strokeLine(inner.left, inner.top, inner.right, inner.top, alpha * 0.68);
+      strokeLine(inner.left, inner.bottom, inner.right, inner.bottom, alpha * 0.68);
+
+      if(!frontOpen){
+        strokeRect(inner.left, inner.top, inner.right, inner.bottom, alpha + 0.10);
+        break;
+      }
+    }
+
+    strokeRect(farFrame.left, farFrame.top, farFrame.right, farFrame.bottom, 0.16 + (pulse * 0.10));
+    if(visibleGoalDepth >= 0){
+      drawGoalEntrance(
+        farFrame.left - 12,
+        farFrame.top - 2,
+        farFrame.right + 12,
+        farFrame.bottom + 10,
+        0.52 + (pulse * 0.22)
+      );
+    }
+
+    drawInspectMarkers();
+
+    if(hasDanger){
+      const dangerAlpha = 0.22 + (pulse * 0.16);
+      strokeLine(frame.left + 8, frame.top + 8, frame.left + 24, frame.top + 8, dangerAlpha);
+      strokeLine(frame.left + 8, frame.top + 8, frame.left + 8, frame.top + 24, dangerAlpha);
+      strokeLine(frame.right - 8, frame.top + 8, frame.right - 24, frame.top + 8, dangerAlpha);
+      strokeLine(frame.right - 8, frame.top + 8, frame.right - 8, frame.top + 24, dangerAlpha);
+      strokeLine(frame.left + 8, frame.bottom - 8, frame.left + 24, frame.bottom - 8, dangerAlpha * 0.72);
+      strokeLine(frame.left + 8, frame.bottom - 8, frame.left + 8, frame.bottom - 24, dangerAlpha * 0.72);
+    }
+
+    if(Boolean(session?.fullMapOpen)){
+      drawFullMapOverlay();
+    }else{
+      drawMiniMap();
+    }
+
+    return canvasEl;
+  }
+
+  function createAdvFacilityMapCanvasElement(selectedMapOverride = null, nowMs = performance.now()){
+    const canvasEl = document.createElement("canvas");
+    canvasEl.className = "overlay-adv-facility-map-canvas";
+    canvasEl.width = 220;
+    canvasEl.height = 148;
+    const ctx2d = canvasEl.getContext("2d");
+    if(!ctx2d){
+      return canvasEl;
+    }
+
+    const selectedMap = isRecord(selectedMapOverride)
+      ? selectedMapOverride
+      : getAdvMapById(selectedMapOverride) || getSelectedAdvMap();
+    const selectedId = String(selectedMap?.id || "").trim().toLowerCase();
+    const w = canvasEl.width;
+    const h = canvasEl.height;
+    const now = Math.max(0, toNumber(nowMs, performance.now()));
+    const pulse = 0.5 + (Math.sin(now * 0.0072) * 0.5);
+
+    ctx2d.clearRect(0, 0, w, h);
+
+    const maps = getAdvMapCatalog();
+    for(let i = 0; i < maps.length; i++){
+      const map = maps[i];
+      const node = isRecord(map?.mapNode) ? map.mapNode : null;
+      if(!node) continue;
+      const x = Math.round(clamp(toNumber(node.x, 0.5), 0.08, 0.92) * w);
+      const y = Math.round(clamp(toNumber(node.y, 0.5), 0.08, 0.92) * h);
+      const selected = String(map?.id || "").trim().toLowerCase() === selectedId;
+      const unlocked = isAdvNodeUnlocked(map);
+      const labels = getAdvMapStateLabels(map);
+
+      ctx2d.strokeStyle = `rgba(14,20,15,${selected ? (0.52 + (pulse * 0.28)).toFixed(3) : (unlocked ? "0.34" : "0.22")})`;
+      ctx2d.strokeRect(x - 4.5, y - 4.5, 9, 9);
+      if(labels.includes(ADV_STATE_LABEL.DANGER)){
+        ctx2d.strokeStyle = `rgba(14,20,15,${selected ? "0.38" : "0.24"})`;
+        ctx2d.strokeRect(x - 7.5, y - 7.5, 15, 15);
+      }
+      if(labels.includes(ADV_STATE_LABEL.CONTAMINATION)){
+        ctx2d.fillStyle = "rgba(14,20,15,0.18)";
+        ctx2d.fillRect(x - 7, y + 6, 3, 3);
+      }
+      if(labels.includes(ADV_STATE_LABEL.ANOMALY)){
+        ctx2d.fillStyle = "rgba(14,20,15,0.18)";
+        ctx2d.fillRect(x + 4, y - 8, 3, 3);
+      }
+      if(selected){
+        ctx2d.fillStyle = `rgba(14,20,15,${(0.28 + (pulse * 0.30)).toFixed(3)})`;
+        ctx2d.fillRect(x - 3, y - 3, 6, 6);
+        ctx2d.strokeStyle = `rgba(14,20,15,${(0.34 + (pulse * 0.30)).toFixed(3)})`;
+        ctx2d.beginPath();
+        ctx2d.moveTo(x - 9, y);
+        ctx2d.lineTo(x - 14, y);
+        ctx2d.moveTo(x + 9, y);
+        ctx2d.lineTo(x + 14, y);
+        ctx2d.moveTo(x, y - 9);
+        ctx2d.lineTo(x, y - 14);
+        ctx2d.moveTo(x, y + 9);
+        ctx2d.lineTo(x, y + 14);
+        ctx2d.stroke();
+      }else if(!unlocked){
+        ctx2d.beginPath();
+        ctx2d.moveTo(x - 3, y - 3);
+        ctx2d.lineTo(x + 3, y + 3);
+        ctx2d.moveTo(x + 3, y - 3);
+        ctx2d.lineTo(x - 3, y + 3);
+        ctx2d.stroke();
+      }else{
+        ctx2d.fillStyle = "rgba(14,20,15,0.10)";
+        ctx2d.fillRect(x - 2, y - 2, 4, 4);
+      }
+    }
+
+    return canvasEl;
+  }
+
+  function appendAdvMapConnectorOverlay(layoutElement, selectedMapOverride = null, nowMs = performance.now()){
+    if(!(layoutElement instanceof HTMLElement)){
+      return null;
+    }
+    const selectedMap = isRecord(selectedMapOverride)
+      ? selectedMapOverride
+      : getAdvMapById(selectedMapOverride) || getSelectedAdvMap();
+    const mapId = String(selectedMap?.id || "").trim().toLowerCase();
+    const node = isRecord(selectedMap?.mapNode) ? selectedMap.mapNode : null;
+    if(mapId.length <= 0 || !node){
+      return null;
+    }
+
+    const rowEl = layoutElement.querySelector(`.overlay-adv-map-row[data-map-id="${mapId}"]`);
+    const anchorEl = rowEl?.querySelector(".overlay-adv-map-name");
+    const listPane = layoutElement.querySelector(".overlay-adv-map-pane");
+    const mapCanvas = layoutElement.querySelector(".overlay-adv-facility-map-canvas");
+    if(!(anchorEl instanceof HTMLElement) || !(listPane instanceof HTMLElement) || !(mapCanvas instanceof HTMLCanvasElement)){
+      return null;
+    }
+
+    const rootRect = layoutElement.getBoundingClientRect();
+    const anchorRect = anchorEl.getBoundingClientRect();
+    const listRect = listPane.getBoundingClientRect();
+    const mapRect = mapCanvas.getBoundingClientRect();
+    if(rootRect.width <= 0 || rootRect.height <= 0 || listRect.width <= 0 || mapRect.width <= 0 || mapRect.height <= 0){
+      return null;
+    }
+
+    const canvasEl = document.createElement("canvas");
+    canvasEl.className = "overlay-adv-map-connector-canvas";
+    const dpr = Math.max(1, toNumber(window.devicePixelRatio, 1));
+    canvasEl.width = Math.max(1, Math.round(rootRect.width * dpr));
+    canvasEl.height = Math.max(1, Math.round(rootRect.height * dpr));
+    canvasEl.style.width = `${Math.round(rootRect.width)}px`;
+    canvasEl.style.height = `${Math.round(rootRect.height)}px`;
+
+    const ctx2d = canvasEl.getContext("2d");
+    if(!ctx2d){
+      return null;
+    }
+
+    const now = Math.max(0, toNumber(nowMs, performance.now()));
+    const pulse = 0.5 + (Math.sin(now * 0.0075) * 0.5);
+    const labelLeftX = anchorRect.left - rootRect.left;
+    const lineY = (anchorRect.bottom - rootRect.top) - 1;
+    const stubEndX = (listRect.right - rootRect.left) - 1;
+    const stubEl = document.createElement("div");
+    stubEl.className = "overlay-adv-map-connector-stub";
+    stubEl.style.left = `${Math.round(labelLeftX)}px`;
+    stubEl.style.top = `${Math.round(lineY)}px`;
+    stubEl.style.width = `${Math.max(0, Math.round(stubEndX - labelLeftX))}px`;
+    stubEl.style.opacity = `${(0.46 + (pulse * 0.14)).toFixed(3)}`;
+
+    const mapX = mapRect.left - rootRect.left;
+    const mapY = mapRect.top - rootRect.top;
+    const endX = mapX + (clamp(toNumber(node.x, 0.5), 0.08, 0.92) * mapRect.width);
+    const endY = mapY + (clamp(toNumber(node.y, 0.5), 0.08, 0.92) * mapRect.height);
+    const startX = stubEndX;
+    const startY = lineY;
+
+    ctx2d.scale(dpr, dpr);
+    ctx2d.clearRect(0, 0, rootRect.width, rootRect.height);
+    ctx2d.lineJoin = "round";
+    ctx2d.lineCap = "round";
+    ctx2d.strokeStyle = `rgba(14,20,15,${(0.50 + (pulse * 0.18)).toFixed(3)})`;
+    ctx2d.lineWidth = 1;
+    ctx2d.beginPath();
+    ctx2d.moveTo(startX, startY);
+    ctx2d.lineTo(endX, endY);
+    ctx2d.stroke();
+
+    ctx2d.fillStyle = `rgba(14,20,15,${(0.30 + (pulse * 0.14)).toFixed(3)})`;
+    ctx2d.fillRect(endX - 1.5, endY - 1.5, 3, 3);
+
+    layoutElement.appendChild(stubEl);
+    layoutElement.appendChild(canvasEl);
+    return canvasEl;
+  }
+
+  function drawAdvBoardNodeIcon(ctx2d, nodeType, centerX, centerY, size, alpha = 1){
+    if(!ctx2d) return;
+    const type = normalizeAdvBoardNodeType(nodeType, ADV_BOARD_NODE_TYPE.OBSERVE);
+    const half = Math.max(3, Math.floor(size * 0.5));
+    const image = getAdvBoardNodeIconImage(type);
+    if(isLoadedImage(image)){
+      drawAdvAssetContain(
+        ctx2d,
+        image,
+        Math.round(centerX - half),
+        Math.round(centerY - half),
+        Math.max(8, half * 2),
+        Math.max(8, half * 2),
+        { alpha, tint: true }
+      );
+      return;
+    }
+    ctx2d.save();
+    ctx2d.translate(Math.round(centerX), Math.round(centerY));
+    ctx2d.scale(1, 1);
+    ctx2d.globalAlpha = clamp(toNumber(alpha, 1), 0, 1);
+    ctx2d.strokeStyle = "rgba(14,20,15,0.94)";
+    ctx2d.fillStyle = "rgba(14,20,15,0.90)";
+    ctx2d.lineWidth = 1;
+
+    if(type === ADV_BOARD_NODE_TYPE.OBSERVE){
+      ctx2d.beginPath();
+      ctx2d.ellipse(0, 0, half, Math.max(3, half - 2), 0, 0, Math.PI * 2);
+      ctx2d.stroke();
+      ctx2d.beginPath();
+      ctx2d.arc(0, 0, Math.max(2, Math.floor(size * 0.18)), 0, Math.PI * 2);
+      ctx2d.fill();
+    }else if(type === ADV_BOARD_NODE_TYPE.COLLECT){
+      ctx2d.strokeRect(-half + 1, -half + 2, size - 2, size - 4);
+      ctx2d.beginPath();
+      ctx2d.moveTo(-half + 3, -2);
+      ctx2d.lineTo(0, -half + 1);
+      ctx2d.lineTo(half - 3, -2);
+      ctx2d.stroke();
+      ctx2d.beginPath();
+      ctx2d.moveTo(-half + 4, 2);
+      ctx2d.lineTo(half - 4, 2);
+      ctx2d.stroke();
+    }else if(type === ADV_BOARD_NODE_TYPE.PRESERVE){
+      ctx2d.beginPath();
+      ctx2d.moveTo(0, -half);
+      ctx2d.lineTo(half - 2, -half + 4);
+      ctx2d.lineTo(half - 4, half - 1);
+      ctx2d.lineTo(0, half);
+      ctx2d.lineTo(-half + 4, half - 1);
+      ctx2d.lineTo(-half + 2, -half + 4);
+      ctx2d.closePath();
+      ctx2d.stroke();
+      ctx2d.beginPath();
+      ctx2d.moveTo(-1, -half + 4);
+      ctx2d.lineTo(-1, half - 4);
+      ctx2d.moveTo(-half + 4, 0);
+      ctx2d.lineTo(half - 4, 0);
+      ctx2d.stroke();
+    }else if(type === ADV_BOARD_NODE_TYPE.DEFENSE){
+      ctx2d.strokeRect(-half, -half + 1, size, size - 2);
+      ctx2d.beginPath();
+      ctx2d.moveTo(-half + 2, -half + 1);
+      ctx2d.lineTo(-half + 2, -half + 6);
+      ctx2d.lineTo(-half + 6, -half + 6);
+      ctx2d.lineTo(-half + 6, -half + 1);
+      ctx2d.moveTo(-2, -half + 1);
+      ctx2d.lineTo(-2, -half + 6);
+      ctx2d.lineTo(2, -half + 6);
+      ctx2d.lineTo(2, -half + 1);
+      ctx2d.moveTo(half - 2, -half + 1);
+      ctx2d.lineTo(half - 2, -half + 6);
+      ctx2d.lineTo(half - 6, -half + 6);
+      ctx2d.lineTo(half - 6, -half + 1);
+      ctx2d.moveTo(-half + 2, 0);
+      ctx2d.lineTo(half - 2, 0);
+      ctx2d.moveTo(-half + 2, 4);
+      ctx2d.lineTo(half - 2, 4);
+      ctx2d.moveTo(-half + 2, 8);
+      ctx2d.lineTo(half - 2, 8);
+      ctx2d.stroke();
+    }else if(type === ADV_BOARD_NODE_TYPE.CONTAMINATION){
+      ctx2d.beginPath();
+      ctx2d.moveTo(0, -half);
+      ctx2d.lineTo(4, -4);
+      ctx2d.lineTo(half, -2);
+      ctx2d.lineTo(5, 3);
+      ctx2d.lineTo(half - 2, half - 1);
+      ctx2d.lineTo(0, 6);
+      ctx2d.lineTo(-half + 2, half - 1);
+      ctx2d.lineTo(-5, 3);
+      ctx2d.lineTo(-half, -2);
+      ctx2d.lineTo(-4, -4);
+      ctx2d.closePath();
+      ctx2d.stroke();
+      ctx2d.fillRect(-1, -1, 3, 3);
+    }else if(type === ADV_BOARD_NODE_TYPE.ANALYZE){
+      ctx2d.strokeRect(-half, -half + 1, size, size - 2);
+      ctx2d.beginPath();
+      ctx2d.moveTo(-half + 2, 2);
+      ctx2d.lineTo(-half + 6, -2);
+      ctx2d.lineTo(-1, 4);
+      ctx2d.lineTo(3, -3);
+      ctx2d.lineTo(half - 3, -6);
+      ctx2d.stroke();
+      ctx2d.fillRect(-half + 3, half - 4, size - 6, 2);
+    }else if(type === ADV_BOARD_NODE_TYPE.ANOMALY){
+      ctx2d.beginPath();
+      ctx2d.moveTo(0, -half);
+      ctx2d.lineTo(half - 1, half - 2);
+      ctx2d.lineTo(-half + 1, half - 2);
+      ctx2d.closePath();
+      ctx2d.stroke();
+      ctx2d.fillRect(-1, -4, 2, 7);
+      ctx2d.fillRect(-1, half - 6, 2, 2);
+    }else if(type === ADV_BOARD_NODE_TYPE.BOSS){
+      ctx2d.beginPath();
+      ctx2d.moveTo(-half + 2, 2);
+      ctx2d.lineTo(-half + 4, -half + 3);
+      ctx2d.lineTo(-3, -half + 6);
+      ctx2d.lineTo(0, -half + 2);
+      ctx2d.lineTo(3, -half + 6);
+      ctx2d.lineTo(half - 4, -half + 3);
+      ctx2d.lineTo(half - 2, 2);
+      ctx2d.lineTo(half - 5, half - 2);
+      ctx2d.lineTo(-half + 5, half - 2);
+      ctx2d.closePath();
+      ctx2d.stroke();
+      ctx2d.fillRect(-5, -2, 2, 2);
+      ctx2d.fillRect(3, -2, 2, 2);
+      ctx2d.beginPath();
+      ctx2d.moveTo(-4, 4);
+      ctx2d.lineTo(0, 6);
+      ctx2d.lineTo(4, 4);
+      ctx2d.stroke();
+    }
+    ctx2d.restore();
+  }
+
+  function drawAdvObserveForecastStubs(ctx2d, centerX, nodeTopY, rawCount, strokeStyle, nowMs = performance.now()){
+    const count = Math.max(0, Math.floor(toNumber(rawCount, 0)));
+    if(count <= 0 || !ctx2d) return;
+    const baseCenter = Math.round(centerX) + 0.5;
+    const offsets = count <= 1
+      ? [0]
+      : count === 2
+        ? [-8, 8]
+        : [-12, 0, 12];
+    const y1 = Math.round(nodeTopY - 7) + 0.5;
+    const y2 = Math.round(nodeTopY - 22) + 0.5;
+    const railGap = 1.5;
+    const arrowAlpha = 0.22;
+    const arrowLength = 3;
+    const arrowWing = 1.25;
+    const arrowShiftX = -1;
+    ctx2d.save();
+    ctx2d.strokeStyle = strokeStyle;
+    ctx2d.lineWidth = 1;
+    for(let i = 0; i < offsets.length; i++){
+      const center = baseCenter + offsets[i];
+      const drawRail = (offset) => {
+        const x = Math.round(center + offset) + 0.5;
+        ctx2d.beginPath();
+        ctx2d.moveTo(x, y1);
+        ctx2d.lineTo(x, y2);
+        ctx2d.stroke();
+      };
+      drawRail(-railGap);
+      drawRail(railGap);
+      const usableTop = y2 + 1;
+      const usableBottom = y1 - arrowLength - 1;
+      const travelSpan = Math.max(1, usableBottom - usableTop);
+    const offset = (toNumber(nowMs, performance.now()) * 0.00145) % travelSpan;
+      const cy = usableBottom - offset;
+      if(cy <= usableBottom && cy >= usableTop){
+        const cx = Math.round(center + arrowShiftX) + 0.5;
+        const tailY = cy + arrowLength;
+        ctx2d.strokeStyle = strokeStyle.replace(/rgba\(([^,]+),([^,]+),([^,]+),[^\)]+\)/, `rgba($1,$2,$3,${arrowAlpha})`);
+        ctx2d.beginPath();
+        ctx2d.moveTo(Math.round(cx - arrowWing) + 0.5, Math.round(tailY) + 0.5);
+        ctx2d.lineTo(cx, Math.round(cy) + 0.5);
+        ctx2d.lineTo(Math.round(cx + arrowWing) + 0.5, Math.round(tailY) + 0.5);
+        ctx2d.stroke();
+      }
+    }
+    ctx2d.restore();
+  }
+
+  function createAdvBoardCanvasElement(map, board, nowMs = performance.now(), options = {}){
+    const canvasEl = document.createElement("canvas");
+    const preview = Boolean(options.preview);
+    canvasEl.className = `overlay-adv-board-canvas ${preview ? "is-preview" : "is-explore"}`;
+    const renderScale = preview ? 1 : 2;
+    const logicalWidth = preview ? 232 : 360;
+    const logicalHeight = preview ? 136 : 188;
+    canvasEl.width = logicalWidth * renderScale;
+    canvasEl.height = logicalHeight * renderScale;
+    const ctx2d = canvasEl.getContext("2d");
+    if(!ctx2d || !isRecord(board)){
+      return canvasEl;
+    }
+    if(renderScale !== 1){
+      ctx2d.scale(renderScale, renderScale);
+    }
+    const now = Math.max(0, toNumber(nowMs, performance.now()));
+    const pulse = 0.5 + (Math.sin(now * 0.0068) * 0.5);
+    const slowPulse = 0.5 + (Math.sin(now * 0.0032) * 0.5);
+    const w = logicalWidth;
+    const h = logicalHeight;
+    const frame = preview
+      ? { left: 10, top: 12, right: w - 10, bottom: h - 12 }
+      : { left: 0, top: 0, right: w, bottom: h };
+    const tone = (alpha = 0.3) => `rgba(14,20,15,${clamp(toNumber(alpha, 0.3), 0.02, 0.98).toFixed(3)})`;
+    const nodeSizeBase = preview ? 10 : 36;
+    const contentPaddingX = preview ? 10 : Math.max(32, Math.round(nodeSizeBase * 0.92));
+    const contentPaddingY = preview ? 10 : Math.max(12, Math.round(nodeSizeBase * 0.46));
+    const contentFrame = {
+      left: frame.left + contentPaddingX,
+      top: frame.top + contentPaddingY,
+      right: frame.right - contentPaddingX,
+      bottom: frame.bottom - contentPaddingY,
+    };
+
+    ctx2d.clearRect(0, 0, w, h);
+    ctx2d.fillStyle = tone(preview ? 0.03 : 0.04);
+    ctx2d.fillRect(frame.left, frame.top, frame.right - frame.left, frame.bottom - frame.top);
+    ctx2d.strokeStyle = tone(0.20);
+    ctx2d.strokeRect(frame.left + 0.5, frame.top + 0.5, frame.right - frame.left - 1, frame.bottom - frame.top - 1);
+
+    const chosenByDepth = isRecord(board.chosenNodeIdByDepth) ? board.chosenNodeIdByDepth : {};
+    const completedSet = new Set(Array.isArray(board.completedNodeIds) ? board.completedNodeIds : []);
+    const lockedSet = new Set(Array.isArray(board.lockedNodeIds) ? board.lockedNodeIds : []);
+    const visiblePathDepth = Math.max(0, Math.floor(toNumber(board.currentDepth, 0)));
+    const availableSet = new Set(getAdvBoardSelectionList(board));
+    const previewDepth = preview
+      ? Math.min(board.depthCount - 1, visiblePathDepth + 2)
+      : Math.min(board.depthCount - 1, visiblePathDepth + 1);
+    const previewSet = new Set(Array.isArray(board.layers?.[previewDepth]) ? board.layers[previewDepth] : []);
+    const prevNodeId = String(chosenByDepth[Math.max(0, visiblePathDepth - 1)] || "").trim().toLowerCase();
+    const currentNodeId = String(board.currentNodeId || "").trim().toLowerCase();
+    const selectedNodeId = String(board.selectedNodeId || "").trim().toLowerCase();
+    const currentMonsterView = runtimeGetView(state.monster);
+    const currentMonsterAnim = getIdleMonsterAnim(state.t, currentMonsterView);
+    const activeAdvSession = !preview ? getAdvSession() : null;
+    const activeRunEffects = !preview && isRecord(activeAdvSession) ? ensureAdvRunEffects(activeAdvSession) : null;
+    const observeForecast = isRecord(activeRunEffects?.observeForecast) ? activeRunEffects.observeForecast : null;
+    const currentBoardNode = !preview ? getAdvBoardNodeById(board, currentNodeId) : null;
+
+    const focusNodes = preview
+      ? board.nodes.slice()
+      : board.nodes.filter((node) => {
+        const nodeId = String(node?.id || "").trim().toLowerCase();
+        if(nodeId.length <= 0) return false;
+        if(nodeId === currentNodeId) return true;
+        if(availableSet.has(nodeId)) return true;
+        return false;
+      });
+    const focusXValues = focusNodes.map((node) => clamp(toNumber(node?.x, 0.5), 0, 1));
+    const focusYValues = focusNodes.map((node) => clamp(toNumber(node?.y, 0.5), 0, 1));
+    let viewLeftNorm = 0;
+    let viewRightNorm = 1;
+    let viewTopNorm = 0;
+    let viewBottomNorm = 1;
+    if(!preview && focusXValues.length > 0 && focusYValues.length > 0){
+      const minX = Math.min(...focusXValues);
+      const maxX = Math.max(...focusXValues);
+      const minY = Math.min(...focusYValues);
+      const maxY = Math.max(...focusYValues);
+      const desiredWidth = Math.max(0.22, Math.min(0.46, (maxX - minX) + 0.10));
+      const desiredHeight = Math.max(0.18, Math.min(0.42, (maxY - minY) + 0.10));
+      const centerX = (minX + maxX) * 0.5;
+      const centerY = (minY + maxY) * 0.5;
+      viewLeftNorm = clamp(centerX - (desiredWidth * 0.5), 0, 1 - desiredWidth);
+      viewRightNorm = clamp(viewLeftNorm + desiredWidth, desiredWidth, 1);
+      viewTopNorm = clamp(centerY - (desiredHeight * 0.5), 0, 1 - desiredHeight);
+      viewBottomNorm = clamp(viewTopNorm + desiredHeight, desiredHeight, 1);
+    }
+
+    const projectX = (value) => {
+      const safe = clamp(toNumber(value, 0.5), 0, 1);
+      const ratio = (safe - viewLeftNorm) / Math.max(0.0001, viewRightNorm - viewLeftNorm);
+      return contentFrame.left + (clamp(ratio, 0, 1) * (contentFrame.right - contentFrame.left));
+    };
+    const projectY = (value) => {
+      const safe = clamp(toNumber(value, 0.5), 0, 1);
+      const ratio = (safe - viewTopNorm) / Math.max(0.0001, viewBottomNorm - viewTopNorm);
+      return contentFrame.top + (clamp(ratio, 0, 1) * (contentFrame.bottom - contentFrame.top));
+    };
+
+    const explorePointById = new Map();
+    if(!preview){
+      const exploreYOffset = 0.09;
+      const shiftY = (value) => clamp(toNumber(value, 0.5) + exploreYOffset, 0.04, 0.96);
+      const currentNode = getAdvBoardNodeById(board, currentNodeId);
+      const availableNodes = Array.from(availableSet)
+        .map((id) => getAdvBoardNodeById(board, id))
+        .filter(Boolean)
+        .sort((a, b) => {
+          const ax = toNumber(a?.x, 0.5);
+          const bx = toNumber(b?.x, 0.5);
+          if(Math.abs(ax - bx) > 0.0001) return ax - bx;
+          return String(a?.id || "").localeCompare(String(b?.id || ""));
+        });
+      const currentAnchor = availableNodes.length > 0
+        ? { x: 0.50, y: 0.80 }
+        : { x: 0.50, y: 0.50 };
+      if(currentNode){
+        explorePointById.set(currentNode.id, {
+          x: contentFrame.left + ((contentFrame.right - contentFrame.left) * currentAnchor.x),
+          y: contentFrame.top + ((contentFrame.bottom - contentFrame.top) * shiftY(currentAnchor.y)),
+        });
+      }
+      const slotLayoutByCount = {
+        1: [{ x: 0.50, y: 0.16 }],
+        2: [{ x: 0.24, y: 0.22 }, { x: 0.76, y: 0.22 }],
+        3: [{ x: 0.16, y: 0.24 }, { x: 0.50, y: 0.14 }, { x: 0.84, y: 0.24 }],
+        4: [{ x: 0.10, y: 0.34 }, { x: 0.34, y: 0.14 }, { x: 0.66, y: 0.14 }, { x: 0.90, y: 0.34 }],
+      };
+      const slotLayout = slotLayoutByCount[Math.max(1, Math.min(4, availableNodes.length))] || [];
+      for(let i = 0; i < availableNodes.length; i++){
+        const node = availableNodes[i];
+        const slot = slotLayout[i] || { x: 0.50, y: 0.28 + (i * 0.12) };
+        explorePointById.set(node.id, {
+          x: contentFrame.left + ((contentFrame.right - contentFrame.left) * slot.x),
+          y: contentFrame.top + ((contentFrame.bottom - contentFrame.top) * shiftY(slot.y)),
+        });
+      }
+    }
+
+    const getNodePoint = (node) => {
+      const nodeId = String(node?.id || "").trim().toLowerCase();
+      if(!preview && explorePointById.has(nodeId)){
+        return explorePointById.get(nodeId);
+      }
+      return {
+        x: projectX(node?.x),
+        y: projectY(node?.y),
+      };
+    };
+
+    for(let depth = 0; depth < board.depthCount; depth++){
+      if(!preview && depth !== visiblePathDepth && depth !== visiblePathDepth + 1){
+        continue;
+      }
+      const layer = Array.isArray(board.layers?.[depth]) ? board.layers[depth] : [];
+      const sampleNode = getAdvBoardNodeById(board, layer[0]) || null;
+      const sampleYNorm = sampleNode ? sampleNode.y : (1 - (depth / Math.max(1, board.depthCount - 1)));
+      const y = projectY(sampleYNorm);
+      const bandTop = Math.round(y - 10);
+      if(!preview){
+        const alpha = depth > visiblePathDepth ? 0.026 : 0.04;
+        ctx2d.fillStyle = tone(alpha);
+        ctx2d.fillRect(frame.left + 2, bandTop, frame.right - frame.left - 4, 20);
+        ctx2d.strokeStyle = tone(0.06);
+        ctx2d.beginPath();
+        ctx2d.moveTo(frame.left + 4, Math.round(y) + 0.5);
+        ctx2d.lineTo(frame.right - 4, Math.round(y) + 0.5);
+        ctx2d.stroke();
+      }
+    }
+    if(!preview){
+      ctx2d.strokeStyle = tone(0.10);
+      ctx2d.beginPath();
+      ctx2d.moveTo(Math.round((frame.left + frame.right) * 0.5) + 0.5, frame.top + 4);
+      ctx2d.lineTo(Math.round((frame.left + frame.right) * 0.5) + 0.5, frame.bottom - 4);
+      ctx2d.stroke();
+    }
+
+    const getNodeRenderMode = (node) => {
+      if(!node) return "hidden";
+      const nodeId = String(node.id || "").trim().toLowerCase();
+      if(preview) return node.type === ADV_BOARD_NODE_TYPE.BOSS ? "boss_hint" : "preview";
+      if(nodeId === currentNodeId) return "current";
+      if(availableSet.has(nodeId)) return nodeId === selectedNodeId ? "selected" : "available";
+      return "hidden";
+    };
+
+    const getNodeRenderSize = (node, renderMode, status) => {
+      const isBoss = node?.type === ADV_BOARD_NODE_TYPE.BOSS;
+      return renderMode === "boss_hint"
+        ? Math.max(10, nodeSizeBase - 2)
+        : renderMode === "preview"
+          ? Math.max(9, nodeSizeBase - 4)
+          : nodeSizeBase + (isBoss ? 5 : 0) + (status === "current" ? 2 : 0);
+    };
+
+    const getNodeFrameSize = (node, renderMode, status) => {
+      const iconSize = getNodeRenderSize(node, renderMode, status);
+      if(renderMode === "preview") return iconSize + 2;
+      if(renderMode === "boss_hint") return iconSize + 4;
+      return iconSize + 12 + (status === "current" ? 4 : 0);
+    };
+
+    const getNodeConnectionTrim = (node, renderMode, status) => {
+      const frameSize = getNodeFrameSize(node, renderMode, status);
+      if(renderMode === "current") return (frameSize * 0.5) + 10;
+      if(node?.type === ADV_BOARD_NODE_TYPE.BOSS && renderMode !== "preview") return (frameSize * 0.5) + 8;
+      return (frameSize * 0.5) + 8;
+    };
+
+    for(let i = 0; i < board.connections.length; i++){
+      const connection = board.connections[i];
+      const fromNode = getAdvBoardNodeById(board, connection.from);
+      const toNode = getAdvBoardNodeById(board, connection.to);
+      if(!fromNode || !toNode) continue;
+      const fromMode = getNodeRenderMode(fromNode);
+      const toMode = getNodeRenderMode(toNode);
+      if(!preview && (fromMode === "hidden" || toMode === "hidden")){
+        continue;
+      }
+      const fromPoint = getNodePoint(fromNode);
+      const toPoint = getNodePoint(toNode);
+      const fromStatus = getAdvBoardNodeStatus(board, String(fromNode.id || "").trim().toLowerCase());
+      const toStatus = getAdvBoardNodeStatus(board, String(toNode.id || "").trim().toLowerCase());
+      const fromSize = getNodeFrameSize(fromNode, fromMode, fromStatus);
+      const toSize = getNodeFrameSize(toNode, toMode, toStatus);
+      const dx = toPoint.x - fromPoint.x;
+      const dy = toPoint.y - fromPoint.y;
+      const length = Math.max(0.0001, Math.hypot(dx, dy));
+      const ux = dx / length;
+      const uy = dy / length;
+      const fromTrim = getNodeConnectionTrim(fromNode, fromMode, fromStatus);
+      const toTrim = getNodeConnectionTrim(toNode, toMode, toStatus);
+      const lineStartX = fromPoint.x + (ux * fromTrim);
+      const lineStartY = fromPoint.y + (uy * fromTrim);
+      const lineEndX = toPoint.x - (ux * toTrim);
+      const lineEndY = toPoint.y - (uy * toTrim);
+      let drawStartX = lineStartX;
+      let drawStartY = lineStartY;
+      let drawEndX = lineEndX;
+      let drawEndY = lineEndY;
+      if(!preview){
+        const midX = (lineStartX + lineEndX) * 0.5;
+        const midY = (lineStartY + lineEndY) * 0.5;
+        const isDiagonal = Math.abs(dx) > 1 && Math.abs(dy) > 1;
+        const shownRatio = isDiagonal ? 0.57 : 0.80;
+        drawStartX = midX + ((lineStartX - midX) * shownRatio);
+        drawStartY = midY + ((lineStartY - midY) * shownRatio);
+        drawEndX = midX + ((lineEndX - midX) * shownRatio);
+        drawEndY = midY + ((lineEndY - midY) * shownRatio);
+      }
+      let alpha = preview ? 0.08 : 0.08;
+      let width = 1;
+      const fromChosen = String(chosenByDepth[fromNode.depth] || "") === String(fromNode.id || "");
+      const toChosen = String(chosenByDepth[toNode.depth] || "") === String(toNode.id || "");
+      if(fromChosen && toChosen){
+        alpha = preview ? 0.16 : 0.26;
+      }
+      if(String(fromNode.id || "") === currentNodeId && availableSet.has(String(toNode.id || ""))){
+        alpha = 0.42 + (pulse * 0.12);
+        width = 2;
+      }
+      if(preview){
+        ctx2d.strokeStyle = tone(alpha);
+        ctx2d.lineWidth = width;
+        ctx2d.beginPath();
+        ctx2d.moveTo(Math.round(drawStartX) + 0.5, Math.round(drawStartY) + 0.5);
+        ctx2d.lineTo(Math.round(drawEndX) + 0.5, Math.round(drawEndY) + 0.5);
+        ctx2d.stroke();
+      } else {
+        const nx = -uy;
+        const ny = ux;
+        const railOffset = width >= 2 ? 2.25 : 1.75;
+        const drawRail = (offset) => {
+          const startX = drawStartX + (nx * offset);
+          const startY = drawStartY + (ny * offset);
+          const endX = drawEndX + (nx * offset);
+          const endY = drawEndY + (ny * offset);
+          ctx2d.beginPath();
+          ctx2d.moveTo(Math.round(startX) + 0.5, Math.round(startY) + 0.5);
+          ctx2d.lineTo(Math.round(endX) + 0.5, Math.round(endY) + 0.5);
+          ctx2d.stroke();
+        };
+        ctx2d.strokeStyle = tone(alpha);
+        ctx2d.lineWidth = 1;
+        drawRail(-railOffset);
+        drawRail(railOffset);
+        const fromId = String(fromNode.id || "").trim().toLowerCase();
+        const toId = String(toNode.id || "").trim().toLowerCase();
+        const isForwardFlow =
+          (fromId === currentNodeId && toId === selectedNodeId) ||
+          (toId === currentNodeId && fromId === selectedNodeId);
+        if(isForwardFlow){
+          const flowStartX = fromId === currentNodeId ? drawStartX : drawEndX;
+          const flowStartY = fromId === currentNodeId ? drawStartY : drawEndY;
+          const flowEndX = fromId === currentNodeId ? drawEndX : drawStartX;
+          const flowEndY = fromId === currentNodeId ? drawEndY : drawStartY;
+          const flowDx = flowEndX - flowStartX;
+          const flowDy = flowEndY - flowStartY;
+          const flowLength = Math.max(0.0001, Math.hypot(flowDx, flowDy));
+          const flowUx = flowDx / flowLength;
+          const flowUy = flowDy / flowLength;
+          const flowNx = -flowUy;
+          const flowNy = flowUx;
+          const arrowAlpha = 0.36 + (pulse * 0.14);
+          const arrowLength = Math.min(8, Math.max(5, flowLength * 0.10));
+          const wing = Math.max(2.25, arrowLength * 0.42);
+          const usableStart = 0.20;
+          const usableEnd = 0.82;
+          const usableTravel = usableEnd - usableStart;
+          const arrowCount =
+            flowLength >= 84 ? 4 :
+            flowLength >= 54 ? 3 :
+            2;
+          const spacingTravel = usableTravel / arrowCount;
+          const travelOffset = ((now * 0.00075) + (i * 0.17)) % spacingTravel;
+          const drawChevron = (travel) => {
+            const clampedTravel = clamp(travel, usableStart, usableEnd);
+            const cx = flowStartX + (flowDx * clampedTravel);
+            const cy = flowStartY + (flowDy * clampedTravel);
+            const tailX = cx - (flowUx * arrowLength);
+            const tailY = cy - (flowUy * arrowLength);
+            const leftX = tailX + (flowNx * wing);
+            const leftY = tailY + (flowNy * wing);
+            const rightX = tailX - (flowNx * wing);
+            const rightY = tailY - (flowNy * wing);
+            ctx2d.strokeStyle = tone(arrowAlpha);
+            ctx2d.lineWidth = 1;
+            ctx2d.beginPath();
+            ctx2d.moveTo(Math.round(leftX) + 0.5, Math.round(leftY) + 0.5);
+            ctx2d.lineTo(Math.round(cx) + 0.5, Math.round(cy) + 0.5);
+            ctx2d.lineTo(Math.round(rightX) + 0.5, Math.round(rightY) + 0.5);
+            ctx2d.stroke();
+          };
+          for(let n = 0; n < arrowCount; n++){
+            const travel = usableStart + travelOffset + (spacingTravel * n);
+            drawChevron(travel);
+          }
+        }
+      }
+    }
+
+    if(!preview && observeForecast && currentBoardNode?.type === ADV_BOARD_NODE_TYPE.OBSERVE){
+      for(let i = 0; i < board.nodes.length; i++){
+        const node = board.nodes[i];
+        const nodeId = String(node?.id || "").trim().toLowerCase();
+        if(!availableSet.has(nodeId)) continue;
+        const renderMode = getNodeRenderMode(node);
+        if(renderMode !== "available" && renderMode !== "selected") continue;
+        const branchCount = Math.max(0, Math.min(3, Math.floor(toNumber(observeForecast[nodeId], 0))));
+        if(branchCount <= 0) continue;
+        const status = getAdvBoardNodeStatus(board, nodeId);
+        const point = getNodePoint(node);
+        const frameSize = getNodeFrameSize(node, renderMode, status);
+        const nodeTopY = point.y - (frameSize * 0.5);
+        drawAdvObserveForecastStubs(
+          ctx2d,
+          point.x,
+          nodeTopY,
+          branchCount,
+          tone(0.16),
+          now
+        );
+      }
+    }
+
+    for(let i = 0; i < board.nodes.length; i++){
+      const node = board.nodes[i];
+      const nodeId = String(node.id || "").trim().toLowerCase();
+      const status = getAdvBoardNodeStatus(board, nodeId);
+      const renderMode = getNodeRenderMode(node);
+      if(renderMode === "hidden"){
+        continue;
+      }
+      const point = getNodePoint(node);
+      const isSelected = nodeId === selectedNodeId;
+      const isBoss = node.type === ADV_BOARD_NODE_TYPE.BOSS;
+      const size = getNodeRenderSize(node, renderMode, status);
+      const frameSize = getNodeFrameSize(node, renderMode, status);
+      const left = Math.round(point.x - (frameSize * 0.5));
+      const top = Math.round(point.y - (frameSize * 0.5));
+      const strokeAlpha =
+        renderMode === "preview" ? 0.16 :
+        renderMode === "boss_hint" ? 0.16 + (pulse * 0.08) :
+        status === "completed" ? 0.40 :
+        status === "current" ? 0.48 :
+        status === "locked" ? 0.16 :
+        status === "available" ? 0.38 :
+        0.22;
+
+      ctx2d.strokeStyle = tone(strokeAlpha);
+      ctx2d.lineWidth = 1;
+      ctx2d.strokeRect(left + 0.5, top + 0.5, frameSize - 1, frameSize - 1);
+      if(isBoss && renderMode !== "preview"){
+        ctx2d.strokeStyle = tone(0.28 + (pulse * 0.20));
+        ctx2d.strokeRect(left - 2.5, top - 2.5, frameSize + 4, frameSize + 4);
+      }else if(isBoss && preview){
+        ctx2d.strokeStyle = tone(0.20);
+        ctx2d.strokeRect(left - 1.5, top - 1.5, frameSize + 2, frameSize + 2);
+      }
+      if(renderMode === "current"){
+        ctx2d.strokeStyle = tone(0.58);
+        ctx2d.lineWidth = 1;
+        ctx2d.strokeRect(left + 3.5, top + 3.5, Math.max(1, frameSize - 7), Math.max(1, frameSize - 7));
+      }
+      if(renderMode === "locked"){
+        ctx2d.strokeStyle = tone(0.20);
+        ctx2d.beginPath();
+        ctx2d.moveTo(left + 3.5, top + 3.5);
+        ctx2d.lineTo(left + frameSize - 3.5, top + frameSize - 3.5);
+        ctx2d.moveTo(left + frameSize - 3.5, top + 3.5);
+        ctx2d.lineTo(left + 3.5, top + frameSize - 3.5);
+        ctx2d.stroke();
+      }
+      if(renderMode === "selected" && !preview){
+        ctx2d.strokeStyle = tone(0.22 + (slowPulse * 0.24));
+        ctx2d.lineWidth = 2;
+        ctx2d.strokeRect(left - 3.5, top - 3.5, frameSize + 6, frameSize + 6);
+      }
+      if(renderMode === "current" && !preview){
+        const spriteScale = Math.max(3, Math.floor((size - 1) / SPRITE_SIZE));
+        const spritePx = SPRITE_SIZE * spriteScale;
+        const spriteDrawX = Math.round(point.x - (spritePx * 0.5) + toNumber(currentMonsterAnim?.ox, 0));
+        const spriteDrawY = Math.round(point.y - (spritePx * 0.5) + toNumber(currentMonsterAnim?.oy, 0));
+        drawSprite16x16ToContext(
+          ctx2d,
+          spriteDrawX,
+          spriteDrawY,
+          currentMonsterAnim?.sprite,
+          spriteScale,
+          {
+            body: "rgba(14,20,15,0.78)",
+            accent: "rgba(14,20,15,0.94)",
+          }
+        );
+      }else if(renderMode !== "preview" && renderMode !== "boss_hint"){
+        const iconAlpha = renderMode === "locked"
+          ? 0.28
+          : (renderMode === "selected" ? 0.46 + (slowPulse * 0.54) : 1);
+        drawAdvBoardNodeIcon(ctx2d, node.type, point.x, point.y, Math.max(12, size + 2), iconAlpha);
+      }else if(renderMode === "boss_hint"){
+        drawAdvBoardNodeIcon(ctx2d, node.type, point.x, point.y, Math.max(10, size), 0.34);
+      }
+      if(completedSet.has(nodeId) && renderMode !== "preview" && renderMode !== "boss_hint"){
+        ctx2d.fillStyle = tone(0.74);
+        ctx2d.fillRect(left + frameSize - 5, top + frameSize - 5, 3, 3);
+      }
+    }
+
+    return canvasEl;
+  }
+
+  function buildAdvResultOverlayElement(payload, nowMs = performance.now()){
+    const lines = Array.isArray(payload?.lines) ? payload.lines.map((line) => String(line ?? "")) : ["結果なし。"];
+    return buildStructuredResultOverlayElement(
+      {
+        title: String(payload?.title || "ADV RESULT"),
+        flavorLines: lines.slice(0, 2),
+        resultLines: lines.slice(2),
+      },
+      `adv-result:${String(payload?.title || "ADV RESULT")}::${lines.join("\n")}`,
+      nowMs
+    );
+  }
+
+  function closeAdvResultPhase(session){
+    if(!isRecord(session)) return;
+    const runEffects = ensureAdvRunEffects(session);
+    const noticeText = String(session.noticeText || "").trim();
+    const shouldReturnMapSelect = Boolean(session.returnToMapSelectAfterBattle) || Boolean(runEffects.zoneCleared);
+    session.resultPayload = null;
+    if(shouldReturnMapSelect){
+      session.returnToMapSelectAfterBattle = false;
+      runEffects.zoneCleared = false;
+      enterAdvMapSelect(session, noticeText);
+      return;
+    }
+    session.phase = ADV_PHASE.EXPLORE;
+  }
+
+  function buildAdvBoardBottomPane(session, map){
+    const bottomPane = document.createElement("div");
+    bottomPane.className = "overlay-food-pane overlay-food-pane-bottom overlay-adv-pane-bottom";
+    const board = getAdvBoard(session);
+    const currentNode = getAdvBoardCurrentNode(board);
+    const selectedNode = getAdvBoardSelectedNode(board) || currentNode;
+    const selectedStatus = getAdvBoardNodeStatus(board, selectedNode?.id);
+    const selectedOutcome = resolveAdvBoardNodeOutcomeKind(selectedNode, map, board);
+
+    const name = document.createElement("div");
+    name.className = "overlay-food-detail-name";
+    name.textContent = `${getAdvBoardNodeDisplay(selectedNode?.type).label}ノード`;
+
+    const meta = document.createElement("div");
+    meta.className = "overlay-food-detail-meta";
+    meta.textContent = `種別:${getAdvBoardNodeDisplay(selectedNode?.type).label} / 危険度:${getAdvDangerJa(map).replace(/^危/, "")} / ${
+      selectedStatus === "current" ? "現在地" :
+      selectedStatus === "completed" ? "到達済み" :
+      selectedStatus === "locked" ? "条件不足" :
+      selectedStatus === "available" ? "到達可能" :
+      "未到達"
+    }`;
+
+    const desc = document.createElement("div");
+    desc.className = "overlay-food-detail-desc";
+    desc.textContent = buildAdvBoardNodeDescription(map, selectedNode);
+
+    bottomPane.appendChild(name);
+    bottomPane.appendChild(meta);
+    bottomPane.appendChild(desc);
+    return bottomPane;
+  }
+
+  function buildAdvMapSelectOverlayElement(){
+    const session = getAdvSession() || createAdvSession(performance.now());
+    const maps = getAdvMapCatalog();
+    const selectedMap = getSelectedAdvMap(session);
+    const page = document.createElement("div");
+    page.className = "overlay-adv-page overlay-adv-mapselect-page";
+
+    const topPane = document.createElement("div");
+    topPane.className = "overlay-food-pane overlay-food-pane-top";
+    const topLayout = document.createElement("div");
+    topLayout.className = "overlay-adv-map-layout";
+
+    const listPane = document.createElement("div");
+    listPane.className = "overlay-item-subpane overlay-adv-map-pane";
+    const listRows = document.createElement("div");
+    listRows.className = "overlay-adv-map-rows";
+    if(maps.length <= 0){
+      const empty = document.createElement("div");
+      empty.className = "overlay-item-empty";
+      empty.textContent = "探索先が登録されていない。";
+      listRows.appendChild(empty);
+    }else{
+      const cursor = getAdvMapCursor(session);
+      const visibleRows = Math.min(ADV_MAP_LIST_VISIBLE_ROWS, maps.length);
+      const start = getFoodListWindowStart(maps.length, cursor, visibleRows);
+      const end = Math.min(maps.length, start + visibleRows);
+      for(let i = start; i < end; i++){
+        const map = maps[i];
+        const selected = i === cursor;
+        const row = document.createElement("div");
+        row.className = `overlay-adv-map-row${selected ? " is-selected" : ""}`;
+
+        const cursorEl = document.createElement("span");
+        cursorEl.textContent = selected ? ">" : " ";
+        const nameEl = document.createElement("span");
+        nameEl.className = "overlay-adv-map-name";
+        nameEl.textContent = getAdvMapDisplayName(map);
+        const metaEl = document.createElement("span");
+        metaEl.className = "overlay-adv-map-meta";
+        metaEl.textContent = getAdvMapMetaText(map);
+
+        row.appendChild(cursorEl);
+        row.appendChild(nameEl);
+        row.appendChild(metaEl);
+        listRows.appendChild(row);
+      }
+    }
+    listPane.appendChild(listRows);
+
+    const detailPane = document.createElement("div");
+    detailPane.className = "overlay-item-subpane overlay-adv-map-detail-pane";
+    if(selectedMap){
+      const symbolWrap = document.createElement("div");
+      symbolWrap.className = "overlay-adv-zone-symbol-wrap";
+      symbolWrap.appendChild(createAdvZoneSymbolCanvasElement(selectedMap));
+      detailPane.appendChild(symbolWrap);
+      if(!isAdvNodeUnlocked(selectedMap)){
+        detailPane.appendChild(createAdvZonePaneNoiseCanvasElement(selectedMap));
+      }
+    }
+
+    topLayout.appendChild(listPane);
+    topLayout.appendChild(detailPane);
+    topPane.appendChild(topLayout);
+
+    const bottomPane = document.createElement("div");
+    bottomPane.className = "overlay-food-pane overlay-food-pane-bottom overlay-adv-pane-bottom";
+    const note = document.createElement("div");
+    note.className = "overlay-adv-bottom-note";
+    note.textContent = getAdvMapDescriptionText(selectedMap) || String(session.noticeText || "").trim() || "\u00A0";
+    bottomPane.appendChild(note);
+    if(selectedMap){
+      const meta = document.createElement("div");
+      meta.className = "overlay-adv-bottom-meta";
+      meta.textContent = `危険度：${getAdvDangerLevelJa(selectedMap)} / 規模：${getAdvMapScaleJa(selectedMap)} / BOSS：${getAdvMapBossStateText(selectedMap)}`;
+      bottomPane.appendChild(meta);
+    }
+
+    page.appendChild(topPane);
+    page.appendChild(bottomPane);
+    return page;
+  }
+
+  function createAdvFixedViewCanvasElement(session, map, nowMs = performance.now()){
+    const canvasEl = document.createElement("canvas");
+    canvasEl.className = "overlay-adv-fixedview-canvas";
+    canvasEl.width = 224;
+    canvasEl.height = 160;
+    const ctx2d = canvasEl.getContext("2d");
+    if(!ctx2d){
+      return canvasEl;
+    }
+    const w = canvasEl.width;
+    const h = canvasEl.height;
+    const pulse = 0.5 + (Math.sin(Math.max(0, toNumber(nowMs, performance.now())) * 0.0074) * 0.5);
+    const cell = getAdvCurrentCellType(session);
+    const zoneType = String(map?.zoneType || "").trim().toLowerCase();
+    const stateLabels = getAdvMapStateLabels(map);
+    const room = { left: 12, top: 10, right: w - 10, bottom: h - 10 };
+    const back = { left: 58, top: 26, right: w - 54, bottom: h - 34 };
+    const tone = (alpha) => `rgba(14,20,15,${clamp(toNumber(alpha, 0.1), 0.03, 0.92).toFixed(3)})`;
+    const strokeLine = (x1, y1, x2, y2, alpha = 0.22) => {
+      ctx2d.strokeStyle = tone(alpha);
+      ctx2d.beginPath();
+      ctx2d.moveTo(Math.round(x1) + 0.5, Math.round(y1) + 0.5);
+      ctx2d.lineTo(Math.round(x2) + 0.5, Math.round(y2) + 0.5);
+      ctx2d.stroke();
+    };
+    const strokeRect = (left, top, right, bottom, alpha = 0.22) => {
+      ctx2d.strokeStyle = tone(alpha);
+      ctx2d.strokeRect(
+        Math.round(left) + 0.5,
+        Math.round(top) + 0.5,
+        Math.max(1, Math.round(right - left) - 1),
+        Math.max(1, Math.round(bottom - top) - 1)
+      );
+    };
+    const fillRectAlpha = (left, top, width, height, alpha = 0.08) => {
+      ctx2d.fillStyle = tone(alpha);
+      ctx2d.fillRect(left, top, Math.max(1, width), Math.max(1, height));
+    };
+
+    ctx2d.clearRect(0, 0, w, h);
+    fillRectAlpha(0, 0, w, h, 0.03);
+
+    ctx2d.fillStyle = tone(0.06);
+    ctx2d.beginPath();
+    ctx2d.moveTo(room.left, room.bottom);
+    ctx2d.lineTo(room.right, room.bottom);
+    ctx2d.lineTo(back.right, back.bottom);
+    ctx2d.lineTo(back.left, back.bottom);
+    ctx2d.closePath();
+    ctx2d.fill();
+
+    ctx2d.fillStyle = tone(0.09);
+    ctx2d.beginPath();
+    ctx2d.moveTo(room.left, room.top);
+    ctx2d.lineTo(back.left, back.top);
+    ctx2d.lineTo(back.left, back.bottom);
+    ctx2d.lineTo(room.left, room.bottom);
+    ctx2d.closePath();
+    ctx2d.fill();
+
+    ctx2d.beginPath();
+    ctx2d.moveTo(room.right, room.top);
+    ctx2d.lineTo(back.right, back.top);
+    ctx2d.lineTo(back.right, back.bottom);
+    ctx2d.lineTo(room.right, room.bottom);
+    ctx2d.closePath();
+    ctx2d.fill();
+
+    fillRectAlpha(back.left, back.top, back.right - back.left, back.bottom - back.top, 0.11);
+
+    strokeLine(room.left, room.top, back.left, back.top, 0.30);
+    strokeLine(room.right, room.top, back.right, back.top, 0.30);
+    strokeLine(room.left, room.bottom, back.left, back.bottom, 0.30);
+    strokeLine(room.right, room.bottom, back.right, back.bottom, 0.30);
+    strokeRect(back.left, back.top, back.right, back.bottom, 0.34);
+
+    if(zoneType === ADV_ZONE_TYPE.MAINTENANCE){
+      for(let x = room.left + 22; x < room.right - 10; x += 24){
+        strokeLine(x, back.bottom + 6, x - 8, room.bottom - 4, 0.14);
+      }
+      strokeLine(back.left + 28, back.top + 6, back.left + 28, back.bottom - 6, 0.20);
+      strokeLine(back.right - 28, back.top + 6, back.right - 28, back.bottom - 6, 0.20);
+      strokeRect(back.left + 34, back.top + 12, back.right - 34, back.bottom - 8, 0.28);
+      strokeRect(back.left + 46, back.top + 20, back.right - 46, back.bottom - 18, 0.20);
+      strokeRect(room.right - 44, room.bottom - 34, room.right - 14, room.bottom - 14, 0.18);
+      strokeLine(room.left + 16, room.top + 6, room.left + 16, room.bottom - 12, 0.18);
+      strokeLine(room.left + 22, room.top + 10, room.left + 22, room.bottom - 16, 0.16);
+    }else if(zoneType === ADV_ZONE_TYPE.RECORD){
+      for(let y = back.top + 12; y < back.bottom - 6; y += 12){
+        strokeLine(back.left + 8, y, back.right - 8, y, 0.14);
+      }
+      for(let x = back.left + 18; x < back.right - 10; x += 18){
+        strokeLine(x, back.top + 8, x, back.bottom - 8, 0.12);
+      }
+      strokeRect(back.left + 10, back.top + 18, back.left + 38, back.bottom - 16, 0.18);
+      strokeRect(back.right - 40, back.top + 16, back.right - 12, back.bottom - 12, 0.18);
+      fillRectAlpha(back.left + 16, back.top + 24, 10, 6, 0.20);
+      strokeLine(room.left + 12, room.top + 10, room.left + 12, room.bottom - 10, 0.10);
+      strokeLine(room.right - 12, room.top + 10, room.right - 12, room.bottom - 10, 0.10);
+    }else if(zoneType === ADV_ZONE_TYPE.LINE){
+      strokeRect(back.left + 52, back.top + 18, back.right - 52, back.top + 42, 0.24);
+      strokeLine(back.left + 64, back.top + 30, back.left + 28, back.top + 12, 0.20);
+      strokeLine(back.right - 64, back.top + 30, back.right - 24, back.top + 14, 0.20);
+      strokeLine(back.left + 66, back.top + 42, back.left + 22, back.bottom - 10, 0.16);
+      strokeLine(back.right - 66, back.top + 42, back.right - 20, back.bottom - 12, 0.16);
+      for(let i = 0; i < 4; i++){
+        const cableX = room.left + 18 + (i * 8);
+        strokeLine(cableX, room.top + 6, cableX + 6, room.bottom - 24, 0.14);
+      }
+      fillRectAlpha(room.left + 20, room.top + 18, 3, 3, 0.22);
+      fillRectAlpha(room.right - 28, room.bottom - 30, 3, 3, 0.22);
+    }else if(zoneType === ADV_ZONE_TYPE.CONTROL){
+      strokeRect(back.left + 28, back.top + 10, back.right - 28, back.bottom - 8, 0.30);
+      strokeLine(back.left + (back.right - back.left) * 0.5, back.top + 10, back.left + (back.right - back.left) * 0.5, back.bottom - 8, 0.22);
+      strokeLine(room.left + 18, room.top + 8, room.left + 18, room.bottom - 8, 0.18);
+      strokeLine(room.right - 18, room.top + 8, room.right - 18, room.bottom - 8, 0.18);
+    }else if(zoneType === ADV_ZONE_TYPE.ECOLOGY){
+      strokeRect(back.left + 22, back.top + 12, back.right - 22, back.bottom - 10, 0.18);
+      strokeLine(room.left + 18, room.top + 8, room.left + 30, room.bottom - 14, 0.10);
+      strokeLine(room.right - 18, room.top + 10, room.right - 32, room.bottom - 16, 0.10);
+      fillRectAlpha(back.left + 34, back.top + 26, back.right - back.left - 68, 6, 0.14);
+    }
+
+    if(stateLabels.includes(ADV_STATE_LABEL.CONTAMINATION)){
+      for(let i = 0; i < 5; i++){
+        fillRectAlpha(room.left + 18 + (i * 12), room.bottom - 18 - ((i % 2) * 6), 3, 3, 0.14);
+      }
+    }
+    if(stateLabels.includes(ADV_STATE_LABEL.ANOMALY)){
+      strokeLine(back.left + 12, back.top + 18, back.right - 18, back.top + 12, 0.12);
+      strokeRect(back.left + 18, back.top + 24, back.left + 42, back.top + 40, 0.10);
+    }
+    if(stateLabels.includes(ADV_STATE_LABEL.DANGER)){
+      const alertAlpha = 0.16 + (pulse * 0.12);
+      strokeLine(room.left + 6, room.top + 6, room.left + 20, room.top + 6, alertAlpha);
+      strokeLine(room.left + 6, room.top + 6, room.left + 6, room.top + 20, alertAlpha);
+      strokeLine(room.right - 6, room.top + 6, room.right - 20, room.top + 6, alertAlpha);
+      strokeLine(room.right - 6, room.top + 6, room.right - 6, room.top + 20, alertAlpha);
+    }
+
+    if(cell?.kind === "goal"){
+      const doorLeft = back.left + 40;
+      const doorRight = back.right - 40;
+      const doorTop = back.top + 12;
+      const doorBottom = back.bottom - 6;
+      fillRectAlpha(doorLeft + 2, doorTop + 2, Math.floor((doorRight - doorLeft) * 0.5) - 4, doorBottom - doorTop - 4, 0.18 + (pulse * 0.08));
+      fillRectAlpha(Math.floor((doorLeft + doorRight) * 0.5) + 2, doorTop + 2, Math.floor((doorRight - doorLeft) * 0.5) - 4, doorBottom - doorTop - 4, 0.18 + (pulse * 0.08));
+      strokeRect(doorLeft, doorTop, doorRight, doorBottom, 0.44);
+      strokeLine((doorLeft + doorRight) * 0.5, doorTop, (doorLeft + doorRight) * 0.5, doorBottom, 0.44);
+      strokeRect(doorLeft + 10, doorTop + 12, doorLeft + 34, doorBottom - 14, 0.24);
+      strokeRect(doorRight - 34, doorTop + 12, doorRight - 10, doorBottom - 14, 0.24);
+    }else if(cell?.kind === "item"){
+      strokeRect(back.right - 38, back.bottom - 24, back.right - 20, back.bottom - 8, 0.16 + (pulse * 0.14));
+      fillRectAlpha(back.right - 34, back.bottom - 20, 10, 8, 0.20 + (pulse * 0.10));
+    }else if(cell?.kind === "event"){
+      const cx = back.left + 28;
+      const cy = back.top + 24;
+      strokeRect(cx - 8, cy - 8, cx + 8, cy + 8, 0.14 + (pulse * 0.14));
+      fillRectAlpha(cx - 1, cy - 1, 3, 3, 0.20 + (pulse * 0.12));
+    }else if(cell?.kind === "start"){
+      strokeRect(back.left + 14, back.bottom - 18, back.right - 14, back.bottom - 8, 0.12);
+    }
+
+    return canvasEl;
+  }
+
+  function createAdvLocalMapCanvasElement(session, map, options = {}){
+    const canvasEl = document.createElement("canvas");
+    const full = Boolean(options.full);
+    canvasEl.className = full ? "overlay-adv-localmap-canvas is-full" : "overlay-adv-localmap-canvas";
+    canvasEl.width = full ? 240 : 128;
+    canvasEl.height = full ? 208 : 140;
+    const ctx2d = canvasEl.getContext("2d");
+    if(!ctx2d){
+      return canvasEl;
+    }
+    const dungeon = getAdvDungeon(session);
+    const player = getAdvDungeonPlayer(session);
+    if(!dungeon || !player){
+      return canvasEl;
+    }
+    const pulse = 0.5 + (Math.sin(performance.now() * 0.0072) * 0.5);
+    const tone = (alpha) => `rgba(14,20,15,${clamp(toNumber(alpha, 0.1), 0.03, 0.92).toFixed(3)})`;
+    const box = { left: 8, top: 8, right: canvasEl.width - 8, bottom: canvasEl.height - 8 };
+    const innerW = box.right - box.left;
+    const innerH = box.bottom - box.top;
+    const scale = Math.max(2, Math.floor(Math.min(innerW / Math.max(1, dungeon.width), innerH / Math.max(1, dungeon.height))));
+    const gridW = scale * dungeon.width;
+    const gridH = scale * dungeon.height;
+    const offsetX = box.left + Math.floor((innerW - gridW) * 0.5);
+    const offsetY = box.top + Math.floor((innerH - gridH) * 0.5);
+    const visited = new Set(Array.isArray(dungeon.visitedKeys) ? dungeon.visitedKeys : []);
+
+    ctx2d.clearRect(0, 0, canvasEl.width, canvasEl.height);
+    ctx2d.fillStyle = tone(full ? 0.08 : 0.06);
+    ctx2d.fillRect(box.left, box.top, innerW, innerH);
+    ctx2d.strokeStyle = tone(full ? 0.30 : 0.24);
+    ctx2d.strokeRect(box.left + 0.5, box.top + 0.5, innerW - 1, innerH - 1);
+
+    for(let y = 0; y < dungeon.height; y++){
+      const row = Array.isArray(dungeon.grid?.[y]) ? dungeon.grid[y] : [];
+      for(let x = 0; x < dungeon.width; x++){
+        if(row[x] !== 1) continue;
+        const key = getAdvCellKey(x, y);
+        if(!visited.has(key)) continue;
+        const left = offsetX + (x * scale);
+        const top = offsetY + (y * scale);
+        ctx2d.fillStyle = tone(full ? 0.38 : 0.32);
+        ctx2d.fillRect(left, top, scale, scale);
+        if(x < dungeon.width - 1 && row[x + 1] === 1 && visited.has(getAdvCellKey(x + 1, y))){
+          ctx2d.fillRect(left + scale - 1, top + Math.floor(scale * 0.35), 2, Math.max(1, Math.floor(scale * 0.30)));
+        }
+        if(y < dungeon.height - 1 && Array.isArray(dungeon.grid[y + 1]) && dungeon.grid[y + 1][x] === 1 && visited.has(getAdvCellKey(x, y + 1))){
+          ctx2d.fillRect(left + Math.floor(scale * 0.35), top + scale - 1, Math.max(1, Math.floor(scale * 0.30)), 2);
+        }
+        const hasUnknownNeighbor = [
+          { x: x + 1, y },
+          { x: x - 1, y },
+          { x, y: y + 1 },
+          { x, y: y - 1 },
+        ].some((next) => isAdvDungeonWalkable(dungeon, next.x, next.y) && !visited.has(getAdvCellKey(next.x, next.y)));
+        if(hasUnknownNeighbor){
+          ctx2d.fillStyle = tone(0.14);
+          ctx2d.fillRect(left + scale - 3, top + 1, 2, 2);
+        }
+      }
+    }
+
+    const markCell = (x, y, alpha = 0.20) => {
+      const left = offsetX + (x * scale);
+      const top = offsetY + (y * scale);
+      ctx2d.strokeStyle = tone(alpha);
+      ctx2d.strokeRect(left + 0.5, top + 0.5, Math.max(1, scale - 1), Math.max(1, scale - 1));
+    };
+    const itemCells = Array.isArray(dungeon.itemCells) ? dungeon.itemCells : [];
+    for(let i = 0; i < itemCells.length; i++){
+      const cell = itemCells[i];
+      if(cell?.claimed || !visited.has(getAdvCellKey(cell.x, cell.y))) continue;
+      markCell(cell.x, cell.y, 0.18);
+    }
+    const eventCells = Array.isArray(dungeon.eventCells) ? dungeon.eventCells : [];
+    for(let i = 0; i < eventCells.length; i++){
+      const cell = eventCells[i];
+      if(cell?.resolved || !visited.has(getAdvCellKey(cell.x, cell.y))) continue;
+      const left = offsetX + (cell.x * scale);
+      const top = offsetY + (cell.y * scale);
+      ctx2d.strokeStyle = tone(0.16);
+      ctx2d.beginPath();
+      ctx2d.moveTo(left + 1.5, top + 1.5);
+      ctx2d.lineTo(left + scale - 1.5, top + scale - 1.5);
+      ctx2d.moveTo(left + scale - 1.5, top + 1.5);
+      ctx2d.lineTo(left + 1.5, top + scale - 1.5);
+      ctx2d.stroke();
+    }
+
+    const goalVisited = visited.has(getAdvCellKey(dungeon.goal?.x, dungeon.goal?.y)) || (player.x === dungeon.goal?.x && player.y === dungeon.goal?.y);
+    if(goalVisited){
+      const goalLeft = offsetX + (dungeon.goal.x * scale);
+      const goalTop = offsetY + (dungeon.goal.y * scale);
+      ctx2d.fillStyle = tone(0.26);
+      ctx2d.fillRect(goalLeft + 1, goalTop + 1, Math.max(2, scale - 2), Math.max(2, scale - 2));
+      ctx2d.strokeStyle = tone(0.34);
+      ctx2d.strokeRect(goalLeft + 0.5, goalTop + 0.5, Math.max(1, scale - 1), Math.max(1, scale - 1));
+    }
+
+    const playerLeft = offsetX + (player.x * scale);
+    const playerTop = offsetY + (player.y * scale);
+    ctx2d.fillStyle = tone(0.32 + (pulse * 0.20));
+    ctx2d.fillRect(playerLeft - 1, playerTop - 1, scale + 2, scale + 2);
+    ctx2d.strokeStyle = "rgba(200,214,194,0.80)";
+    ctx2d.strokeRect(playerLeft - 1.5, playerTop - 1.5, scale + 2, scale + 2);
+
+    return canvasEl;
+  }
+
+  function buildAdvExploreBottomPane(session, map){
+    const bottomPane = document.createElement("div");
+    bottomPane.className = "overlay-food-pane overlay-food-pane-bottom overlay-adv-pane-bottom";
+
+    const lead = document.createElement("div");
+    lead.className = "overlay-adv-bottom-lead";
+    lead.textContent = String(session?.leadText || "").trim() || "観測対象を確認する。";
+
+    const note = document.createElement("div");
+    note.className = "overlay-adv-bottom-note";
+    const activeChoices = getAdvPromptChoices(session);
+    const selectedChoice = getSelectedAdvChoiceItem(session);
+    const latestLog = Array.isArray(session?.logs) && session.logs.length > 0 ? String(session.logs[session.logs.length - 1] || "") : "";
+    const noteText = String(session?.noticeText || latestLog || selectedChoice?.description || session?.noteText || "").trim();
+    note.textContent = noteText.length > 0 ? noteText : "\u00A0";
+
+    const choiceList = document.createElement("div");
+    choiceList.className = "overlay-adv-choice-list";
+    const list = activeChoices.length > 0 ? activeChoices : ADV_COMMAND_CATALOG;
+    const cursor = getAdvChoiceCursor(session);
+    for(let i = 0; i < list.length; i++){
+      const entry = list[i];
+      const selected = i === cursor;
+      const row = document.createElement("div");
+      row.className = `overlay-adv-choice-row${selected ? " is-selected" : ""}`;
+      const cursorEl = document.createElement("span");
+      cursorEl.textContent = selected ? ">" : " ";
+      const labelEl = document.createElement("span");
+      labelEl.textContent = String(entry?.label || "");
+      row.appendChild(cursorEl);
+      row.appendChild(labelEl);
+      choiceList.appendChild(row);
+    }
+
+    bottomPane.appendChild(lead);
+    bottomPane.appendChild(note);
+    bottomPane.appendChild(choiceList);
+    return bottomPane;
+  }
+
+  function isReadyImageAsset(image){
+    return Boolean(
+      image instanceof Image &&
+      image.complete &&
+      image.naturalWidth > 0 &&
+      image.naturalHeight > 0
+    );
+  }
+
+  function drawAdvUiFrame(ctx, image, rect){
+    if(!ctx || !isRecord(rect)) return;
+    if(isReadyImageAsset(image)){
+      ctx.drawImage(image, rect.x, rect.y, rect.w, rect.h);
+      return;
+    }
+    ctx.save();
+    ctx.strokeStyle = "rgba(14,20,15,0.45)";
+    ctx.strokeRect(rect.x + 0.5, rect.y + 0.5, rect.w - 1, rect.h - 1);
+    ctx.restore();
+  }
+
+  function drawAdvUiIcon(ctx, iconId, x, y, size = 16, alpha = 1){
+    const image = ADV_UI_ICON_IMAGES[String(iconId || "").trim().toLowerCase()] || null;
+    if(!ctx || !isReadyImageAsset(image)) return;
+    ctx.save();
+    ctx.globalAlpha = clamp(toNumber(alpha, 1), 0, 1);
+    ctx.drawImage(image, Math.round(x), Math.round(y), size, size);
+    ctx.restore();
+  }
+
+  function drawAdvProtoText(ctx, x, y, text, options = {}){
+    if(!ctx) return;
+    const size = Math.max(8, Math.floor(toNumber(options.size, 12)));
+    ctx.save();
+    ctx.globalAlpha = clamp(toNumber(options.alpha, 1), 0, 1);
+    ctx.fillStyle = options.color || "rgba(14,20,15,0.94)";
+    ctx.font = `${size}px "PixelMplus12", ui-monospace, monospace`;
+    ctx.textAlign = options.align || "left";
+    ctx.textBaseline = options.baseline || "top";
+    ctx.fillText(String(text ?? ""), x, y);
+    ctx.restore();
+  }
+
+  function drawAdvObservationSignal(ctx, signal, nowMs, hoveredId){
+    if(!ctx || !isRecord(signal)) return;
+    const x = toNumber(signal.x, 0);
+    const y = toNumber(signal.y, 0);
+    const radius = Math.max(3, toNumber(signal.radius, 6));
+    const hovered = String(hoveredId || "") === String(signal.id || "");
+    const pulse = 0.55 + (((Math.sin((nowMs / 220) + toNumber(signal.pulse, 0)) + 1) * 0.5) * 0.45);
+    ctx.save();
+    ctx.strokeStyle = hovered ? "rgba(14,20,15,0.96)" : "rgba(14,20,15,0.72)";
+    ctx.fillStyle = "rgba(14,20,15,0.80)";
+    ctx.lineWidth = hovered ? 2 : 1;
+    if(signal.kind === "true"){
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(x, y, radius + (pulse * 4), 0, Math.PI * 2);
+      ctx.stroke();
+    }else if(signal.kind === "echo"){
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(x, y, radius + 3 + (pulse * 2), 0, Math.PI * 2);
+      ctx.stroke();
+    }else if(signal.kind === "lure"){
+      ctx.beginPath();
+      ctx.moveTo(x, y - radius - 2);
+      ctx.lineTo(x + radius + 2, y + radius + 2);
+      ctx.lineTo(x - radius - 2, y + radius + 2);
+      ctx.closePath();
+      ctx.stroke();
+    }else{
+      ctx.strokeRect(Math.round(x - radius), Math.round(y - radius), Math.round(radius * 2), Math.round(radius * 2));
+    }
+    ctx.restore();
+  }
+
+  function drawAdvObservationScanWindow(ctx, trial, nowMs){
+    const layout = getAdvProtoLayoutRects();
+    const scan = layout.scan;
+    const gauge = layout.scanGauge;
+    const arena = layout.scanArena;
+    const lockRect = layout.scanLock;
+    drawAdvUiFrame(ctx, ADV_UI_FRAME_IMAGES.scan, scan);
+    ctx.save();
+    ctx.fillStyle = "rgba(14,20,15,0.05)";
+    ctx.fillRect(arena.x, arena.y, arena.w, arena.h);
+    ctx.restore();
+    drawAdvUiIcon(ctx, "lock", scan.x + 4, scan.y + 12, 16, 0.96);
+    drawAdvProtoText(ctx, scan.x + 22, scan.y + 12, "LOCK", { size: 11 });
+    ctx.save();
+    ctx.strokeStyle = "rgba(14,20,15,0.64)";
+    ctx.strokeRect(gauge.x + 0.5, gauge.y + 0.5, gauge.w - 1, gauge.h - 1);
+    const fillRatio = clamp(toNumber(trial?.lockValue, 0) / 100, 0, 1);
+    const fillH = Math.round((gauge.h - 4) * fillRatio);
+    ctx.fillStyle = "rgba(14,20,15,0.74)";
+    ctx.fillRect(gauge.x + 2, gauge.y + gauge.h - 2 - fillH, gauge.w - 4, fillH);
+    ctx.restore();
+
+    const centerX = lockRect.x + (lockRect.w * 0.5);
+    const centerY = lockRect.y + (lockRect.h * 0.5);
+    ctx.save();
+    ctx.strokeStyle = "rgba(14,20,15,0.40)";
+    ctx.beginPath();
+    ctx.ellipse(centerX, centerY, 74, 34, 0, 0, Math.PI * 2);
+    ctx.ellipse(centerX, centerY, 46, 22, 0, 0, Math.PI * 2);
+    ctx.ellipse(centerX, centerY, 24, 12, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.strokeRect(lockRect.x + 0.5, lockRect.y + 0.5, lockRect.w - 1, lockRect.h - 1);
+    ctx.beginPath();
+    ctx.moveTo(centerX - 70, centerY);
+    ctx.lineTo(centerX + 70, centerY);
+    ctx.moveTo(centerX, centerY - 26);
+    ctx.lineTo(centerX, centerY + 26);
+    ctx.stroke();
+    ctx.restore();
+
+    const noiseLevel = clamp(toNumber(trial?.noiseValue, 0) / 100, 0, 1);
+    ctx.save();
+    ctx.fillStyle = "rgba(14,20,15,0.26)";
+    const noiseCount = 10 + Math.floor(noiseLevel * 24);
+    for(let i = 0; i < noiseCount; i++){
+      const nx = arena.x + ((Math.sin((i * 97) + (nowMs / 160)) + 1) * 0.5 * arena.w);
+      const ny = arena.y + ((Math.cos((i * 53) + (nowMs / 220)) + 1) * 0.5 * arena.h);
+      ctx.fillRect(Math.round(nx), Math.round(ny), 1, 1);
+    }
+    ctx.restore();
+
+    const signals = Array.isArray(trial?.signals) ? trial.signals : [];
+    for(let i = 0; i < signals.length; i++){
+      drawAdvObservationSignal(ctx, signals[i], nowMs, trial?.hoverSignalId);
+    }
+
+    const cursorX = clamp(toNumber(trial?.cursorX, centerX), arena.x + 8, arena.x + arena.w - 8);
+    const cursorY = clamp(toNumber(trial?.cursorY, centerY), arena.y + 8, arena.y + arena.h - 8);
+    ctx.save();
+    ctx.strokeStyle = "rgba(14,20,15,0.92)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(cursorX, cursorY, 10, 0, Math.PI * 2);
+    ctx.moveTo(cursorX - 15, cursorY);
+    ctx.lineTo(cursorX + 15, cursorY);
+    ctx.moveTo(cursorX, cursorY - 15);
+    ctx.lineTo(cursorX, cursorY + 15);
+    ctx.stroke();
+    ctx.restore();
+
+    const lockText = toNumber(trial?.lockValue, 0) >= ADV_OBSERVE_LOCK_FULL_THRESHOLD
+      ? "FULL LOCK"
+      : (toNumber(trial?.lockValue, 0) >= ADV_OBSERVE_LOCK_TEMP_THRESHOLD ? "TEMP LOCK" : "SEARCH");
+    drawAdvProtoText(ctx, scan.x + scan.w - 84, scan.y + 10, lockText, { size: 10, align: "right", alpha: 0.9 });
+    drawAdvUiIcon(ctx, trial?.reactionIconId || "interest", scan.x + scan.w - 24, scan.y + 10, 16, 0.92);
+  }
+
+  function drawAdvObservationSyncWindow(ctx, trial, nowMs){
+    const layout = getAdvProtoLayoutRects();
+    const sync = layout.sync;
+    const arena = layout.syncArena;
+    drawAdvUiFrame(ctx, ADV_UI_FRAME_IMAGES.sync, sync);
+    drawAdvUiIcon(ctx, "sync", sync.x + 4, sync.y + 8, 16, 0.96);
+    drawAdvProtoText(ctx, sync.x + 22, sync.y + 8, "SYNC", { size: 11 });
+    if(!isRecord(trial)){
+      return;
+    }
+    if(trial.stage === ADV_PROTO_STAGE.RESULT && isRecord(trial.result)){
+      drawAdvProtoText(ctx, sync.x + 18, sync.y + 18, trial.result.title, { size: 14 });
+      const lines = Array.isArray(trial.result.lines) ? trial.result.lines : [];
+      for(let i = 0; i < lines.length && i < 3; i++){
+        drawAdvProtoText(ctx, sync.x + 18, sync.y + 38 + (i * 11), lines[i], { size: 10 });
+      }
+      return;
+    }
+    const syncUnlocked = trial.stage === ADV_PROTO_STAGE.SYNC;
+    const zoneLeft = arena.x + (arena.w * (toNumber(trial.syncZoneCenter, 0.42) - (toNumber(trial.syncZoneWidth, 0.16) * 0.5)));
+    const zoneWidth = arena.w * toNumber(trial.syncZoneWidth, 0.16);
+    const dangerLeft = arena.x + (arena.w * (toNumber(trial.dangerCenter, 0.78) - (toNumber(trial.dangerWidth, 0.12) * 0.5)));
+    const dangerWidth = arena.w * toNumber(trial.dangerWidth, 0.12);
+    ctx.save();
+    ctx.fillStyle = syncUnlocked ? "rgba(14,20,15,0.10)" : "rgba(14,20,15,0.05)";
+    ctx.fillRect(zoneLeft, arena.y + 4, zoneWidth, arena.h - 8);
+    ctx.strokeStyle = "rgba(14,20,15,0.54)";
+    ctx.strokeRect(zoneLeft + 0.5, arena.y + 4.5, zoneWidth - 1, arena.h - 9);
+    drawAdvProtoText(ctx, zoneLeft + (zoneWidth * 0.5), arena.y - 1, "SYNC ZONE", { size: 9, align: "center" });
+    ctx.restore();
+    ctx.save();
+    ctx.strokeStyle = "rgba(14,20,15,0.78)";
+    ctx.strokeRect(dangerLeft + 0.5, arena.y + 4.5, dangerWidth - 1, arena.h - 9);
+    drawAdvUiIcon(ctx, "danger", dangerLeft + 2, arena.y - 2, 12, 0.94);
+    drawAdvProtoText(ctx, dangerLeft + 18, arena.y - 1, "DANGER", { size: 9 });
+    ctx.restore();
+
+    ctx.save();
+    ctx.strokeStyle = "rgba(14,20,15,0.86)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    const chaos = clamp(toNumber(trial.waveChaos, 0.35), 0.12, 1.4);
+    for(let i = 0; i <= arena.w; i++){
+      const x = arena.x + i;
+      const t = i / Math.max(1, arena.w);
+      const waveA = Math.sin((t * Math.PI * 2 * 2.2) + (nowMs / 420) + toNumber(trial.waveSeed, 0));
+      const waveB = Math.sin((t * Math.PI * 2 * 5.6) - (nowMs / 300) + toNumber(trial.waveSeed, 0) * 0.6);
+      const y = arena.y + (arena.h * 0.52) + ((waveA * 8) + (waveB * 4 * chaos));
+      if(i === 0){
+        ctx.moveTo(x, y);
+      }else{
+        ctx.lineTo(x, y);
+      }
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    if(syncUnlocked){
+      const elapsed = Math.max(0, nowMs - Math.max(0, toNumber(trial.syncStartedAtMs, nowMs)));
+      const playheadRatio = (elapsed % Math.max(400, toNumber(trial.syncCycleMs, 1600))) / Math.max(400, toNumber(trial.syncCycleMs, 1600));
+      const playheadX = arena.x + (arena.w * playheadRatio);
+      ctx.save();
+      ctx.strokeStyle = "rgba(14,20,15,0.96)";
+      ctx.beginPath();
+      ctx.moveTo(playheadX, arena.y + 2);
+      ctx.lineTo(playheadX, arena.y + arena.h - 2);
+      ctx.stroke();
+      ctx.restore();
+      drawAdvProtoText(ctx, sync.x + sync.w - 10, sync.y + 8, `${Math.max(0, Math.floor(toNumber(trial.syncHits, 0)))}/${ADV_OBSERVE_REQUIRED_SYNC_HITS}`, { size: 11, align: "right" });
+      if(nowMs <= toNumber(trial.tapFlashUntilMs, 0)){
+        const label = String(trial.tapResult || "").toUpperCase();
+        drawAdvProtoText(ctx, sync.x + sync.w - 10, sync.y + 24, label, { size: 10, align: "right", alpha: 0.86 });
+      }
+    }else{
+      drawAdvProtoText(ctx, sync.x + sync.w - 10, sync.y + 8, "LOCK 70%", { size: 11, align: "right", alpha: 0.8 });
+    }
+  }
+
+  function drawAdvObservationHud(ctx, map, trial){
+    const layout = getAdvProtoLayoutRects();
+    const hud = layout.hud;
+    drawAdvUiFrame(ctx, ADV_UI_FRAME_IMAGES.hud, hud);
+    const stats = getAdvHudSnapshot(map);
+    const values = [
+      `HP${String(stats.hp).padStart(3, "0")}`,
+      `STA${String(stats.sta).padStart(3, "0")}`,
+      `STB${String(stats.stb).padStart(3, "0")}`,
+      `INT${String(stats.int).padStart(2, "0")}`,
+    ];
+    const slots = [hud.x + 18, hud.x + 102, hud.x + 190, hud.x + 282];
+    for(let i = 0; i < values.length; i++){
+      drawAdvProtoText(ctx, slots[i], hud.y + 8, values[i], { size: 11 });
+    }
+    if(isRecord(trial)){
+      const display = getAdvNodeKindDisplay(trial.nodeKind);
+      drawAdvUiIcon(ctx, display.iconId, hud.x + hud.w - 20, hud.y + 6, 16, 0.92);
+    }
+  }
+
+  function createAdvObservationCanvasElement(session, map, nowMs = performance.now()){
+    const canvasEl = document.createElement("canvas");
+    canvasEl.className = "overlay-adv-proto-canvas";
+    canvasEl.width = W;
+    canvasEl.height = H;
+    const ctx = canvasEl.getContext("2d");
+    if(!ctx){
+      return canvasEl;
+    }
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = "rgba(200,214,194,0.96)";
+    ctx.fillRect(0, 0, W, H);
+
+    const trial = getAdvObservationTrial(session);
+    const layout = getAdvProtoLayoutRects();
+    drawAdvUiFrame(ctx, ADV_UI_FRAME_IMAGES.header, layout.header);
+    const display = getAdvNodeKindDisplay(trial?.nodeKind || ADV_NODE_KIND.OBSERVE);
+    drawAdvUiIcon(ctx, display.iconId, layout.header.x + 6, layout.header.y + 6, 16, 0.96);
+    drawAdvProtoText(ctx, layout.header.x + 26, layout.header.y + 8, `NODE ${display.label}`, { size: 12 });
+    drawAdvUiIcon(ctx, "node", layout.header.x + 132, layout.header.y + 6, 16, 0.88);
+    drawAdvProtoText(ctx, layout.header.x + 150, layout.header.y + 8, getAdvMapDisplayName(map), { size: 12 });
+    const elapsedSec = Math.max(0, Math.floor((nowMs - Math.max(0, toNumber(trial?.startedAtMs, nowMs))) / 1000));
+    const progressLabel = !trial
+      ? "0%"
+      : (trial.stage === ADV_PROTO_STAGE.SCAN
+        ? `LOCK ${Math.round(toNumber(trial.displayProgress, trial.lockValue || 0))}%`
+        : (trial.stage === ADV_PROTO_STAGE.SYNC
+          ? `SYNC ${Math.round(toNumber(trial.displayProgress, trial.syncProgress || 0))}%`
+          : `DONE ${Math.round(toNumber(trial.result?.score, 0))}%`));
+    drawAdvProtoText(ctx, layout.header.x + layout.header.w - 8, layout.header.y + 8, `${elapsedSec.toString().padStart(2, "0")}S  ${progressLabel}`, {
+      size: 11,
+      align: "right",
+    });
+
+    drawAdvObservationScanWindow(ctx, trial, nowMs);
+    drawAdvObservationSyncWindow(ctx, trial, nowMs);
+    drawAdvObservationHud(ctx, map, trial);
+    return canvasEl;
+  }
+
+  function buildAdvExploreOverlayElement(nowMs = performance.now()){
+    const session = getAdvSession() || createAdvSession(nowMs);
+    const map = getSelectedAdvMap(session);
+    const phase = normalizeAdvPhase(session.phase);
+    if(phase === ADV_PHASE.RESULT){
+      return buildAdvResultOverlayElement(session.resultPayload, nowMs);
+    }
+    const page = document.createElement("div");
+    page.className = "overlay-adv-page overlay-adv-explore-page";
+
+    const topPane = document.createElement("div");
+    topPane.className = "overlay-food-pane overlay-food-pane-top";
+    const topLayout = document.createElement("div");
+    topLayout.className = "overlay-adv-board-top-layout";
+    const boardPane = document.createElement("div");
+    boardPane.className = "overlay-adv-board-pane";
+    boardPane.appendChild(createAdvBoardCanvasElement(map, getAdvBoard(session), nowMs));
+    topLayout.appendChild(boardPane);
+    topPane.appendChild(topLayout);
+
+    page.appendChild(topPane);
+    page.appendChild(buildAdvBoardBottomPane(session, map));
+    return page;
+  }
+
+  function showOverlayAdv(nowMs = performance.now()){
+    const session = getAdvSession();
+    const phase = normalizeAdvPhase(session?.phase);
+    if(!showOverlayShell("food", OVERLAY_STAT_RECT)) return;
+    overlayLog.classList.add("is-adv-solid");
+    const currentFontPx = toNumber(parseFloat(String(overlayLog.style.fontSize || "")), 15);
+    overlayLog.style.fontSize = `${Math.max(15, Math.round(currentFontPx))}px`;
+    overlayLog.style.lineHeight = "1.35";
+    overlayLogTitle.textContent = "";
+    overlayLogBody.textContent = "";
+    overlayLogHint.textContent = "";
+    if(!(phase === ADV_PHASE.RESULT)){
+      clearResultTypewriterState();
+    }
+    const page = (phase === ADV_PHASE.EXPLORE || phase === ADV_PHASE.RESULT)
+      ? buildAdvExploreOverlayElement(nowMs)
+      : buildAdvMapSelectOverlayElement();
+    overlayLogBody.appendChild(page);
   }
 
   function openAdvScreen(nowMs = performance.now()){
     if(!isRecord(state.detailed)){
       state.detailed = createDefaultDetailedState(state.monster?.id || "mon001");
     }
-    hideOverlayLog();
-    setOverlayMode(null);
+    ensureAdvDetailState(state.detailed);
+    captureOverlayBackdropSnapshot();
+    clearStatSkillEditingSlot();
     uiState.advSession = createAdvSession(nowMs);
     state.screen = "adv";
+    setOverlayMode("food");
   }
 
   function closeAdvScreenToMenu(){
@@ -6504,54 +14213,22 @@
     setOverlayMode(null);
   }
 
-  function resolveAdvRewardResultText(rewardResult){
-    const grant = Array.isArray(rewardResult?.grants) ? rewardResult.grants[0] : null;
-    const item = getItemById(grant?.itemId);
-    const appliedCount = Math.max(0, Math.floor(toNumber(grant?.appliedCount, 0)));
-    if(item && appliedCount > 0){
-      return `${String(item.label || item.id).trim()}を取得した\n+${appliedCount}`;
-    }
-    if(item){
-      return `${String(item.label || item.id).trim()}を確保した\n+0`;
-    }
-    return "何も見つからなかった";
-  }
-
-  function resolveAdvSearchingText(nowMs = performance.now(), sessionOverride = null){
-    const session = isRecord(sessionOverride) ? sessionOverride : getAdvSession();
-    const now = Math.max(0, toNumber(nowMs, performance.now()));
-    const elapsedMs = Math.max(0, now - Math.max(0, toNumber(session?.startedAtMs, now)));
-    const dotCount = (Math.floor(elapsedMs / 240) % 4);
-    const dots = ".".repeat(dotCount);
-    return `SEARCHING${dots}\n信号をたどっている\n回収対象を探索中`;
-  }
-
-  function finalizeAdvRewardSession(sessionOverride = null){
-    const session = isRecord(sessionOverride) ? sessionOverride : getAdvSession();
-    if(!session || normalizeAdvPhase(session.phase) === ADV_PHASE.RESULT){
-      return session;
-    }
-    const rewardResult = grantDetailedInventoryRewards([
-      { itemId: String(session.rewardItemId || "patch_tape_i"), count: 1 },
-    ]);
-    session.rewardResult = rewardResult;
-    session.phase = ADV_PHASE.RESULT;
-    session.resultText = resolveAdvRewardResultText(rewardResult);
-    return session;
-  }
-
   function updateAdv(nowMs = performance.now()){
     if(state.screen !== "adv") return;
-    const session = getAdvSession();
-    if(!session){
+    if(!isRecord(uiState.advSession)){
       uiState.advSession = createAdvSession(nowMs);
       return;
     }
-    if(
-      normalizeAdvPhase(session.phase) === ADV_PHASE.SEARCH &&
-      Math.max(0, toNumber(nowMs, performance.now())) >= Math.max(0, toNumber(session.resolveAtMs, 0))
-    ){
-      finalizeAdvRewardSession(session);
+    const session = uiState.advSession;
+    session.phase = normalizeAdvPhase(session.phase);
+    const map = getSelectedAdvMap(session);
+    if(map){
+      session.mapId = String(map.id || "").trim().toLowerCase();
+      if(normalizeAdvPhase(session.phase) === ADV_PHASE.EXPLORE && !isRecord(session.board)){
+        session.board = createAdvBoardState(map, {
+          seed: hashAdvSeed(`${String(map.id || "")}:${Math.floor(nowMs)}`),
+        });
+      }
     }
   }
 
@@ -6592,6 +14269,28 @@
     setFoodScreenMode(FOOD_SCREEN_MODE.SELECT);
     uiState.foodWarningMessage = "";
     setFoodResultPayload(null);
+    menuDeactivate();
+    state.screen = "menu";
+    hideOverlayLog();
+  }
+
+  function openItemScreen(){
+    if(!isRecord(state.detailed)){
+      state.detailed = createDefaultDetailedState(state.monster?.id || "mon001");
+    }
+    captureOverlayBackdropSnapshot();
+    ensureInventoryDetailState(state.detailed);
+    clearStatSkillEditingSlot();
+    uiState.itemWarningMessage = "";
+    setItemMenuFocus(ITEM_MENU_FOCUS.CATEGORY);
+    getItemCategoryCursor();
+    ensureItemMenuCursorState();
+    state.screen = "item";
+    setOverlayMode("food");
+  }
+
+  function closeItemScreenToMenu(){
+    uiState.itemWarningMessage = "";
     menuDeactivate();
     state.screen = "menu";
     hideOverlayLog();
@@ -7118,6 +14817,171 @@
     return clamp(rough, 0, total - count);
   }
 
+  function buildItemCategoryPaneElement(detail){
+    const pane = document.createElement("div");
+    const categoryFocus = isItemMenuCategoryFocus();
+    pane.className = `overlay-item-subpane overlay-item-category-pane${categoryFocus ? " is-focus-pane" : ""}`;
+
+    const cursor = getItemCategoryCursor();
+    for(let i = 0; i < ITEM_MENU_CATEGORY_ORDER.length; i++){
+      const category = ITEM_MENU_CATEGORY_ORDER[i];
+      const entries = getItemEntriesForCategory(category, detail);
+      const selected = i === cursor;
+      const row = document.createElement("div");
+      row.className = `overlay-item-category-row${selected ? " is-current" : ""}${selected && categoryFocus ? " is-selected" : ""}`;
+
+      const cursorEl = document.createElement("span");
+      cursorEl.className = "overlay-item-category-cursor";
+      cursorEl.textContent = selected && categoryFocus ? ">" : " ";
+
+      const labelEl = document.createElement("span");
+      labelEl.className = "overlay-item-category-label";
+      labelEl.textContent = getItemMenuCategoryLabel(category);
+
+      const countEl = document.createElement("span");
+      countEl.className = "overlay-item-category-count";
+      countEl.textContent = entries.length > 0 ? String(entries.length).padStart(2, "0") : "--";
+
+      row.appendChild(cursorEl);
+      row.appendChild(labelEl);
+      row.appendChild(countEl);
+      pane.appendChild(row);
+    }
+
+    return pane;
+  }
+
+  function buildItemListPaneElement(detail){
+    const category = getSelectedItemMenuCategory();
+    const entries = getItemEntriesForCategory(category, detail);
+    const total = entries.length;
+    const cursor = total > 0 ? getItemMenuCursor(category, detail) : 0;
+    const listFocus = isItemMenuListFocus();
+
+    const pane = document.createElement("div");
+    pane.className = `overlay-item-subpane overlay-item-list-pane${listFocus ? " is-focus-pane" : ""}`;
+
+    const title = document.createElement("div");
+    title.className = "overlay-item-list-title";
+    title.textContent = `${getItemMenuCategoryLabel(category)} ITEMS`;
+    pane.appendChild(title);
+
+    const rows = document.createElement("div");
+    rows.className = "overlay-item-list-rows";
+    if(total <= 0){
+      const empty = document.createElement("div");
+      empty.className = "overlay-item-empty";
+      empty.textContent = getItemMenuEmptyText(category);
+      rows.appendChild(empty);
+    }else{
+      const visibleRows = Math.min(ITEM_MENU_LIST_VISIBLE_ROWS, total);
+      const start = getFoodListWindowStart(total, cursor, visibleRows);
+      const end = Math.min(total, start + visibleRows);
+      for(let i = start; i < end; i++){
+        const entry = entries[i];
+        const selected = i === cursor;
+        const row = document.createElement("div");
+        row.className = `overlay-item-list-row${selected ? " is-current" : ""}${selected && listFocus ? " is-selected" : ""}`;
+
+        const cursorEl = document.createElement("span");
+        cursorEl.className = "overlay-item-list-cursor";
+        cursorEl.textContent = selected && listFocus ? ">" : " ";
+
+        const nameEl = document.createElement("span");
+        nameEl.className = "overlay-item-list-name";
+        nameEl.textContent = String(entry?.item?.label || "--");
+
+        const stockEl = document.createElement("span");
+        stockEl.className = "overlay-item-list-stock";
+        stockEl.textContent = formatItemMenuStockText(entry?.count);
+
+        row.appendChild(cursorEl);
+        row.appendChild(nameEl);
+        row.appendChild(stockEl);
+        rows.appendChild(row);
+      }
+    }
+    pane.appendChild(rows);
+    return pane;
+  }
+
+  function buildItemOverlayElement(){
+    const detail = state.detailed;
+    ensureInventoryDetailState(detail);
+    const selectedEntry = getSelectedItemMenuEntry(detail);
+    const selectedItem = selectedEntry?.item || null;
+    const category = selectedItem
+      ? normalizeItemMenuCategory(selectedItem.category, getSelectedItemMenuCategory())
+      : getSelectedItemMenuCategory();
+
+    const page = document.createElement("div");
+    page.className = "overlay-food-page overlay-item-page";
+
+    const topPane = document.createElement("div");
+    topPane.className = "overlay-food-pane overlay-food-pane-top";
+    const topLayout = document.createElement("div");
+    topLayout.className = "overlay-item-top-layout";
+    topLayout.appendChild(buildItemCategoryPaneElement(detail));
+    topLayout.appendChild(buildItemListPaneElement(detail));
+    topPane.appendChild(topLayout);
+
+    const bottomPane = document.createElement("div");
+    bottomPane.className = "overlay-food-pane overlay-food-pane-bottom overlay-heal-pane-bottom overlay-item-pane-bottom";
+
+    if(selectedItem){
+      const name = document.createElement("div");
+      name.className = "overlay-food-detail-name";
+      name.textContent = String(selectedItem.label || "--");
+
+      const meta = document.createElement("div");
+      meta.className = "overlay-food-detail-meta";
+      meta.textContent = `${getItemMenuCategoryLabel(category)}  RANK ${formatItemRankLabel(selectedItem.rank)}  STOCK ${formatItemMenuStockText(selectedEntry?.count)}`;
+
+      const desc = document.createElement("div");
+      desc.className = "overlay-food-detail-desc";
+      desc.textContent = String(selectedItem.description || "").trim();
+
+      bottomPane.appendChild(name);
+      bottomPane.appendChild(meta);
+      bottomPane.appendChild(desc);
+    }else{
+      const desc = document.createElement("div");
+      desc.className = "overlay-food-detail-desc";
+      desc.textContent = getItemMenuEmptyText(category);
+      bottomPane.appendChild(desc);
+    }
+
+    const route = document.createElement("div");
+    route.className = "overlay-item-route";
+    route.textContent = selectedItem
+      ? getItemMenuRouteText(selectedItem)
+      : "使用可能な所持品がありません。";
+    bottomPane.appendChild(route);
+
+    const warning = String(uiState.itemWarningMessage || "").trim();
+    if(warning.length > 0){
+      const warn = document.createElement("div");
+      warn.className = "overlay-food-warning";
+      warn.textContent = `警告: ${warning}`;
+      bottomPane.appendChild(warn);
+    }
+
+    page.appendChild(topPane);
+    page.appendChild(bottomPane);
+    return page;
+  }
+
+  function showOverlayItem(){
+    if(!showOverlayShell("food", OVERLAY_STAT_RECT)) return;
+    const currentFontPx = toNumber(parseFloat(String(overlayLog.style.fontSize || "")), 15);
+    overlayLog.style.fontSize = `${Math.max(15, Math.round(currentFontPx))}px`;
+    overlayLog.style.lineHeight = "1.35";
+    overlayLogTitle.textContent = "";
+    overlayLogBody.textContent = "";
+    overlayLogHint.textContent = "";
+    overlayLogBody.appendChild(buildItemOverlayElement());
+  }
+
   function buildFoodSelectOverlayElement(){
     const detail = ensureFoodDetailState(state.detailed);
     const selectableItems = getFoodSelectableItems(detail);
@@ -7190,6 +15054,11 @@
     if(iconCanvas){
       iconSlot.classList.add("has-icon");
       iconSlot.appendChild(iconCanvas);
+      const rankCanvas = createFoodRankCanvasElement(selectedItem);
+      if(rankCanvas){
+        iconSlot.classList.add("has-rank");
+        iconSlot.appendChild(rankCanvas);
+      }
     }else{
       iconSlot.classList.add("is-empty");
     }
@@ -7244,20 +15113,18 @@
     return page;
   }
 
-  function buildFoodResultOverlayElement(){
+  function buildFoodResultOverlayElement(nowMs = performance.now()){
     const result = getFoodResultPayload();
-    const wrap = document.createElement("div");
-    wrap.className = "overlay-food-result-wrap";
-    const title = document.createElement("div");
-    title.className = "overlay-food-result-title";
-    title.textContent = String(result?.title || "FOOD RESULT");
-    const body = document.createElement("div");
-    body.className = "overlay-food-result-body";
     const lines = Array.isArray(result?.lines) ? result.lines : ["結果なし。"];
-    body.textContent = lines.join("\n");
-    wrap.appendChild(title);
-    wrap.appendChild(body);
-    return wrap;
+    return buildStructuredResultOverlayElement(
+      {
+        title: String(result?.title || "FOOD RESULT"),
+        flavorLines: lines.slice(0, 2),
+        resultLines: lines.slice(2),
+      },
+      `food-result:${String(result?.title || "FOOD RESULT")}::${lines.join("\n")}`,
+      nowMs
+    );
   }
 
   function resolveFoodResultReaction(food, delta){
@@ -7287,7 +15154,7 @@
     };
   }
 
-  function showOverlayFood(){
+  function showOverlayFood(nowMs = performance.now()){
     if(!showOverlayShell("food", OVERLAY_STAT_RECT)) return;
     const currentFontPx = toNumber(parseFloat(String(overlayLog.style.fontSize || "")), 15);
     overlayLog.style.fontSize = `${Math.max(15, Math.round(currentFontPx))}px`;
@@ -7297,9 +15164,10 @@
     overlayLogBody.textContent = "";
     overlayLogHint.textContent = "";
     if(mode === FOOD_SCREEN_MODE.RESULT){
-      overlayLogBody.appendChild(buildFoodResultOverlayElement());
+      overlayLogBody.appendChild(buildFoodResultOverlayElement(nowMs));
       return;
     }
+    clearResultTypewriterState();
     overlayLogBody.appendChild(buildFoodSelectOverlayElement());
   }
 
@@ -7475,6 +15343,25 @@
     return clamp(Math.floor(toNumber(item?.rank, 0)), 0, 3);
   }
 
+  function getHealItemRankBonus(item){
+    const rank = getHealItemEffectRank(item);
+    if(rank <= 1){
+      return 0;
+    }
+    return (rank - 1) * 2;
+  }
+
+  function getHealStabilityThresholds(max = null){
+    const stabilityMax = Math.max(1, Math.floor(toNumber(
+      max,
+      toPositiveInt(state.stats?.stabilityMax, 10)
+    )));
+    return {
+      low: Math.max(1, Math.floor(stabilityMax * 0.3)),
+      high: Math.max(1, Math.ceil(stabilityMax * 0.7)),
+    };
+  }
+
   function formatItemRankLabel(rank){
     const normalized = Math.max(0, Math.floor(toNumber(rank, 0)));
     if(normalized <= 0) return "--";
@@ -7501,15 +15388,23 @@
   function setHealResultPayload(payload){
     if(!isRecord(payload)){
       uiState.healResultPayload = null;
+      clearResultTypewriterState();
       return null;
     }
     uiState.healResultPayload = {
       title: String(payload.title || "HEAL RESULT"),
+      mode: String(payload.mode || ""),
       lead: String(payload.lead || ""),
+      startLine: String(payload.startLine || ""),
+      resultDelayMs: Math.max(0, Math.floor(toNumber(payload.resultDelayMs, HEAL_LOG_RESULT_DELAY_MS))),
       lines: Array.isArray(payload.lines)
         ? payload.lines.map((line) => String(line ?? ""))
         : [],
+      resultLines: Array.isArray(payload.resultLines)
+        ? payload.resultLines.map((line) => String(line ?? ""))
+        : [],
     };
+    clearResultTypewriterState();
     return uiState.healResultPayload;
   }
 
@@ -7651,7 +15546,7 @@
     }
 
     if(frame.shouldApply){
-      const result = applyHealActionById(session.actionId, session.itemId);
+      const result = processHeal(session.actionId, state.detailed, { itemId: session.itemId });
       session.applied = true;
       session.result = result;
       if(!result?.success){
@@ -7715,6 +15610,13 @@
   function getHealActionStaminaCost(actionId){
     const id = normalizeHealActionId(actionId, "");
     return Math.max(0, Math.floor(toNumber(HEAL_STAMINA_COST_BY_TYPE[id], 0)));
+  }
+
+  function isHealBlockedBySleep(detailOverride = null){
+    if(ALLOW_HEAL_IN_SLEEP){
+      return false;
+    }
+    return Boolean(state.isSleeping) || isMonsterTuckedIn(detailOverride || state.detailed);
   }
 
   function getHealSameTypePenalty(detail, actionId){
@@ -7789,6 +15691,60 @@
     };
   }
 
+  function previewHealReduction(current, min, amount){
+    const currentValue = Math.max(0, Math.floor(toNumber(current, 0)));
+    const minValue = Math.max(0, Math.floor(toNumber(min, 0)));
+    const applied = clamp(Math.floor(toNumber(amount, 0)), 0, Math.max(0, currentValue - minValue));
+    return {
+      current: currentValue,
+      next: clamp(currentValue - applied, minValue, currentValue),
+      applied,
+    };
+  }
+
+  function previewHealLoss(current, min, amount){
+    const currentValue = Math.max(0, Math.floor(toNumber(current, 0)));
+    const minValue = Math.max(0, Math.floor(toNumber(min, 0)));
+    const applied = clamp(Math.floor(toNumber(amount, 0)), 0, Math.max(0, currentValue - minValue));
+    return {
+      current: currentValue,
+      next: clamp(currentValue - applied, minValue, currentValue),
+      applied,
+      beneficial: false,
+    };
+  }
+
+  function hasHealStatus(detail, key){
+    return getHealAbnormalLevel(detail, key) > 0;
+  }
+
+  function getHealPurgeTargetKeys(detail, stability = null, extraSlots = 0){
+    const safeDetail = ensureHealDetailState(detail || state.detailed);
+    const stabilityMax = toPositiveInt(state.stats.stabilityMax, 10);
+    const stabilityValue = stability == null
+      ? clamp(toNumber(state.stats.stability, stabilityMax), 0, stabilityMax)
+      : clamp(Math.floor(toNumber(stability, 0)), 0, stabilityMax);
+    const thresholds = getHealStabilityThresholds(stabilityMax);
+    const targets = [];
+    for(let i = 0; i < HEAL_PURGE_PRIORITY.length; i++){
+      const key = HEAL_PURGE_PRIORITY[i];
+      if(getHealAbnormalLevel(safeDetail, key) > 0){
+        targets.push(key);
+      }
+    }
+    if(targets.length <= 1){
+      return targets;
+    }
+    if(targets[0] === "decay"){
+      return [targets[0]];
+    }
+    let removalLimit = 1 + Math.max(0, Math.floor(toNumber(extraSlots, 0)));
+    if(stabilityValue >= thresholds.high){
+      removalLimit += 1;
+    }
+    return targets.slice(0, Math.max(1, removalLimit));
+  }
+
   function hasHealTargetForAction(actionId, detail){
     const id = normalizeHealActionId(actionId, "");
     const hpMax = getRuntimeMax("hp", 100);
@@ -7799,8 +15755,7 @@
     }
     if(id === HEAL_TYPE.STABILIZE){
       return clamp(toNumber(state.stats.stability, 0), 0, toPositiveInt(state.stats.stabilityMax, 10))
-        < toPositiveInt(state.stats.stabilityMax, 10)
-        || getHealAbnormalLevel(detail, "desync") > 0;
+        < toPositiveInt(state.stats.stabilityMax, 10);
     }
     if(id === HEAL_TYPE.PURGE){
       for(let i = 0; i < HEAL_ABNORMAL_KEYS.length; i++){
@@ -7823,13 +15778,13 @@
     const hasTarget = hasHealTargetForAction(action?.id, detail);
     const preview = (selectedItem && hasTarget) ? getHealActionPreview(action?.id, detail, selectedItem) : null;
     const hasEffect = hasTarget ? hasHealPreviewBenefit(preview) : false;
-    if(isMonsterTuckedIn(detail)){
+    if(isHealBlockedBySleep(detail)){
       return {
         canUse: false,
         hasTarget,
         hasEffect,
         preview,
-        reason: "睡眠中は治療できない。",
+        reason: "スリープ中は使用不可。",
         staminaCost: cost,
         item: selectedItem,
         itemCount,
@@ -7878,7 +15833,7 @@
       preview,
       reason: !hasTarget
         ? "治療の必要なし。"
-        : (hasEffect ? "実行可能。" : "このサイクルではこれ以上治療できない。"),
+        : (hasEffect ? "実行可能。" : "効果なし。"),
       staminaCost: cost,
       item: selectedItem,
       itemCount,
@@ -8065,8 +16020,6 @@
 
     if(actionId === HEAL_TYPE.STABILIZE){
       const preview = snapshot?.preview || previewStabilizeHeal(detail, selectedItem);
-      const desyncNow = snapshot ? snapshot.levels.desync : getHealAbnormalLevel(detail, "desync");
-      rows.push(createHealLevelPreviewRowElement("DESYNC", desyncNow, preview?.desync?.next ?? desyncNow, 3, { deltaOpacity }));
       rows.push(createHealGaugePreviewRowElement("STB", stabilityNow, preview?.stability?.next ?? stabilityNow, stabilityMax, { deltaOpacity }));
       rows.push(createHealGaugePreviewRowElement("STA", staminaNow, staminaNext, staminaMax, { deltaOpacity, variant: "cost" }));
       return rows;
@@ -8075,9 +16028,11 @@
     if(actionId === HEAL_TYPE.PURGE){
       const preview = snapshot?.preview || previewPurgeHeal(detail, selectedItem);
       const noiseNow = snapshot ? snapshot.levels.noise : getHealAbnormalLevel(detail, "noise");
+      const desyncNow = snapshot ? snapshot.levels.desync : getHealAbnormalLevel(detail, "desync");
       const contaminationNow = snapshot ? snapshot.levels.contamination : getHealAbnormalLevel(detail, "contamination");
       const decayNow = snapshot ? snapshot.levels.decay : getHealAbnormalLevel(detail, "decay");
       rows.push(createHealLevelPreviewRowElement("NOISE", noiseNow, preview?.noise?.next ?? noiseNow, 3, { deltaOpacity }));
+      rows.push(createHealLevelPreviewRowElement("DESYNC", desyncNow, preview?.desync?.next ?? desyncNow, 3, { deltaOpacity }));
       rows.push(createHealLevelPreviewRowElement("CONTAM", contaminationNow, preview?.contamination?.next ?? contaminationNow, 3, { deltaOpacity }));
       rows.push(createHealLevelPreviewRowElement("DECAY", decayNow, preview?.decay?.next ?? decayNow, 3, { deltaOpacity }));
       rows.push(createHealGaugePreviewRowElement("STA", staminaNow, staminaNext, staminaMax, { deltaOpacity, variant: "cost" }));
@@ -8345,6 +16300,136 @@
     });
     return image;
   })();
+
+  const ADV_TOWER_BASE_IMAGE = (() => {
+    if(typeof Image !== "function"){
+      return null;
+    }
+    const image = new Image();
+    image.decoding = "async";
+    const sources = [
+      "./assets/adv/adv_tower_base.png",
+      "./assets/adv/adv_tower_base.svg",
+    ];
+    let sourceIndex = 0;
+    const tryNextSource = () => {
+      if(sourceIndex >= sources.length){
+        return;
+      }
+      image.src = sources[sourceIndex];
+      sourceIndex += 1;
+    };
+    image.addEventListener("load", () => {
+      if(String(state?.screen || "") === "adv"){
+        showOverlayAdv();
+      }
+    });
+    image.addEventListener("error", () => {
+      if(sourceIndex < sources.length){
+        tryNextSource();
+      }
+    });
+    tryNextSource();
+    return image;
+  })();
+
+  function createAdvUiAssetImage(src){
+    if(typeof Image !== "function"){
+      return null;
+    }
+    const path = String(src || "").trim();
+    if(path.length <= 0){
+      return null;
+    }
+    const image = new Image();
+    image.decoding = "async";
+    image.src = path;
+    image.addEventListener("load", () => {
+      if(String(state?.screen || "") === "adv"){
+        showOverlayAdv();
+      }
+    });
+    return image;
+  }
+
+  const ADV_UI_FRAME_IMAGES = Object.freeze({
+    header: createAdvUiAssetImage("./assets/adv_ui_assets_pack_v2/frames/adv_frame_header.png"),
+    scan: createAdvUiAssetImage("./assets/adv_ui_assets_pack_v2/frames/adv_frame_scan.png"),
+    sync: createAdvUiAssetImage("./assets/adv_ui_assets_pack_v2/frames/adv_frame_sync.png"),
+    hud: createAdvUiAssetImage("./assets/adv_ui_assets_pack_v2/frames/adv_frame_hud.png"),
+  });
+
+  const ADV_UI_ICON_IMAGES = Object.freeze({
+    lock: createAdvUiAssetImage("./assets/adv_ui_assets_pack_v2/icons/adv_icon_lock.png"),
+    sync: createAdvUiAssetImage("./assets/adv_ui_assets_pack_v2/icons/adv_icon_sync.png"),
+    danger: createAdvUiAssetImage("./assets/adv_ui_assets_pack_v2/icons/adv_icon_danger.png"),
+    interest: createAdvUiAssetImage("./assets/adv_ui_assets_pack_v2/icons/adv_icon_interest.png"),
+    caution: createAdvUiAssetImage("./assets/adv_ui_assets_pack_v2/icons/adv_icon_caution.png"),
+    reject: createAdvUiAssetImage("./assets/adv_ui_assets_pack_v2/icons/adv_icon_reject.png"),
+    attune: createAdvUiAssetImage("./assets/adv_ui_assets_pack_v2/icons/adv_icon_attune.png"),
+    observe: createAdvUiAssetImage("./assets/adv_ui_assets_pack_v2/icons/adv_icon_observe.png"),
+    contact: createAdvUiAssetImage("./assets/adv_ui_assets_pack_v2/icons/adv_icon_contact.png"),
+    collect: createAdvUiAssetImage("./assets/adv_ui_assets_pack_v2/icons/adv_icon_collect.png"),
+    hazard: createAdvUiAssetImage("./assets/adv_ui_assets_pack_v2/icons/adv_icon_hazard.png"),
+    anomaly: createAdvUiAssetImage("./assets/adv_ui_assets_pack_v2/icons/adv_icon_anomaly.png"),
+    scan: createAdvUiAssetImage("./assets/adv_ui_assets_pack_v2/icons/adv_icon_scan.png"),
+    node: createAdvUiAssetImage("./assets/adv_ui_assets_pack_v2/icons/adv_icon_node.png"),
+  });
+
+  const ADV_MAP_TRAIT_IMAGES = Object.freeze({
+    observe: createAdvUiAssetImage("./assets/adv/traits/adv_trait_observe.png"),
+    lock: createAdvUiAssetImage("./assets/adv/traits/adv_trait_lock.png"),
+    contamination: createAdvUiAssetImage("./assets/adv/traits/adv_trait_contamination.png"),
+    collapse: createAdvUiAssetImage("./assets/adv/traits/adv_trait_collapse.png"),
+  });
+  const ADV_ZONE_SYMBOL_IMAGES = Object.freeze({
+    [ADV_ZONE_TYPE.MAINTENANCE]: createAdvUiAssetImage("./assets/adv/zone_symbols_large/adv_zone_symbol_maintenance.png"),
+    [ADV_ZONE_TYPE.RECORD]: createAdvUiAssetImage("./assets/adv/zone_symbols_large/adv_zone_symbol_record.png"),
+    [ADV_ZONE_TYPE.LINE]: createAdvUiAssetImage("./assets/adv/zone_symbols_large/adv_zone_symbol_circuit.png"),
+    [ADV_ZONE_TYPE.CONTROL]: createAdvUiAssetImage("./assets/adv/zone_symbols_large/adv_zone_symbol_control.png"),
+    [ADV_ZONE_TYPE.ECOLOGY]: createAdvUiAssetImage("./assets/adv/zone_symbols_large/adv_zone_symbol_ecology.png"),
+  });
+  const ADV_BOARD_NODE_ICON_IMAGES = Object.freeze({
+    [ADV_BOARD_NODE_TYPE.OBSERVE]: createAdvUiAssetImage("./assets/adv/node_icons/adv_node_icon_observe.png"),
+    [ADV_BOARD_NODE_TYPE.COLLECT]: createAdvUiAssetImage("./assets/adv/node_icons/adv_node_icon_collect.png"),
+    [ADV_BOARD_NODE_TYPE.PRESERVE]: createAdvUiAssetImage("./assets/adv/node_icons/adv_node_icon_maintain.png"),
+    [ADV_BOARD_NODE_TYPE.DEFENSE]: createAdvUiAssetImage("./assets/adv/node_icons/adv_node_icon_defense.png"),
+    [ADV_BOARD_NODE_TYPE.CONTAMINATION]: createAdvUiAssetImage("./assets/adv/node_icons/adv_node_icon_contaminate.png"),
+    [ADV_BOARD_NODE_TYPE.ANALYZE]: createAdvUiAssetImage("./assets/adv/node_icons/adv_node_icon_analyze.png"),
+    [ADV_BOARD_NODE_TYPE.ANOMALY]: createAdvUiAssetImage("./assets/adv/node_icons/adv_node_icon_anomaly.png"),
+    [ADV_BOARD_NODE_TYPE.BOSS]: createAdvUiAssetImage("./assets/adv/node_icons/adv_node_icon_boss.png"),
+  });
+
+  const ADV_MAP_TRAIT_STRIP_LOCAL_IMAGE = createAdvUiAssetImage(encodeURI("./素材/ビジュアル資料/zone image.png"));
+  const ADV_MAP_TRAIT_STRIP_IMAGE = createAdvUiAssetImage("./assets/adv/traits/adv_trait_strip.png");
+  const BTTL_DRIVE_ICON_IMAGES = Object.freeze({
+    surge: createAdvUiAssetImage("./assets/drive_icons/bttl_drive_surge.png"),
+    guard: createAdvUiAssetImage("./assets/drive_icons/bttl_drive_guard.png"),
+    focus: createAdvUiAssetImage("./assets/drive_icons/bttl_drive_focus.png"),
+    rampage: createAdvUiAssetImage("./assets/drive_icons/bttl_drive_rampage.png"),
+  });
+  const BTTL_SIGNAL_ICON_IMAGES = Object.freeze({
+    boost: createAdvUiAssetImage(BTTL_SIGNAL_ICON_MAP.boost),
+    stabilize: createAdvUiAssetImage(BTTL_SIGNAL_ICON_MAP.stabilize),
+    calibrate: createAdvUiAssetImage(BTTL_SIGNAL_ICON_MAP.calibrate),
+    overclock: createAdvUiAssetImage(BTTL_SIGNAL_ICON_MAP.overclock),
+  });
+  const BTTL_DRIVE_ICON_SOURCE_RECTS = Object.freeze({
+    surge: Object.freeze({ x: 1, y: 1, w: 12, h: 15 }),
+    guard: Object.freeze({ x: 2, y: 1, w: 12, h: 15 }),
+    focus: Object.freeze({ x: 1, y: 1, w: 14, h: 14 }),
+    rampage: Object.freeze({ x: 1, y: 2, w: 14, h: 14 }),
+  });
+  const BTTL_SIGNAL_ICON_SOURCE_RECTS = Object.freeze({
+    boost: null,
+    stabilize: null,
+    calibrate: null,
+    overclock: null,
+  });
+
+  function isLoadedImage(image){
+    return image instanceof Image && image.complete && image.naturalWidth > 0 && image.naturalHeight > 0;
+  }
 
   let healAdDisplayMaskCanvas = null;
   let healAdSlotBaseMaskCanvas = null;
@@ -9071,7 +17156,10 @@
     }
 
     if(actionId === HEAL_TYPE.STABILIZE && hasEffect){
-      drawHealStabilizeGlitch(ctx, spriteCanvas, spriteBaseX, spriteBaseY, spriteSize, severity, nowMs);
+      const stabilizeGhostY = executionFrame
+        ? (spriteBaseY + insertOffsetY)
+        : spriteBaseY;
+      drawHealStabilizeGlitch(ctx, spriteCanvas, spriteBaseX, stabilizeGhostY, spriteSize, severity, nowMs);
       if(!executionFrame){
         spriteX = spriteBaseX + Math.round(Math.sin(nowMs * 0.009) * (1 + (severity * 4)));
         spriteY = spriteBaseY + Math.round(Math.cos(nowMs * 0.007) * (severity * 2));
@@ -9268,15 +17356,45 @@
     return page;
   }
 
-  function buildHealResultOverlayElement(){
+  function buildHealResultOverlayElement(nowMs = performance.now()){
     const result = getHealResultPayload();
-    const wrap = document.createElement("div");
-    wrap.className = "overlay-food-result-wrap";
-    const title = document.createElement("div");
-    title.className = "overlay-food-result-title";
-    title.textContent = String(result?.title || "HEAL RESULT");
-    const body = document.createElement("div");
-    body.className = "overlay-food-result-body";
+    if(String(result?.mode || "") === "simple"){
+      const lead = String(result?.lead || "").trim();
+      const lines = Array.isArray(result?.lines)
+        ? result.lines.map((line) => String(line ?? "").trim()).filter((line) => line.length > 0)
+        : [];
+      return buildStructuredResultOverlayElement(
+        {
+          title: String(result?.title || "HEAL RESULT"),
+          flavorLines: [lead.length > 0 ? lead : "変化なし。"],
+          resultLines: lines.length > 0 ? lines : ["\u00A0"],
+          flavorTypewriterOptions: { preserveOrder: true },
+          resultTypewriterOptions: { preserveOrder: true },
+        },
+        `heal-result:${String(result?.title || "HEAL RESULT")}::simple::${lead}::${lines.join("\n")}`,
+        nowMs
+      );
+    }
+    if(String(result?.mode || "") === "two_stage"){
+      const startLine = String(result?.startLine || "").trim();
+      const resultLines = Array.isArray(result?.resultLines)
+        ? result.resultLines.map((line) => String(line ?? "").trim()).filter((line) => line.length > 0)
+        : [];
+      return buildStructuredResultOverlayElement(
+        {
+          title: String(result?.title || "HEAL RESULT"),
+          flavorLines: [startLine.length > 0 ? startLine : "処置を実行"],
+          resultLines: resultLines.length > 0 ? resultLines : ["変化なし。"],
+          flavorTypewriterOptions: { preserveOrder: true },
+          resultTypewriterOptions: {
+            preserveOrder: true,
+            baseDelayMs: Math.max(0, Math.floor(toNumber(result?.resultDelayMs, HEAL_LOG_RESULT_DELAY_MS))),
+          },
+        },
+        `heal-result:${String(result?.title || "HEAL RESULT")}::${startLine}::${resultLines.join("\n")}`,
+        nowMs
+      );
+    }
     const lines = [];
     const lead = String(result?.lead || "").trim();
     if(lead.length > 0){
@@ -9290,13 +17408,109 @@
         }
       }
     }
-    body.textContent = (lines.length > 0 ? lines : ["結果なし。"]).join("\n");
-    wrap.appendChild(title);
-    wrap.appendChild(body);
-    return wrap;
+    return buildStructuredResultOverlayElement(
+      {
+        title: String(result?.title || "HEAL RESULT"),
+        flavorLines: lead.length > 0 ? [lead] : lines.slice(0, 1),
+        resultLines: lead.length > 0 ? lines.slice(1) : lines.slice(1),
+      },
+      `heal-result:${String(result?.title || "HEAL RESULT")}::${lines.join("\n")}`,
+      nowMs
+    );
   }
 
-  function showOverlayHeal(){
+  function getHealLogStartMessage(actionId){
+    const id = normalizeHealActionId(actionId, "");
+    if(id === HEAL_TYPE.PATCH){
+      return "補修処置を実行";
+    }
+    if(id === HEAL_TYPE.STABILIZE){
+      return "同期補正を実行";
+    }
+    if(id === HEAL_TYPE.PURGE){
+      return "汚染除去を実行";
+    }
+    return "治療処置を実行";
+  }
+
+  function getHealLogStatusLabel(key){
+    const id = String(key || "").trim().toLowerCase();
+    return String(HEAL_STATUS_LOG_LABELS[id] || id.toUpperCase() || "--");
+  }
+
+  function buildHealMetricLogText(label, value){
+    return `${String(label || "--")} ${formatUiDeltaValue(toNumber(value, 0))}`;
+  }
+
+  function getHealResultHeadline(actionId, healResult = null){
+    const id = normalizeHealActionId(actionId, "");
+    const isStrong = Boolean(healResult?.strong);
+    if(id === HEAL_TYPE.PATCH){
+      return isStrong ? "補修効率 良好" : "外殻損傷を軽減";
+    }
+    if(id === HEAL_TYPE.STABILIZE){
+      return isStrong ? "同期状態 大幅改善" : "揺らぎが収束";
+    }
+    if(id === HEAL_TYPE.PURGE){
+      return isStrong ? "汚染反応を大きく除去" : "異常反応を排出";
+    }
+    return "治療処置を完了";
+  }
+
+  function buildHealStatusResultLines(statuses, suffix = "解除"){
+    const safeStatuses = Array.isArray(statuses) ? statuses : [];
+    const lines = [];
+    for(let i = 0; i < safeStatuses.length; i++){
+      const key = String(safeStatuses[i] || "").trim().toLowerCase();
+      if(key.length <= 0){
+        continue;
+      }
+      lines.push(`${getHealLogStatusLabel(key)} ${String(suffix || "解除").trim() || "解除"}`);
+    }
+    return lines;
+  }
+
+  function buildHealResultLines(actionId, delta, healResult = null){
+    const safeDelta = sanitizeDelta(delta);
+    const id = normalizeHealActionId(actionId, "");
+    const lines = [getHealResultHeadline(id, healResult)];
+
+    if(id === HEAL_TYPE.PATCH){
+      const parts = [];
+      const hpGain = Math.max(0, Math.floor(toNumber(healResult?.hpDelta, safeDelta.hp)));
+      const damageReduce = Math.max(0, Math.floor(Math.abs(toNumber(healResult?.damageDelta, safeDelta.damage ? -safeDelta.damage : 0))));
+      if(hpGain > 0){
+        parts.push(buildHealMetricLogText("HP", hpGain));
+      }
+      if(damageReduce > 0){
+        parts.push(buildHealMetricLogText("DMG", -damageReduce));
+      }
+      if(parts.length > 0){
+        lines.push(parts.join(" / "));
+      }
+      return lines;
+    }
+
+    if(id === HEAL_TYPE.STABILIZE){
+      const stabilityGain = Math.max(0, Math.floor(toNumber(healResult?.stabilityDelta, safeDelta.stability)));
+      if(stabilityGain > 0){
+        lines.push(buildHealMetricLogText("STB", stabilityGain));
+      }
+      return lines;
+    }
+
+    if(id === HEAL_TYPE.PURGE){
+      lines.push(...buildHealStatusResultLines(healResult?.removedStatuses));
+      if(lines.length <= 1){
+        lines.push("変化なし。");
+      }
+      return lines;
+    }
+
+    return lines;
+  }
+
+  function showOverlayHeal(nowMs = performance.now()){
     if(!showOverlayShell("food", OVERLAY_STAT_RECT)) return;
     const currentFontPx = toNumber(parseFloat(String(overlayLog.style.fontSize || "")), 15);
     overlayLog.style.fontSize = `${Math.max(15, Math.round(currentFontPx))}px`;
@@ -9305,117 +17519,131 @@
     overlayLogBody.textContent = "";
     overlayLogHint.textContent = "";
     if(getHealScreenMode() === HEAL_SCREEN_MODE.RESULT){
-      overlayLogBody.appendChild(buildHealResultOverlayElement());
+      overlayLogBody.appendChild(buildHealResultOverlayElement(nowMs));
       return;
     }
+    clearResultTypewriterState();
     overlayLogBody.appendChild(buildHealSelectOverlayElement());
   }
 
   function createHealResultPayload(action, delta, options = {}){
     const safeDelta = sanitizeDelta(delta);
-    const lines = [];
-    const orderedKeys = LOG_STAT_SPECS.map((spec) => String(spec?.key || ""));
-    for(let i = 0; i < orderedKeys.length; i++){
-      const key = orderedKeys[i];
-      if(!Object.prototype.hasOwnProperty.call(safeDelta, key)){
-        continue;
-      }
-      const specSign = (() => {
-        for(let j = 0; j < LOG_STAT_SPECS.length; j++){
-          if(String(LOG_STAT_SPECS[j]?.key || "") === key){
-            return toNumber(LOG_STAT_SPECS[j]?.sign, 1);
-          }
-        }
-        return 1;
-      })();
-      const value = toNumber(safeDelta[key], 0) * specSign;
-      if(value === 0) continue;
-      lines.push(`${getLogStatLabel(key)} ${formatUiDeltaValue(value)}`);
+    if(String(options.mode || "") === "simple"){
+      const lines = Array.isArray(options.lines)
+        ? options.lines.map((line) => String(line ?? "").trim()).filter((line) => line.length > 0)
+        : [];
+      return {
+        title: String(options.title || "HEAL RESULT"),
+        mode: "simple",
+        lead: String(options.lead || action?.resultLead || "変化なし。"),
+        lines,
+      };
     }
-    if(lines.length <= 0){
-      lines.push("変化なし。");
-    }
+    const resultLines = buildHealResultLines(action?.id, safeDelta, options.healResult);
+    const startLine = String(options.startLine || getHealLogStartMessage(action?.id));
     return {
       title: String(options.title || "HEAL RESULT"),
-      lead: String(options.lead || action?.resultLead || "治療を実行。"),
-      lines,
+      mode: "two_stage",
+      lead: String(options.lead || startLine),
+      startLine,
+      lines: resultLines,
+      resultLines,
+      resultDelayMs: Math.max(
+        0,
+        Math.floor(toNumber(options.resultDelayMs, HEAL_LOG_RESULT_DELAY_MS + (startLine.length * RESULT_TYPEWRITER_CHAR_MS)))
+      ),
     };
   }
 
   function previewPatchHeal(detail, itemOverride = null){
-    const rank = getHealItemEffectRank(getSelectedHealItem(HEAL_TYPE.PATCH, detail, itemOverride));
-    const repeat = getHealSameTypePenalty(detail, HEAL_TYPE.PATCH);
-    const ambient = getHealAmbientPenalty(detail);
+    const safeDetail = ensureHealDetailState(detail || state.detailed);
+    const selectedItem = getSelectedHealItem(HEAL_TYPE.PATCH, safeDetail, itemOverride);
+    const rankBonus = getHealItemRankBonus(selectedItem);
     const damageMax = toPositiveInt(state.stats.damageMax, 10);
     const damageNow = clamp(toNumber(state.stats.damage, 0), 0, damageMax);
     const hpMax = getRuntimeMax("hp", 100);
     const hpNow = clamp(getRuntimeStat("hp", hpMax), 0, hpMax);
+    const stabilityMax = toPositiveInt(state.stats.stabilityMax, 10);
+    const stabilityNow = clamp(toNumber(state.stats.stability, stabilityMax), 0, stabilityMax);
+    const thresholds = getHealStabilityThresholds(stabilityMax);
+    let hpGain = 12 + rankBonus;
+    let damageHeal = 2 + Math.floor(rankBonus / 2);
+    if(hasHealStatus(safeDetail, "decay")){
+      hpGain -= 2;
+      damageHeal -= 1;
+    }
+    if(stabilityNow >= thresholds.high){
+      hpGain += 2;
+    }
+    damageHeal = Math.max(1, damageHeal);
+    const damage = previewHealReduction(damageNow, 0, damageHeal);
+    const hp = previewHealGain(hpNow, hpMax, hpGain);
     return {
-      damage: previewHealFloorLimitedReduction(
-        detail,
-        "damage",
-        damageNow,
-        computeHealEffectAmount(Math.max(0, rank), rank > 0 ? 1 : 0, { repeat, noise: ambient.noise, decay: ambient.decay })
-      ),
-      hp: previewHealGain(
-        hpNow,
-        hpMax,
-        computeHealEffectAmount(Math.max(0, rank - 1), 0, { repeat, noise: ambient.noise, decay: ambient.decay })
-      ),
+      damage,
+      hp,
+      result: {
+        type: "PATCH",
+        hpDelta: hp.applied,
+        damageDelta: -damage.applied,
+        strong: hp.applied >= 14 || damage.applied >= 3,
+      },
     };
   }
 
   function previewStabilizeHeal(detail, itemOverride = null){
-    const rank = getHealItemEffectRank(getSelectedHealItem(HEAL_TYPE.STABILIZE, detail, itemOverride));
-    const repeat = getHealSameTypePenalty(detail, HEAL_TYPE.STABILIZE);
-    const ambient = getHealAmbientPenalty(detail);
+    const safeDetail = ensureHealDetailState(detail || state.detailed);
+    const selectedItem = getSelectedHealItem(HEAL_TYPE.STABILIZE, safeDetail, itemOverride);
+    const rankBonus = getHealItemRankBonus(selectedItem);
     const stabilityMax = toPositiveInt(state.stats.stabilityMax, 10);
     const stabilityNow = clamp(toNumber(state.stats.stability, stabilityMax), 0, stabilityMax);
-    const desyncNow = getHealAbnormalLevel(detail, "desync");
+    const thresholds = getHealStabilityThresholds(stabilityMax);
+    let stbGain = 2 + Math.floor(rankBonus / 2);
+    if(hasHealStatus(safeDetail, "noise") || hasHealStatus(safeDetail, "desync")){
+      stbGain += 1;
+    }
+    if(stabilityNow <= thresholds.low){
+      stbGain += 1;
+    }
+    if(hasHealStatus(safeDetail, "decay")){
+      stbGain -= 1;
+    }
+    stbGain = Math.max(0, stbGain);
+    const stability = previewHealGain(stabilityNow, stabilityMax, stbGain);
     return {
-      stability: previewHealGain(
-        stabilityNow,
-        stabilityMax,
-        computeHealEffectAmount(Math.max(0, rank), rank > 0 ? 1 : 0, { repeat, noise: ambient.noise, decay: ambient.decay })
-      ),
-      desync: previewHealFloorLimitedReduction(
-        detail,
-        "desync",
-        desyncNow,
-        computeHealEffectAmount(Math.max(0, rank), rank > 0 ? 1 : 0, { repeat, noise: ambient.noise, decay: ambient.decay })
-      ),
+      stability,
+      result: {
+        type: "STABILIZE",
+        stabilityDelta: stability.applied,
+        strong: stability.applied >= Math.max(2, Math.ceil(stabilityMax * 0.4)),
+      },
     };
   }
 
   function previewPurgeHeal(detail, itemOverride = null){
-    const rank = getHealItemEffectRank(getSelectedHealItem(HEAL_TYPE.PURGE, detail, itemOverride));
-    const repeat = getHealSameTypePenalty(detail, HEAL_TYPE.PURGE);
-    const ambient = getHealAmbientPenalty(detail);
+    const safeDetail = ensureHealDetailState(detail || state.detailed);
+    const selectedItem = getSelectedHealItem(HEAL_TYPE.PURGE, safeDetail, itemOverride);
+    const rankBonus = getHealItemRankBonus(selectedItem);
+    const rankExtraSlots = Math.floor(rankBonus / 2);
+    const stabilityMax = toPositiveInt(state.stats.stabilityMax, 10);
+    const stabilityNow = clamp(toNumber(state.stats.stability, stabilityMax), 0, stabilityMax);
+    const removedStatuses = getHealPurgeTargetKeys(safeDetail, stabilityNow, rankExtraSlots);
+    const buildStatusPreview = (key) => {
+      const level = getHealAbnormalLevel(safeDetail, key);
+      if(removedStatuses.includes(key)){
+        return previewHealReduction(level, 0, level);
+      }
+      return previewHealReduction(level, 0, 0);
+    };
     return {
-      noise: previewHealFloorLimitedReduction(
-        detail,
-        "noise",
-        getHealAbnormalLevel(detail, "noise"),
-        computeHealEffectAmount(Math.max(0, rank), rank > 0 ? 1 : 0, { repeat, noise: ambient.noise, decay: ambient.decay })
-      ),
-      contamination: previewHealFloorLimitedReduction(
-        detail,
-        "contamination",
-        getHealAbnormalLevel(detail, "contamination"),
-        computeHealEffectAmount(Math.max(0, rank), rank > 0 ? 1 : 0, { repeat, noise: ambient.noise, decay: ambient.decay })
-      ),
-      desync: previewHealFloorLimitedReduction(
-        detail,
-        "desync",
-        getHealAbnormalLevel(detail, "desync"),
-        computeHealEffectAmount(Math.max(0, rank - 1), 0, { repeat, noise: ambient.noise, decay: ambient.decay })
-      ),
-      decay: previewHealFloorLimitedReduction(
-        detail,
-        "decay",
-        getHealAbnormalLevel(detail, "decay"),
-        computeHealEffectAmount(Math.max(0, rank - 1), 0, { repeat, noise: ambient.noise, decay: ambient.decay })
-      ),
+      noise: buildStatusPreview("noise"),
+      contamination: buildStatusPreview("contamination"),
+      desync: buildStatusPreview("desync"),
+      decay: buildStatusPreview("decay"),
+      result: {
+        type: "PURGE",
+        removedStatuses: removedStatuses.slice(),
+        strong: removedStatuses.length >= 2 || removedStatuses.includes("decay"),
+      },
     };
   }
 
@@ -9438,6 +17666,9 @@
     const keys = Object.keys(preview);
     for(let i = 0; i < keys.length; i++){
       const entry = preview[keys[i]];
+      if(isRecord(entry) && entry.beneficial === false){
+        continue;
+      }
       if(toNumber(entry?.applied, 0) > 0){
         return true;
       }
@@ -9481,6 +17712,30 @@
     }
   }
 
+  function processHeal(type, target = null, options = null){
+    const normalizedType = normalizeHealActionId(type, "");
+    if(normalizedType.length <= 0){
+      return {
+        success: false,
+        reason: "missing_action",
+        warning: "治療項目が不明。",
+        action: null,
+        delta: {},
+      };
+    }
+    if(target && target !== state.monster && target !== state.detailed){
+      return {
+        success: false,
+        reason: "invalid_target",
+        warning: "対象が不正。",
+        action: getHealActionById(normalizedType),
+        delta: {},
+      };
+    }
+    const itemId = isRecord(options) ? options.itemId : null;
+    return applyHealActionById(normalizedType, itemId);
+  }
+
   function applyHealActionById(actionId, itemId = null){
     if(!isRecord(state.detailed)){
       state.detailed = createDefaultDetailedState(state.monster?.id || "mon001");
@@ -9518,10 +17773,11 @@
       recordLastDeltaLine({});
       return {
         success: true,
-        reason: availability?.hasTarget ? "cycle_limited" : "no_target",
+        reason: availability?.hasTarget ? "no_effect" : "no_target",
         action,
         delta: {},
         payload: createHealResultPayload(action, {}, {
+          mode: "simple",
           lead: String(availability?.reason || "変化なし。"),
         }),
       };
@@ -9549,61 +17805,38 @@
     if(spent > 0){
       delta.stamina = -spent;
     }
+    const healResult = isRecord(preview?.result) ? preview.result : null;
 
     if(action.id === HEAL_TYPE.PATCH){
-      const damageApplied = commitHealFloorLimitedReduction(detail, preview.damage, (next) => {
-        state.stats.damage = clamp(next, 0, toPositiveInt(state.stats.damageMax, 10));
-      });
+      const damageApplied = Math.max(0, Math.floor(toNumber(preview?.damage?.applied, 0)));
       if(damageApplied > 0){
+        state.stats.damage = clamp(toNumber(preview?.damage?.next, state.stats.damage), 0, toPositiveInt(state.stats.damageMax, 10));
         delta.damage = damageApplied;
       }
-      const hpApplied = commitHealGain(preview.hp, (next) => {
-        setRuntimeStat("hp", clamp(next, 0, getRuntimeMax("hp", 100)));
-      });
+      const hpApplied = Math.max(0, Math.floor(toNumber(preview?.hp?.applied, 0)));
       if(hpApplied > 0){
+        setRuntimeStat("hp", clamp(toNumber(preview?.hp?.next, getRuntimeStat("hp", getRuntimeMax("hp", 100))), 0, getRuntimeMax("hp", 100)));
         delta.hp = hpApplied;
       }
     }else if(action.id === HEAL_TYPE.STABILIZE){
-      const desyncApplied = commitHealFloorLimitedReduction(detail, preview.desync, (next) => {
-        setHealAbnormalLevel(detail, "desync", next);
-      });
-      if(desyncApplied > 0){
-        delta.desync = desyncApplied;
-      }
-      const stabilityApplied = commitHealGain(preview.stability, (next) => {
-        state.stats.stability = clamp(next, 0, toPositiveInt(state.stats.stabilityMax, 10));
-      });
+      const stabilityApplied = Math.max(0, Math.floor(toNumber(preview?.stability?.applied, 0)));
       if(stabilityApplied > 0){
+        state.stats.stability = clamp(toNumber(preview?.stability?.next, state.stats.stability), 0, toPositiveInt(state.stats.stabilityMax, 10));
         delta.stability = stabilityApplied;
       }
     }else if(action.id === HEAL_TYPE.PURGE){
-      const noiseApplied = commitHealFloorLimitedReduction(detail, preview.noise, (next) => {
-        setHealAbnormalLevel(detail, "noise", next);
-      });
-      if(noiseApplied > 0){
-        delta.noise = noiseApplied;
-      }
-      const contaminationApplied = commitHealFloorLimitedReduction(detail, preview.contamination, (next) => {
-        setHealAbnormalLevel(detail, "contamination", next);
-      });
-      if(contaminationApplied > 0){
-        delta.contamination = contaminationApplied;
-      }
-      const desyncApplied = commitHealFloorLimitedReduction(detail, preview.desync, (next) => {
-        setHealAbnormalLevel(detail, "desync", next);
-      });
-      if(desyncApplied > 0){
-        delta.desync = desyncApplied;
-      }
-      const decayApplied = commitHealFloorLimitedReduction(detail, preview.decay, (next) => {
-        setHealAbnormalLevel(detail, "decay", next);
-      });
-      if(decayApplied > 0){
-        delta.decay = decayApplied;
+      for(let i = 0; i < HEAL_ABNORMAL_KEYS.length; i++){
+        const key = HEAL_ABNORMAL_KEYS[i];
+        const entry = isRecord(preview?.[key]) ? preview[key] : null;
+        const applied = Math.max(0, Math.floor(toNumber(entry?.applied, 0)));
+        if(applied <= 0){
+          continue;
+        }
+        setHealAbnormalLevel(detail, key, clamp(toNumber(entry?.next, 0), HEAL_ABNORMAL_MIN, HEAL_ABNORMAL_MAX));
+        delta[key] = applied;
       }
     }
 
-    markHealCycleUse(detail, action.id);
     const sanitizedDelta = sanitizeDelta(delta);
     updateLogParams("heal", sanitizedDelta);
     recordLastDeltaLine(sanitizedDelta);
@@ -9614,7 +17847,7 @@
       action,
       item: selectedItem,
       delta: sanitizedDelta,
-      payload: createHealResultPayload(action, sanitizedDelta),
+      payload: createHealResultPayload(action, sanitizedDelta, { healResult }),
     };
   }
 
@@ -10386,6 +18619,7 @@
       { id: "adv",  label: "ADV"  },
     ],
     [
+      { id: "item",  label: "ITEM"  },
       { id: "wc",    label: "WC"    },
       { id: "sleep", label: "SLEEP" },
       { id: "heal",  label: "HEAL"  },
@@ -11425,20 +19659,25 @@
     return false;
   }
 
-  function drawSprite16x16(x, y, sprite, dotScale){
-    ctx.save();
+  function drawSprite16x16ToContext(targetCtx, x, y, sprite, dotScale, palette = null){
+    if(!targetCtx || !isSprite16(sprite)) return;
+    const bodyColor = String(palette?.body || "rgba(14,20,15,0.70)");
+    const accentColor = String(palette?.accent || "rgba(14,20,15,0.85)");
+    targetCtx.save();
     for(let r=0;r<SPRITE_SIZE;r++){
       for(let c=0;c<SPRITE_SIZE;c++){
         const v = sprite[r][c];
         if(!v) continue;
         // 1=body, 2=accent
-        ctx.fillStyle = (v === 2)
-          ? "rgba(14,20,15,0.85)"
-          : "rgba(14,20,15,0.70)";
-        ctx.fillRect(x + c*dotScale, y + r*dotScale, dotScale, dotScale);
+        targetCtx.fillStyle = (v === 2) ? accentColor : bodyColor;
+        targetCtx.fillRect(x + c*dotScale, y + r*dotScale, dotScale, dotScale);
       }
     }
-    ctx.restore();
+    targetCtx.restore();
+  }
+
+  function drawSprite16x16(x, y, sprite, dotScale){
+    drawSprite16x16ToContext(ctx, x, y, sprite, dotScale);
   }
 
   function drawSprite16x16Facing(x, y, sprite, dotScale, facing = "right"){
@@ -11803,10 +20042,12 @@
       toNumber(BTTL_RANGE_MIN_GAP, 0.10),
       toNumber(BTTL_RANGE_POS_MAX, 0.94) - toNumber(BTTL_RANGE_POS_MIN, 0.06)
     );
-    const overclock = getBttlActiveOverclock(ctxBattle, nowMs);
     const owner = String(attackOwner || "").trim().toLowerCase();
-    if(owner === "enemy" && overclock){
-      const resist = clamp(toNumber(overclock.knockbackResist, 0), 0, 0.9);
+    const allySignal = owner === "enemy"
+      ? getBttlActiveSignalBuff(ctxBattle, nowMs)
+      : null;
+    if(owner === "enemy" && allySignal){
+      const resist = clamp(toNumber(allySignal.knockbackResist, 0), 0, 0.9);
       targetGap = clamp(
         targetGap * (1 - (resist * 0.65)),
         toNumber(BTTL_RANGE_MIN_GAP, 0.10),
@@ -12975,6 +21216,52 @@
       : BTTL_START_INTRO_ENCOUNT_MS;
   }
 
+  function normalizeBttlEnemyDifficultyId(value){
+    const id = String(value || "").trim().toLowerCase();
+    if(
+      id === BTTL_ENEMY_DIFFICULTY.NORMAL ||
+      id === BTTL_ENEMY_DIFFICULTY.ADV_NORMAL ||
+      id === BTTL_ENEMY_DIFFICULTY.ADV_DANGER ||
+      id === BTTL_ENEMY_DIFFICULTY.ADV_BOSS
+    ){
+      return id;
+    }
+    return BTTL_ENEMY_DIFFICULTY.NORMAL;
+  }
+
+  function getBttlEnemyDifficultyPreset(difficultyId){
+    const id = normalizeBttlEnemyDifficultyId(difficultyId);
+    return BTTL_ENEMY_DIFFICULTY_PRESET[id] || BTTL_ENEMY_DIFFICULTY_PRESET[BTTL_ENEMY_DIFFICULTY.NORMAL];
+  }
+
+  function resolveBttlEnemyDifficultyId(options = null){
+    const explicit = String(options?.enemyDifficulty || "").trim().toLowerCase();
+    if(explicit.length > 0){
+      return normalizeBttlEnemyDifficultyId(explicit);
+    }
+    const advType = normalizeAdvBoardNodeType(options?.advBattleNodeType, "");
+    if(advType === ADV_BOARD_NODE_TYPE.BOSS){
+      return BTTL_ENEMY_DIFFICULTY.ADV_BOSS;
+    }
+    if(
+      advType === ADV_BOARD_NODE_TYPE.CONTAMINATION ||
+      advType === ADV_BOARD_NODE_TYPE.ANOMALY
+    ){
+      return BTTL_ENEMY_DIFFICULTY.ADV_DANGER;
+    }
+    if(advType.length > 0){
+      return BTTL_ENEMY_DIFFICULTY.ADV_NORMAL;
+    }
+    return BTTL_ENEMY_DIFFICULTY.NORMAL;
+  }
+
+  function getBttlEnemyTuning(ctxBattle = null){
+    if(isRecord(ctxBattle?.enemyTuning)){
+      return ctxBattle.enemyTuning;
+    }
+    return getBttlEnemyDifficultyPreset(resolveBttlEnemyDifficultyId(ctxBattle));
+  }
+
   function resolveBttlStartIntroType(options, enemyHp){
     const debugForced = normalizeBttlStartIntroType(BTTL_START_INTRO_DEBUG_FORCE_TYPE);
     if(String(BTTL_START_INTRO_DEBUG_FORCE_TYPE || "").trim().length > 0){
@@ -12983,6 +21270,12 @@
     const requested = normalizeBttlStartIntroType(options?.introType || "");
     if(options && options.introType){
       return requested;
+    }
+    const difficultyIntro = normalizeBttlStartIntroType(
+      getBttlEnemyDifficultyPreset(resolveBttlEnemyDifficultyId(options)).introType
+    );
+    if(String(difficultyIntro || "").trim().length > 0){
+      return difficultyIntro;
     }
     const hp = Math.max(0, Math.floor(toNumber(enemyHp, 0)));
     if(
@@ -13650,7 +21943,7 @@
   }
 
   function getBttlBreakLogPrefix(actorKey){
-    return actorKey === "enemy" ? "EN" : "AL";
+    return actorKey === "enemy" ? "ENE" : "YOU";
   }
 
   function getBttlBreakRecoveryRangeMult(rangeState){
@@ -14055,7 +22348,7 @@
   }
 
   function getBttlSkillLogPrefix(actorKey){
-    return actorKey === "enemy" ? "EN" : "AL";
+    return actorKey === "enemy" ? "ENE" : "YOU";
   }
 
   function applyBttlSupportSkill(ctxBattle, actorKey, skill, nowMs = performance.now()){
@@ -14352,23 +22645,131 @@
     return BTTL_ENEMY_ACTION.STABLE;
   }
 
-  function getBttlEnemyDriveProcLabelByAction(actionId){
-    const id = getBttlEnemyActionId(actionId);
-    if(id === BTTL_ENEMY_ACTION.PRESS) return "SURGE";
-    if(id === BTTL_ENEMY_ACTION.DEFEND) return "GUARD";
-    return "FOCUS";
+  function normalizeBttlEnemyDriveId(driveId){
+    const id = String(driveId || "").trim().toLowerCase();
+    if(
+      id === "surge" ||
+      id === "guard" ||
+      id === "focus" ||
+      id === "rampage"
+    ){
+      return id;
+    }
+    return "focus";
   }
 
-  function markBttlEnemyDriveProc(ctxBattle, actionId, nowMs = performance.now()){
+  function getBttlEnemyDriveIdByAction(actionId){
+    const id = getBttlEnemyActionId(actionId);
+    if(id === BTTL_ENEMY_ACTION.PRESS) return "surge";
+    if(id === BTTL_ENEMY_ACTION.DEFEND) return "guard";
+    return "focus";
+  }
+
+  function resolveBttlEnemyDriveId(value){
+    const raw = String(value || "").trim();
+    if(raw.length <= 0) return "focus";
+    const upper = raw.toUpperCase();
+    if(
+      upper === BTTL_ENEMY_ACTION.PRESS ||
+      upper === BTTL_ENEMY_ACTION.DEFEND ||
+      upper === BTTL_ENEMY_ACTION.STABLE
+    ){
+      return getBttlEnemyDriveIdByAction(upper);
+    }
+    return normalizeBttlEnemyDriveId(raw);
+  }
+
+  function getBttlEnemyDriveLabel(driveId){
+    const id = normalizeBttlEnemyDriveId(driveId);
+    const item = BTTL_ENEMY_DRIVE_ITEMS.find((entry) => String(entry?.id || "").trim().toLowerCase() === id);
+    return String(item?.label || "FOCUS").trim().toUpperCase();
+  }
+
+  function getBttlCurrentEnemyDriveId(ctxBattle, nowMs = performance.now()){
+    const now = toNumber(nowMs, performance.now());
+    if(now < toNumber(ctxBattle?.heavyInboundUntilMs, 0)){
+      return "rampage";
+    }
+    return getBttlEnemyDriveIdByAction(getBttlEnemyAiState(ctxBattle, now).currentAction);
+  }
+
+  function getBttlEnemyDriveProcLabelByAction(actionId){
+    return getBttlEnemyDriveLabel(getBttlEnemyDriveIdByAction(actionId));
+  }
+
+  function getBttlSignalHintCommandByDrive(driveId){
+    const id = normalizeBttlEnemyDriveId(driveId);
+    if(id === "surge" || id === "rampage") return "stabilize";
+    if(id === "guard") return "calibrate";
+    if(id === "focus") return "boost";
+    return "";
+  }
+
+  function ensureBttlSignalHintPulseState(ctxBattle){
+    if(!ctxBattle) return null;
+    if(!isRecord(ctxBattle.signalHintPulseUntilByCmd)){
+      ctxBattle.signalHintPulseUntilByCmd = {
+        boost: 0,
+        stabilize: 0,
+        calibrate: 0,
+      };
+    }
+    return ctxBattle.signalHintPulseUntilByCmd;
+  }
+
+  function triggerBttlSignalHintPulse(ctxBattle, driveId, nowMs = performance.now()){
     if(!ctxBattle) return;
-    const label = String(getBttlEnemyDriveProcLabelByAction(actionId) || "").trim().toUpperCase();
+    const cmd = getBttlSignalHintCommandByDrive(driveId);
+    if(cmd.length <= 0) return;
+    const byCmd = ensureBttlSignalHintPulseState(ctxBattle);
+    if(!byCmd) return;
+    byCmd[cmd] = toNumber(nowMs, performance.now()) + BTTL_SIGNAL_HINT_PULSE_MS;
+  }
+
+  function getBttlSignalHintPulseStrength(ctxBattle, cmd, nowMs = performance.now()){
+    if(!ctxBattle) return 0;
+    const id = normalizeBttlSignalCommand(cmd);
+    const byCmd = ensureBttlSignalHintPulseState(ctxBattle);
+    if(!byCmd || !Object.prototype.hasOwnProperty.call(byCmd, id)) return 0;
+    const now = toNumber(nowMs, performance.now());
+    const untilMs = toNumber(byCmd[id], 0);
+    if(untilMs <= now) return 0;
+    return clamp((untilMs - now) / BTTL_SIGNAL_HINT_PULSE_MS, 0, 1);
+  }
+
+  function markBttlEnemyDriveProc(ctxBattle, actionOrDriveId, nowMs = performance.now()){
+    if(!ctxBattle) return;
+    const driveId = resolveBttlEnemyDriveId(actionOrDriveId);
+    const label = String(getBttlEnemyDriveLabel(driveId) || "").trim().toUpperCase();
     if(label.length <= 0) return;
     const now = toNumber(nowMs, performance.now());
+    const prevDriveId = normalizeBttlEnemyDriveId(ctxBattle.enemyPrevDriveId);
+    ctxBattle.enemyPrevDriveId = driveId;
+    if(prevDriveId === driveId){
+      return;
+    }
+    ctxBattle.enemyDriveBadgePulseStartedAtMs = now;
+    ctxBattle.enemyDriveBadgePulseUntilMs = now + BTTL_ENEMY_DRIVE_BADGE_PULSE_MS;
+    triggerBttlSignalHintPulse(ctxBattle, driveId, now);
     ctxBattle.lastEnemyDriveProc = {
+      id: driveId,
       label,
       startedAtMs: now,
       untilMs: now + BTTL_ENEMY_DRIVE_PROC_FLASH_MS,
     };
+  }
+
+  function syncBttlEnemyDriveBadgePulse(ctxBattle, driveId, nowMs = performance.now()){
+    if(!ctxBattle) return;
+    const currentDriveId = resolveBttlEnemyDriveId(driveId);
+    const prevDriveId = normalizeBttlEnemyDriveId(ctxBattle.enemyPrevDriveId);
+    if(prevDriveId.length <= 0){
+      ctxBattle.enemyPrevDriveId = currentDriveId;
+      return;
+    }
+    if(prevDriveId !== currentDriveId){
+      ctxBattle.enemyPrevDriveId = currentDriveId;
+    }
   }
 
   function getBttlEnemyActionIntervalMult(actionId){
@@ -14474,7 +22875,11 @@
       return BTTL_RANGE_INTENT.APPROACH;
     }
     if(id === BTTL_ENEMY_ACTION.DEFEND){
-      return BTTL_RANGE_INTENT.RETREAT;
+      const stateId = normalizeBttlRangeStateId(rangeState);
+      if(stateId === "short"){
+        return BTTL_RANGE_INTENT.RETREAT;
+      }
+      return BTTL_RANGE_INTENT.HOLD;
     }
     return getBttlStableRangeIntentByState(rangeState);
   }
@@ -14644,12 +23049,14 @@
 
   function applyBttlRangedHitKnockback(ctxBattle, owner, nowMs = performance.now()){
     if(!ctxBattle) return;
-    const overclock = getBttlActiveOverclock(ctxBattle, nowMs);
-    const overclockResist = owner === "enemy"
-      ? clamp(toNumber(overclock?.knockbackResist, 0), 0, 0.9)
+    const allySignal = owner === "enemy"
+      ? getBttlActiveSignalBuff(ctxBattle, nowMs)
+      : null;
+    const allyKnockbackResist = owner === "enemy"
+      ? clamp(toNumber(allySignal?.knockbackResist, 0), 0, 0.9)
       : 0;
     const baseDelta = clamp(toNumber(BTTL_RANGED_HIT_KNOCK_POS_DELTA, 0.028), 0.006, 0.10);
-    const delta = baseDelta * (1 - overclockResist);
+    const delta = baseDelta * (1 - allyKnockbackResist);
     const targetRatio = clamp(toNumber(BTTL_RANGED_HIT_KNOCK_TARGET_RATIO, 0.72), 0.50, 0.92);
     const actorRatio = 1 - targetRatio;
     let enemyPos = toNumber(ctxBattle.enemyRangePos, BTTL_RANGE_INIT_ENEMY_POS);
@@ -14987,10 +23394,10 @@
       (enemyHit * 0.92) -
       (allyHit * 0.72);
     let scoreDefend =
-      ((1 - hpEnemy) * 1.28) +
-      (allyHit * 0.90) +
-      ((lastDamageMs <= 2500) ? 0.46 : 0) -
-      ((1 - hpAlly) * 0.42);
+      ((1 - hpEnemy) * 1.08) +
+      (allyHit * 0.79) +
+      ((lastDamageMs <= 2500) ? 0.26 : 0) -
+      ((1 - hpAlly) * 0.36);
     let scoreStable = 0;
 
     const pressureLead = clamp(enemyHit - allyHit, -0.45, 0.45);
@@ -15002,7 +23409,7 @@
       scoreDefend -= 0.26;
     }else if(rangeState === "short"){
       scorePress -= 0.30;
-      scoreDefend += 0.30;
+      scoreDefend += 0.16;
     }else{
       scorePress += 0.06;
       scoreDefend += 0.04;
@@ -15012,20 +23419,21 @@
       if(rangeState === "long"){
         scorePress += 0.32;
       }else if(rangeState === "short"){
-        scoreDefend += 0.34;
+        scoreDefend += 0.15;
+        scoreStable += 0.10;
       }else{
         scoreStable += 0.14;
       }
       scorePress -= 0.10;
     }else if(readyAttackSkillsInRange <= 0){
       scorePress -= 0.18;
-      scoreDefend += 0.08;
-      scoreStable += 0.10;
+      scoreDefend += 0.03;
+      scoreStable += 0.12;
     }
 
     if(buff === "UP"){
-      scoreDefend += 0.24;
-      scorePress -= 0.30;
+      scoreDefend += 0.13;
+      scorePress -= 0.24;
     }else if(buff === "DN"){
       scorePress += 0.26;
       scoreDefend -= 0.12;
@@ -15033,19 +23441,26 @@
 
     const tension = Math.abs(scorePress - scoreDefend);
     scoreStable += 0.86 - Math.min(0.54, tension * 0.40) + (enemyHit < 0.35 ? 0.15 : 0);
+    scoreStable += 0.14;
+    if(lastDamageMs >= 3200){
+      scoreStable += 0.14;
+    }
     if(rangeState === "mid"){
-      scoreStable += 0.12;
+      scoreStable += 0.20;
     }else if(rangeState === "long"){
       scoreStable -= 0.08;
     }else{
       scoreStable -= 0.06;
+    }
+    if(buff === "NONE"){
+      scoreStable += 0.05;
     }
 
     const stickyBonus = Math.max(0, toNumber(BTTL_ENEMY_AI_CURRENT_ACTION_BONUS, 0.14));
     if(currentAction === BTTL_ENEMY_ACTION.PRESS){
       scorePress += stickyBonus;
     }else if(currentAction === BTTL_ENEMY_ACTION.DEFEND){
-      scoreDefend += stickyBonus;
+      scoreDefend += stickyBonus * 0.54;
     }else{
       scoreStable += stickyBonus;
     }
@@ -15554,7 +23969,7 @@
     buff.breakTakenMult = 1;
   }
 
-  function activateBttlSignalBuff(ctxBattle, cmdRaw, tierRaw, nowMs = performance.now()){
+  function activateBttlSignalBuff(ctxBattle, cmdRaw, tierRaw, nowMs = performance.now(), options = null){
     if(!ctxBattle) return null;
     const cmd = normalizeBttlSignalCommand(cmdRaw);
     const tier = clamp(Math.floor(toNumber(tierRaw, 0)), 0, 3);
@@ -15565,19 +23980,77 @@
       return null;
     }
     const buff = ensureBttlSignalBuffState(ctxBattle);
+    const enemyDriveId = resolveBttlEnemyDriveId(
+      String(options?.enemyDriveId || getBttlCurrentEnemyDriveId(ctxBattle, now))
+    );
+    const advantage = isBttlSignalAdvantage(cmd, enemyDriveId);
+    const challengeBonus = Boolean(options?.challengeBonus);
+    const hitChanceAdjBase = getBttlSignalHitBonus(cmd, tier);
+    const intervalMultBase = getBttlSignalIntervalMult(cmd, tier);
+    const approachMultBase = clamp(getBttlSignalTierValue(BTTL_SIGNAL_APPROACH_MULT_BY_TIER, cmd, tier, 1), 1, 3);
+    const knockbackResistBase = clamp(getBttlSignalTierValue(BTTL_SIGNAL_KNOCKBACK_RESIST_BY_TIER, cmd, tier, 0), 0, 0.9);
+    const damageTakenMultBase = clamp(getBttlSignalTierValue(BTTL_SIGNAL_DAMAGE_TAKEN_MULT_BY_TIER, cmd, tier, 1), 0.55, 1.8);
+    const breakTakenMultBase = clamp(getBttlSignalTierValue(BTTL_SIGNAL_BREAK_TAKEN_MULT_BY_TIER, cmd, tier, 1), 0.55, 1.8);
     buff.cmd = cmd;
     buff.startedAtMs = now;
     buff.activeUntilMs = now + durationMs;
     buff.tier = tier;
-    buff.hitChanceAdj = getBttlSignalHitBonus(cmd, tier);
-    buff.intervalMult = getBttlSignalIntervalMult(cmd, tier);
-    buff.approachMult = clamp(getBttlSignalTierValue(BTTL_SIGNAL_APPROACH_MULT_BY_TIER, cmd, tier, 1), 1, 3);
-    buff.knockbackResist = clamp(getBttlSignalTierValue(BTTL_SIGNAL_KNOCKBACK_RESIST_BY_TIER, cmd, tier, 0), 0, 0.9);
-    buff.damageTakenMult = Math.max(1, getBttlSignalTierValue(BTTL_SIGNAL_DAMAGE_TAKEN_MULT_BY_TIER, cmd, tier, 1));
-    buff.breakTakenMult = Math.max(1, getBttlSignalTierValue(BTTL_SIGNAL_BREAK_TAKEN_MULT_BY_TIER, cmd, tier, 1));
+    buff.hitChanceAdj = applyBttlSignalChallengeBonus(
+      applyBttlSignalAdvantageBonus(hitChanceAdjBase, advantage, 0),
+      challengeBonus,
+      0
+    );
+    buff.intervalMult = clamp(
+      applyBttlSignalChallengeBonus(
+        applyBttlSignalAdvantageBonus(intervalMultBase, advantage, 1),
+        challengeBonus,
+        1
+      ),
+      0.72,
+      1.35
+    );
+    buff.approachMult = clamp(
+      applyBttlSignalChallengeBonus(
+        applyBttlSignalAdvantageBonus(approachMultBase, advantage, 1),
+        challengeBonus,
+        1
+      ),
+      1,
+      3
+    );
+    buff.knockbackResist = clamp(
+      applyBttlSignalChallengeBonus(
+        applyBttlSignalAdvantageBonus(knockbackResistBase, advantage, 0),
+        challengeBonus,
+        0
+      ),
+      0,
+      0.9
+    );
+    buff.damageTakenMult = clamp(
+      applyBttlSignalChallengeBonus(
+        applyBttlSignalAdvantageBonus(damageTakenMultBase, advantage, 1),
+        challengeBonus,
+        1
+      ),
+      0.55,
+      1.8
+    );
+    buff.breakTakenMult = clamp(
+      applyBttlSignalChallengeBonus(
+        applyBttlSignalAdvantageBonus(breakTakenMultBase, advantage, 1),
+        challengeBonus,
+        1
+      ),
+      0.55,
+      1.8
+    );
     return {
       cmd,
       tier,
+      advantage,
+      challengeBonus,
+      enemyDriveId,
       durationMs,
       activeUntilMs: buff.activeUntilMs,
       hitChanceAdj: buff.hitChanceAdj,
@@ -15606,6 +24079,58 @@
     const buff = getBttlActiveSignalBuff(ctxBattle, nowMs);
     if(!buff) return null;
     return normalizeBttlSignalCommand(buff.cmd) === "overclock" ? buff : null;
+  }
+
+  function isBttlSignalAdvantage(signalType, enemyDrive){
+    const cmd = normalizeBttlSignalCommand(signalType);
+    const driveId = normalizeBttlEnemyDriveId(enemyDrive);
+    if(cmd === "stabilize" && (driveId === "surge" || driveId === "rampage")) return true;
+    if(cmd === "calibrate" && driveId === "guard") return true;
+    if(cmd === "boost" && driveId === "focus") return true;
+    return false;
+  }
+
+  function isBttlSignalMinigameDisadvantage(signalType, enemyDrive){
+    const cmd = normalizeBttlSignalCommand(signalType);
+    if(cmd === "overclock") return false;
+    return !isBttlSignalAdvantage(cmd, enemyDrive);
+  }
+
+  function getBttlSignalAdvantageLog(signalType, enemyDrive){
+    if(!isBttlSignalAdvantage(signalType, enemyDrive)) return null;
+    const cmd = normalizeBttlSignalCommand(signalType);
+    if(cmd === "stabilize") return "CONTROL GOOD";
+    if(cmd === "calibrate") return "SYNC MATCH";
+    if(cmd === "boost") return "PRESS THROUGH";
+    return null;
+  }
+
+  function roundBttlSignalEffectValue(value){
+    return Math.round(toNumber(value, 0) * 1000) / 1000;
+  }
+
+  function applyBttlSignalAdvantageBonus(baseValue, isAdvantage, neutralValue = 0, bonusMult = BTTL_SIGNAL_ADVANTAGE_BONUS_MULT){
+    const base = toNumber(baseValue, neutralValue);
+    const neutral = toNumber(neutralValue, 0);
+    if(!isAdvantage) return roundBttlSignalEffectValue(base);
+    const mult = Math.max(1, toNumber(bonusMult, BTTL_SIGNAL_ADVANTAGE_BONUS_MULT));
+    const delta = base - neutral;
+    if(Math.abs(delta) <= 0.000001){
+      return roundBttlSignalEffectValue(base);
+    }
+    return roundBttlSignalEffectValue(neutral + (delta * mult));
+  }
+
+  function applyBttlSignalChallengeBonus(baseValue, enabled, neutralValue = 0, bonusMult = BTTL_SIGNAL_DISADVANTAGE_REWARD_MULT){
+    const base = toNumber(baseValue, neutralValue);
+    const neutral = toNumber(neutralValue, 0);
+    if(!enabled) return roundBttlSignalEffectValue(base);
+    const mult = Math.max(1, toNumber(bonusMult, BTTL_SIGNAL_DISADVANTAGE_REWARD_MULT));
+    const delta = base - neutral;
+    if(Math.abs(delta) <= 0.000001){
+      return roundBttlSignalEffectValue(base);
+    }
+    return roundBttlSignalEffectValue(neutral + (delta * mult));
   }
 
   function getBttlSignalHitBonus(cmd, tier){
@@ -15638,12 +24163,23 @@
 
   function getBttlSignalBuffTone(effect){
     if(!isRecord(effect)) return "EQ";
+    const cmd = normalizeBttlSignalCommand(effect.cmd);
     const intervalMult = toNumber(effect.intervalMult, 1);
     const hitAdj = toNumber(effect.hitChanceAdj, 0);
     const approach = toNumber(effect.approachMult, 1);
-    const score = ((1 - intervalMult) * 1.4) + (hitAdj * 1.6) + ((approach - 1) * 1.2);
-    if(score > 0.02) return "UP";
-    if(score < -0.02) return "DN";
+    const damageTakenMult = clamp(toNumber(effect.damageTakenMult, 1), 0.55, 1.8);
+    const breakTakenMult = clamp(toNumber(effect.breakTakenMult, 1), 0.55, 1.8);
+    const knockbackResist = clamp(toNumber(effect.knockbackResist, 0), 0, 0.9);
+    const offenseScore = ((1 - intervalMult) * 1.45) + (hitAdj * 1.75) + ((approach - 1) * 1.25);
+    const defenseScore =
+      (Math.max(0, 1 - damageTakenMult) * 1.25) +
+      (Math.max(0, 1 - breakTakenMult) * 1.60) +
+      (knockbackResist * 1.05);
+    if(cmd === "stabilize"){
+      return defenseScore > 0.03 ? "DN" : "EQ";
+    }
+    if(offenseScore > defenseScore + 0.02) return "UP";
+    if(defenseScore > offenseScore + 0.04) return "DN";
     return "EQ";
   }
 
@@ -15655,12 +24191,57 @@
     return `${cmdLabel} ${grade}`;
   }
 
-  function getBttlSignalActiveBadgeText(buff){
-    if(!isRecord(buff)) return "";
-    const cmd = normalizeBttlSignalCommand(buff.cmd);
-    if(cmd === "overclock") return "OVRCLK";
-    const item = BTTL_SIGNAL_MENU_ITEMS.find((entry) => normalizeBttlSignalCommand(entry?.id) === cmd);
-    return item ? String(item.label || "").trim().toUpperCase() : "";
+  function normalizeBttlSignalFaceMood(value){
+    const id = String(value || "").trim().toLowerCase();
+    if(id === "happy" || id === "grim") return id;
+    return "normal";
+  }
+
+  function drawBttlSignalFaceBadge(drawX, drawY, mood = "normal", pulse = 0){
+    const badgeW = 14;
+    const badgeH = 14;
+    const faceMood = normalizeBttlSignalFaceMood(mood);
+    const bgAlpha = 0.26 + (pulse * 0.18);
+    const edgeAlpha = 0.22 + (pulse * 0.16);
+    const shadowAlpha = 0.38 + (pulse * 0.12);
+    const mainAlpha = 0.84 + (pulse * 0.10);
+    ctx.save();
+    ctx.fillStyle = `rgba(198,212,192,${bgAlpha.toFixed(2)})`;
+    ctx.fillRect(drawX - 1, drawY - 1, badgeW + 2, badgeH + 2);
+    ctx.fillStyle = `rgba(14,20,15,${edgeAlpha.toFixed(2)})`;
+    ctx.fillRect(drawX, drawY, badgeW, 1);
+    ctx.fillRect(drawX, drawY + badgeH - 1, badgeW, 1);
+    ctx.fillRect(drawX, drawY, 1, badgeH);
+    ctx.fillRect(drawX + badgeW - 1, drawY, 1, badgeH);
+    if(pulse > 0.01){
+      ctx.strokeStyle = `rgba(198,212,192,${(0.14 + (pulse * 0.20)).toFixed(2)})`;
+      ctx.lineWidth = 1;
+      ctx.strokeRect(drawX - 1.5, drawY - 1.5, badgeW + 3, badgeH + 3);
+    }
+    ctx.restore();
+
+    const drawFace = (offsetX, offsetY, color) => {
+      const gx = drawX + offsetX;
+      const gy = drawY + offsetY;
+      ctx.save();
+      ctx.fillStyle = color;
+      ctx.fillRect(gx + 4, gy + 4, 2, 2);
+      ctx.fillRect(gx + 8, gy + 4, 2, 2);
+      if(faceMood === "happy"){
+        ctx.fillRect(gx + 4, gy + 9, 1, 1);
+        ctx.fillRect(gx + 5, gy + 10, 4, 1);
+        ctx.fillRect(gx + 9, gy + 9, 1, 1);
+      }else if(faceMood === "grim"){
+        ctx.fillRect(gx + 4, gy + 10, 1, 1);
+        ctx.fillRect(gx + 5, gy + 9, 4, 1);
+        ctx.fillRect(gx + 9, gy + 10, 1, 1);
+      }else{
+        ctx.fillRect(gx + 4, gy + 9, 6, 1);
+      }
+      ctx.restore();
+    };
+    drawFace(1, 0, `rgba(14,20,15,${shadowAlpha.toFixed(2)})`);
+    drawFace(0, 0, `rgba(14,20,15,${mainAlpha.toFixed(2)})`);
   }
 
   function drawBttlSignalStatusBadge(ctxBattle, field, allyX, allyY, nowMs = performance.now()){
@@ -15673,9 +24254,36 @@
     }
     // Show immediate judge/result badge first (e.g. "STB NEAR").
     // When FINISH is ready, periodically flash "FINISH OK" as a badge.
-    const rawText = procActive
-      ? getBttlSignalProcBadgeText(proc)
-      : (isBttlFinishReadyBadgeVisible(ctxBattle, nowMs) ? BTTL_FINISH_READY_TEXT : "");
+    const showFaceBadge = procActive && String(proc?.faceMood || "").trim().length > 0;
+    const rawText = showFaceBadge
+      ? ""
+      : (procActive
+        ? getBttlSignalProcBadgeText(proc)
+        : (isBttlFinishReadyBadgeVisible(ctxBattle, nowMs) ? BTTL_FINISH_READY_TEXT : ""));
+    const badgeW = 14;
+    const badgeH = 14;
+    const xMin = field.bottomLaneRect.x + 2;
+    const yMin = field.bottomLaneRect.y + 1;
+    const yMaxText = (field.bottomLaneRect.y + field.bottomLaneRect.h - 2) - Math.max(6, Math.floor(toNumber(BITMAP_GLYPH_H, 7)));
+    const yMaxBadge = (field.bottomLaneRect.y + field.bottomLaneRect.h - 2) - badgeH;
+    const yOffset = Math.floor(toNumber(BTTL_SIGNAL_BADGE_Y_OFFSET, -6));
+    if(showFaceBadge){
+      const drawX = Math.round(clamp(
+        allyX - badgeW - 5,
+        xMin,
+        Math.max(xMin, (field.bottomLaneRect.x + field.bottomLaneRect.w - 2) - badgeW)
+      ));
+      const drawY = Math.round(clamp(
+        allyY + 2 + yOffset,
+        yMin,
+        Math.max(yMin, yMaxBadge)
+      ));
+      const startedAtMs = toNumber(proc?.startedAtMs, procUntilMs - BTTL_SIGNAL_PROC_FLASH_MS);
+      const pulseLife = clamp((nowMs - startedAtMs) / Math.max(1, Math.floor(BTTL_SIGNAL_PROC_FLASH_MS * 0.45)), 0, 1);
+      const pulse = 1 - pulseLife;
+      drawBttlSignalFaceBadge(drawX, drawY, proc.faceMood, pulse);
+      return;
+    }
     if(rawText.length <= 0) return;
 
     const baseOpt = { scale: 1 };
@@ -15683,12 +24291,9 @@
     const text = fitTrnRightPaneText(rawText, Math.max(18, field.bottomLaneRect.w - 8), baseOpt);
     if(text.length <= 0) return;
     const textW = Number(uiTextMeasure(text, baseOpt)?.width) || 0;
-    const xMin = field.bottomLaneRect.x + 2;
     const xMax = (field.bottomLaneRect.x + field.bottomLaneRect.w - 2) - textW;
-    const yMin = field.bottomLaneRect.y + 1;
-    const yMax = (field.bottomLaneRect.y + field.bottomLaneRect.h - 2) - textH;
+    const yMax = yMaxText;
     const drawX = Math.round(clamp(allyX - textW - 6, xMin, Math.max(xMin, xMax)));
-    const yOffset = Math.floor(toNumber(BTTL_SIGNAL_BADGE_Y_OFFSET, -6));
     const drawY = Math.round(clamp(allyY + yOffset, yMin, Math.max(yMin, yMax)));
 
     const mainAlpha = 0.98;
@@ -15708,47 +24313,237 @@
 
   function drawBttlEnemyDriveStatusBadge(ctxBattle, field, enemyX, enemyY, spritePx = 16, nowMs = performance.now()){
     if(!ctxBattle || !field) return;
-    const proc = isRecord(ctxBattle.lastEnemyDriveProc) ? ctxBattle.lastEnemyDriveProc : null;
-    if(!proc) return;
-    const procUntilMs = toNumber(proc.untilMs, 0);
-    if(nowMs >= procUntilMs){
-      ctxBattle.lastEnemyDriveProc = null;
-      return;
-    }
-
-    const rawText = String(proc.label || "").trim().toUpperCase();
-    if(rawText.length <= 0) return;
-    const text = fitTrnRightPaneText(rawText, Math.max(18, field.topLaneRect.w - 8), { scale: 1 });
-    if(text.length <= 0) return;
-
-    const textH = Math.max(6, Math.floor(toNumber(BITMAP_GLYPH_H, 7)));
-    const textW = Number(uiTextMeasure(text, { scale: 1 })?.width) || 0;
+    const now = toNumber(nowMs, performance.now());
+    const currentDriveId = getBttlCurrentEnemyDriveId(ctxBattle, now);
+    syncBttlEnemyDriveBadgePulse(ctxBattle, currentDriveId, now);
+    const driveId = currentDriveId;
+    const driveImage = BTTL_DRIVE_ICON_IMAGES[normalizeBttlEnemyDriveId(driveId)] || null;
+    const useSpriteBadge = isLoadedImage(driveImage);
+    const badgeW = 14;
+    const badgeH = 14;
     const lane = field.topLaneRect;
     const xMin = lane.x + 2;
-    const xMax = (lane.x + lane.w - 2) - textW;
+    const xMax = (lane.x + lane.w - 2) - badgeW;
     const yMin = lane.y + 1;
-    const yMax = (lane.y + lane.h - 2) - textH;
+    const yMax = (lane.y + lane.h - 2) - badgeH;
     const spriteSize = Math.max(8, Math.floor(toNumber(spritePx, 16)));
     const drawX = Math.round(clamp(enemyX + spriteSize + 6, xMin, Math.max(xMin, xMax)));
     const yOffset = Math.floor(toNumber(BTTL_ENEMY_DRIVE_BADGE_Y_OFFSET, -8));
     const drawY = Math.round(clamp(
-      enemyY + Math.floor((spriteSize - textH) / 2) + yOffset,
+      enemyY + Math.floor((spriteSize - badgeH) / 2) + yOffset,
       yMin,
       Math.max(yMin, yMax)
     ));
 
+    const bgAlpha = 0.18;
+    const mainAlpha = 0.82;
+    const shadowAlpha = 0.40;
+
     ctx.save();
-    ctx.fillStyle = "rgba(198,212,192,0.34)";
-    ctx.fillRect(drawX - 1, drawY - 1, Math.max(2, textW + 2), textH + 2);
+    ctx.fillStyle = `rgba(198,212,192,${bgAlpha.toFixed(2)})`;
+    ctx.fillRect(drawX - 1, drawY - 1, badgeW + 2, badgeH + 2);
+    ctx.fillStyle = `rgba(14,20,15,${(bgAlpha * 0.8).toFixed(2)})`;
+    ctx.fillRect(drawX, drawY, badgeW, 1);
+    ctx.fillRect(drawX, drawY + badgeH - 1, badgeW, 1);
+    ctx.fillRect(drawX, drawY, 1, badgeH);
+    ctx.fillRect(drawX + badgeW - 1, drawY, 1, badgeH);
     ctx.restore();
-    drawText(drawX, drawY, text, {
-      scale: 1,
-      color: "rgba(14,20,15,0.98)",
-    });
-    drawText(drawX + 1, drawY, text, {
-      scale: 1,
-      color: "rgba(14,20,15,0.62)",
-    });
+
+    const shadowColor = `rgba(14,20,15,${shadowAlpha.toFixed(2)})`;
+    const mainColor = `rgba(14,20,15,${mainAlpha.toFixed(2)})`;
+    const px = Math.round(drawX + 1);
+    const py = Math.round(drawY + 1);
+    if(useSpriteBadge){
+      const sourceRect = BTTL_DRIVE_ICON_SOURCE_RECTS[normalizeBttlEnemyDriveId(driveId)] || null;
+      const srcX = sourceRect ? sourceRect.x : 0;
+      const srcY = sourceRect ? sourceRect.y : 0;
+      const srcW = sourceRect ? sourceRect.w : driveImage.naturalWidth;
+      const srcH = sourceRect ? sourceRect.h : driveImage.naturalHeight;
+      const scale = Math.min(12 / Math.max(1, srcW), 12 / Math.max(1, srcH));
+      const destW = Math.max(1, Math.round(srcW * scale));
+      const destH = Math.max(1, Math.round(srcH * scale));
+      const iconX = Math.round(drawX + Math.floor((badgeW - destW) / 2));
+      const iconY = Math.round(drawY + Math.floor((badgeH - destH) / 2));
+      ctx.save();
+      ctx.imageSmoothingEnabled = false;
+      ctx.globalAlpha = clamp(shadowAlpha, 0, 1);
+      ctx.drawImage(driveImage, srcX, srcY, srcW, srcH, iconX + 1, iconY, destW, destH);
+      ctx.globalAlpha = clamp(mainAlpha, 0, 1);
+      ctx.drawImage(driveImage, srcX, srcY, srcW, srcH, iconX, iconY, destW, destH);
+      ctx.restore();
+      return;
+    }
+    const drawGlyph = (offsetX, offsetY, color) => {
+      const gx = px + offsetX;
+      const gy = py + offsetY;
+      ctx.save();
+      ctx.fillStyle = color;
+      switch(normalizeBttlEnemyDriveId(driveId)){
+        case "surge":
+          ctx.fillRect(gx + 1, gy + 7, 2, 1);
+          ctx.fillRect(gx + 3, gy + 6, 2, 1);
+          ctx.fillRect(gx + 5, gy + 5, 2, 1);
+          ctx.fillRect(gx + 7, gy + 4, 2, 1);
+          ctx.fillRect(gx + 9, gy + 3, 2, 1);
+          ctx.fillRect(gx + 8, gy + 2, 3, 1);
+          ctx.fillRect(gx + 9, gy + 1, 2, 1);
+          ctx.fillRect(gx + 10, gy + 1, 1, 3);
+          break;
+        case "guard":
+          ctx.fillRect(gx + 4, gy + 1, 4, 1);
+          ctx.fillRect(gx + 3, gy + 2, 6, 1);
+          ctx.fillRect(gx + 3, gy + 3, 6, 1);
+          ctx.fillRect(gx + 4, gy + 4, 4, 1);
+          ctx.fillRect(gx + 4, gy + 5, 4, 1);
+          ctx.fillRect(gx + 5, gy + 6, 2, 1);
+          ctx.fillRect(gx + 5, gy + 7, 2, 1);
+          break;
+        case "rampage":
+          ctx.fillRect(gx + 2, gy + 2, 2, 2);
+          ctx.fillRect(gx + 4, gy + 1, 2, 3);
+          ctx.fillRect(gx + 6, gy + 2, 2, 2);
+          ctx.fillRect(gx + 2, gy + 4, 6, 3);
+          ctx.fillRect(gx + 1, gy + 5, 1, 3);
+          ctx.fillRect(gx + 3, gy + 7, 4, 1);
+          ctx.fillRect(gx + 4, gy + 8, 3, 1);
+          break;
+        case "focus":
+        default:
+          ctx.fillRect(gx + 4, gy + 1, 3, 1);
+          ctx.fillRect(gx + 2, gy + 2, 1, 1);
+          ctx.fillRect(gx + 8, gy + 2, 1, 1);
+          ctx.fillRect(gx + 1, gy + 4, 1, 2);
+          ctx.fillRect(gx + 9, gy + 4, 1, 2);
+          ctx.fillRect(gx + 2, gy + 7, 1, 1);
+          ctx.fillRect(gx + 8, gy + 7, 1, 1);
+          ctx.fillRect(gx + 4, gy + 8, 3, 1);
+          ctx.fillRect(gx + 5, gy + 3, 1, 4);
+          ctx.fillRect(gx + 3, gy + 5, 5, 1);
+          break;
+      }
+      ctx.restore();
+    };
+    drawGlyph(1, 0, shadowColor);
+    drawGlyph(0, 0, mainColor);
+  }
+
+  function getBttlSignalMenuIconAsset(cmd){
+    const id = normalizeBttlSignalCommand(cmd);
+    const driveIconId = normalizeBttlEnemyDriveId(BTTL_SIGNAL_DRIVE_ICON_MAP[id] || "");
+    const image = (BTTL_DRIVE_ICON_IMAGES[driveIconId] || BTTL_SIGNAL_ICON_IMAGES[id] || null);
+    const sourceRect = BTTL_DRIVE_ICON_SOURCE_RECTS[driveIconId] || BTTL_SIGNAL_ICON_SOURCE_RECTS[id] || null;
+    return { id, driveIconId, image, sourceRect };
+  }
+
+  function drawBttlSignalMenuIcon(cmd, x, y, size = 14, alpha = 0.82){
+    const asset = getBttlSignalMenuIconAsset(cmd);
+    const image = asset.image;
+    const boxSize = Math.max(10, Math.floor(toNumber(size, 14)));
+    const drawX = Math.round(toNumber(x, 0));
+    const drawY = Math.round(toNumber(y, 0));
+    if(isLoadedImage(image)){
+      const sourceRect = asset.sourceRect || null;
+      const srcX = sourceRect ? sourceRect.x : 0;
+      const srcY = sourceRect ? sourceRect.y : 0;
+      const srcW = sourceRect ? sourceRect.w : image.naturalWidth;
+      const srcH = sourceRect ? sourceRect.h : image.naturalHeight;
+      const maxInner = Math.max(8, boxSize - 2);
+      const scale = Math.min(maxInner / Math.max(1, srcW), maxInner / Math.max(1, srcH));
+      const destW = Math.max(1, Math.round(srcW * scale));
+      const destH = Math.max(1, Math.round(srcH * scale));
+      const iconX = Math.round(drawX + Math.floor((boxSize - destW) / 2));
+      const iconY = Math.round(drawY + Math.floor((boxSize - destH) / 2));
+      ctx.save();
+      ctx.imageSmoothingEnabled = false;
+      ctx.globalAlpha = clamp(alpha * 0.42, 0, 1);
+      ctx.drawImage(image, srcX, srcY, srcW, srcH, iconX + 1, iconY, destW, destH);
+      ctx.globalAlpha = clamp(alpha, 0, 1);
+      ctx.drawImage(image, srcX, srcY, srcW, srcH, iconX, iconY, destW, destH);
+      ctx.restore();
+      return true;
+    }
+    ctx.save();
+    ctx.strokeStyle = `rgba(14,20,15,${(alpha * 0.22).toFixed(2)})`;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(drawX + 3.5, drawY + 3.5, Math.max(4, boxSize - 8), Math.max(4, boxSize - 8));
+    ctx.restore();
+    return false;
+  }
+
+  function getBttlSignalMenuFittedLabel(item, maxWidth, drawOpt){
+    const fullLabel = String(item?.label || "").trim();
+    const compactLabel = String(item?.menuLabel || fullLabel).trim();
+    if(fullLabel.length <= 0) return "";
+    const safeMaxWidth = Math.max(0, Math.floor(toNumber(maxWidth, 0)));
+    if(safeMaxWidth <= 0) return "";
+    const fullWidth = Number(uiTextMeasure(fullLabel, drawOpt)?.width) || 0;
+    if(fullWidth <= safeMaxWidth){
+      return fullLabel;
+    }
+    if(compactLabel.length > 0 && compactLabel !== fullLabel){
+      const compactWidth = Number(uiTextMeasure(compactLabel, drawOpt)?.width) || 0;
+      if(compactWidth <= safeMaxWidth){
+        return compactLabel;
+      }
+    }
+    return fitTrnRightPaneText(compactLabel || fullLabel, safeMaxWidth, drawOpt);
+  }
+
+  function skipBttlSignalResultHold(ctxBattle){
+    if(!ctxBattle || !ctxBattle.signalResult) return false;
+    ctxBattle.signalResult = null;
+    clearBttlSignalSuccessFx(ctxBattle);
+    ctxBattle.signalFxBadShakeUntilMs = 0;
+    ctxBattle.signalFxBadShakeDir = 0;
+    ctxBattle.rightPaneMode = BTTL_RIGHTPANE_MODE.SIGNAL_MENU;
+    return true;
+  }
+
+  function getBttlSignalResultVisualProfile(grade){
+    const normalizedGrade = String(grade || "").trim().toUpperCase();
+    if(normalizedGrade === "SUCCESS"){
+      return {
+        header: "SIG SUCCESS",
+        headerColor: "rgba(14,20,15,0.98)",
+        grade: "SUCCESS",
+        gradeScale: 1,
+        gradeColor: "rgba(14,20,15,0.98)",
+        centerRingWidth: 2,
+        centerRingColor: "rgba(14,20,15,0.24)",
+        innerRingOffset: -7,
+        innerRingColor: "rgba(14,20,15,0.12)",
+        outerRingOffset: 8,
+        outerRingColor: "rgba(14,20,15,0.16)",
+      };
+    }
+    if(normalizedGrade === "OK"){
+      return {
+        header: "SIG OK",
+        headerColor: "rgba(14,20,15,0.92)",
+        grade: "OK",
+        gradeScale: 2,
+        gradeColor: "rgba(14,20,15,0.94)",
+        centerRingWidth: 2,
+        centerRingColor: "rgba(14,20,15,0.19)",
+        innerRingOffset: -6,
+        innerRingColor: "rgba(14,20,15,0.10)",
+        outerRingOffset: 0,
+        outerRingColor: "",
+      };
+    }
+    return {
+      header: "SIG BAD",
+      headerColor: "rgba(14,20,15,0.82)",
+      grade: "BAD",
+      gradeScale: 2,
+      gradeColor: "rgba(14,20,15,0.86)",
+      centerRingWidth: 1,
+      centerRingColor: "rgba(14,20,15,0.15)",
+      innerRingOffset: -5,
+      innerRingColor: "rgba(14,20,15,0.08)",
+      outerRingOffset: 0,
+      outerRingColor: "",
+    };
   }
 
   function drawBttlReactiveAssistBadge(ctxBattle, field, nowMs = performance.now()){
@@ -15765,7 +24560,7 @@
     const heavyUntilMs = toNumber(ctxBattle.heavyInboundUntilMs, 0);
     const heavyImpactAtMs = toNumber(ctxBattle.heavyImpactAtMs, 0);
     if(heavyUntilMs <= 0 || nowMs >= heavyUntilMs){
-      const tuning = getBttlHeavyTuning();
+      const tuning = getBttlHeavyTuning(ctxBattle);
       const cdRemainMs = Math.max(0, toNumber(ctxBattle.enemyHeavyReadyAtMs, 0) - toNumber(nowMs, performance.now()));
       const cdSec = (cdRemainMs / 1000).toFixed(1);
       const rollPct = Math.round(clamp(toNumber(tuning.chanceBase, BTTL_HEAVY_CHANCE_BASE), 0, 1) * 100);
@@ -16001,7 +24796,8 @@
       if(action !== BTTL_ENEMY_ACTION.DEFEND){
         return { damage: rawDamage, mitigated: false };
       }
-      const mult = clamp(toNumber(BTTL_ENEMY_DEFEND_DMG_MULT, 0.88), 0.50, 1.00);
+      const tuning = getBttlEnemyTuning(ctxBattle);
+      const mult = clamp(toNumber(tuning?.defendDamageMult, BTTL_ENEMY_DEFEND_DMG_MULT), 0.50, 1.00);
       const reduced = Math.max(1, Math.ceil(rawDamage * mult));
       return { damage: reduced, mitigated: reduced < rawDamage };
     }
@@ -16018,7 +24814,7 @@
     return { damage: rawDamage, mitigated: false };
   }
 
-  function getBttlHeavyTuning(){
+  function getBttlHeavyTuning(ctxBattle = null){
     if(BTTL_HEAVY_TEST_MODE){
       return {
         chanceBase: BTTL_HEAVY_TEST_CHANCE_BASE,
@@ -16026,17 +24822,18 @@
         initialReadyRatio: BTTL_HEAVY_TEST_INITIAL_READY_RATIO,
       };
     }
+    const tuning = getBttlEnemyTuning(ctxBattle);
     return {
-      chanceBase: BTTL_HEAVY_CHANCE_BASE,
-      cooldownMs: BTTL_HEAVY_COOLDOWN_MS,
-      initialReadyRatio: BTTL_HEAVY_INITIAL_READY_RATIO,
+      chanceBase: toNumber(tuning?.heavyChanceBase, BTTL_HEAVY_CHANCE_BASE),
+      cooldownMs: Math.max(300, Math.floor(toNumber(tuning?.heavyCooldownMs, BTTL_HEAVY_COOLDOWN_MS))),
+      initialReadyRatio: clamp(toNumber(tuning?.heavyInitialReadyRatio, BTTL_HEAVY_INITIAL_READY_RATIO), 0, 1),
     };
   }
 
   function shouldLaunchEnemyHeavy(ctxBattle, nowMs = performance.now()){
     if(!ctxBattle) return false;
     const now = toNumber(nowMs, performance.now());
-    const tuning = getBttlHeavyTuning();
+    const tuning = getBttlHeavyTuning(ctxBattle);
     const readyAtMs = toNumber(ctxBattle.enemyHeavyReadyAtMs, 0);
     if(now < readyAtMs){
       return false;
@@ -16197,11 +24994,17 @@
           damage * clamp(toNumber(supportTakenPenalty.damageTakenMult, 1), 0.55, 1.8)
         ));
       }
-      const allyOverclockPenalty = (targetKey === "ally")
-        ? getBttlActiveOverclock(ctxBattle, nowMs)
+      const allySignalEffect = (targetKey === "ally")
+        ? getBttlActiveSignalBuff(ctxBattle, nowMs)
         : null;
-      if(allyOverclockPenalty){
-        damage = Math.max(1, Math.ceil(damage * clamp(toNumber(allyOverclockPenalty.damageTakenMult, 1), 1, 3)));
+      if(allySignalEffect){
+        damage = Math.max(1, Math.ceil(damage * clamp(toNumber(allySignalEffect.damageTakenMult, 1), 0.55, 1.8)));
+      }
+      if(targetKey === "ally" && projectile.owner === "enemy"){
+        const advDamageReduction = clamp(toNumber(ctxBattle?.advDamageReduction, 0), 0, 1);
+        if(advDamageReduction > 0){
+          damage = Math.max(1, Math.ceil(damage * advDamageReduction));
+        }
       }
 
       const dmgResolved = applyBttlActorDefendDamageMitigation(ctxBattle, targetKey, damage);
@@ -16216,7 +25019,7 @@
       target.knockDir = targetKey === "enemy" ? 1 : -1;
       noteBttlShotOutcome(ctxBattle, projectile.owner, true, nowMs);
       if(dmgResolved.mitigated && targetKey === "enemy" && !hpLocked && BTTL_ENEMY_AI_AUDIT_LOG){
-        pushBttlLog(ctxBattle, "EN DEF DMG↓");
+        pushBttlLog(ctxBattle, "ENE DEF DMG↓");
       }
       pushBttlLog(ctxBattle, getBttlOutcomeLogLine(projectile.owner, true, appliedDamage));
       const breakBaseDamage = hpLocked ? toNumber(dmgResolved.damage, appliedDamage) : appliedDamage;
@@ -16226,9 +25029,9 @@
           breakGain * clamp(toNumber(supportTakenPenalty.breakTakenMult, 1), 0.55, 1.8)
         ));
       }
-      if(targetKey === "ally" && allyOverclockPenalty){
+      if(targetKey === "ally" && allySignalEffect){
         breakGain = Math.max(0, Math.round(
-          breakGain * clamp(toNumber(allyOverclockPenalty.breakTakenMult, 1), 1, 3)
+          breakGain * clamp(toNumber(allySignalEffect.breakTakenMult, 1), 0.55, 1.8)
         ));
       }
       applyBttlBreakDelta(ctxBattle, targetKey, breakGain, nowMs);
@@ -16294,7 +25097,7 @@
       Math.max(0, Math.floor(toNumber(selectedSkill.flatDamageBonus, 0)))
     ));
     if(launchHeavy){
-      damage = Math.max(1, damage + BTTL_HEAVY_DAMAGE_BONUS);
+      damage = Math.max(1, damage + Math.floor(toNumber(getBttlEnemyTuning(ctxBattle)?.heavyDamageBonus, BTTL_HEAVY_DAMAGE_BONUS)));
     }
     const field = getBttlFieldGeometry();
     const projectile = createBttlProjectile(actorKey, field, ctxBattle);
@@ -16331,6 +25134,7 @@
     }
     if(launchHeavy){
       startBttlHeavyReactSession(ctxBattle, projectile, field, now);
+      markBttlEnemyDriveProc(ctxBattle, "rampage", now);
       pushBttlLog(ctxBattle, "HEAVY IN");
     }
     const signalMeta = activeSignal
@@ -16602,7 +25406,7 @@
     ctxBattle.rightPaneMode = BTTL_RIGHTPANE_MODE.FINISH_GAME;
     pushBttlLog(
       ctxBattle,
-      `AL FIN ${String(projectile.meta.skillLabel || "FINISH")} ${getBttlSignalGradeShort(grade)}`
+      `YOU FIN ${String(projectile.meta.skillLabel || "FINISH")} ${getBttlSignalGradeShort(grade)}`
     );
     return true;
   }
@@ -16632,7 +25436,7 @@
     const bandMin = Math.max(6, Math.floor(toNumber(cfg.bandWMin, 16) * 0.58));
     const bandMax = Math.max(bandMin + 2, Math.floor(toNumber(cfg.bandWMax, 30) * 0.58));
     const sleepJudgeMult = getSleepJudgeMultiplier(state.detailed);
-    const bandW = clamp(
+    const baseBandW = clamp(
       (bandMin + ((bandMax - bandMin) * stabilityRatio)) * sleepJudgeMult,
       Math.max(4, bandMin * 0.55),
       bandMax
@@ -16646,10 +25450,35 @@
       toNumber(cfg.critChanceMax, 0.35)
     );
     const critEnabled = Math.random() < critChance;
+    const baseCritW = clamp(
+      Math.round(Math.min(toNumber(cfg.critW, 4), Math.max(2, baseBandW - 2))),
+      2,
+      Math.max(2, baseBandW)
+    );
+    const enemyDriveId = getBttlCurrentEnemyDriveId(ctxBattle, now);
+    const disadvantageActive = isBttlSignalMinigameDisadvantage(commandId, enemyDriveId);
+    const bandW = clamp(
+      disadvantageActive
+        ? Math.round(baseBandW * BTTL_SIGNAL_DISADVANTAGE_BAND_MULT)
+        : baseBandW,
+      4,
+      bandMax
+    );
     const critW = clamp(
-      Math.round(Math.min(toNumber(cfg.critW, 4), Math.max(2, bandW - 2))),
+      disadvantageActive
+        ? Math.round(baseCritW * BTTL_SIGNAL_DISADVANTAGE_CRIT_MULT)
+        : baseCritW,
       2,
       Math.max(2, bandW)
+    );
+    const nearMargin = Math.max(
+      1,
+      Math.floor(
+        toNumber(cfg.nearMargin, TRN_BASE_NEAR_MARGIN) *
+        0.8 *
+        sleepJudgeMult *
+        (disadvantageActive ? BTTL_SIGNAL_DISADVANTAGE_NEAR_MARGIN_MULT : 1)
+      )
     );
     clearBttlSignalSuccessFx(ctxBattle);
     ctxBattle.signalFxBadShakeUntilMs = 0;
@@ -16658,19 +25487,28 @@
       cmd: commandId,
       mode,
       startedAtMs: now,
-      loopMs: trnLoopMsFromBpm(cfg.bpm, 375),
+      loopMs: Math.max(
+        120,
+        Math.round(
+          trnLoopMsFromBpm(cfg.bpm, 375) *
+          (disadvantageActive ? BTTL_SIGNAL_DISADVANTAGE_LOOP_MULT : 1)
+        )
+      ),
       minR: metrics.minR,
       maxR: metrics.maxR,
       centerR,
       bandW,
       critEnabled,
       critW,
-      nearMargin: Math.max(1, Math.floor(toNumber(cfg.nearMargin, TRN_BASE_NEAR_MARGIN) * 0.8 * sleepJudgeMult)),
+      nearMargin,
       internalP: getTrnInternalSuccessBase(mode),
       wasInBand: false,
       wasInCrit: false,
       bandHitFlashUntilMs: 0,
       critHitFlashUntilMs: 0,
+      enemyDriveId,
+      disadvantageActive,
+      noiseSeed: Math.random() * Math.PI * 2,
     };
     ctxBattle.signalResult = null;
     ctxBattle.rightPaneMode = BTTL_RIGHTPANE_MODE.SIGNAL_GAME;
@@ -16699,6 +25537,7 @@
         untilMs: toNumber(nowMs, performance.now()) + BTTL_SIGNAL_GAME_RESULT_HOLD_MS,
         buffDurationMs: 0,
         buffActive: false,
+        faceMood: "grim",
       };
       ctxBattle.rightPaneMode = BTTL_RIGHTPANE_MODE.SIGNAL_GAME;
       return;
@@ -16708,7 +25547,17 @@
     }
     const tier = getBttlSignalTierFromGrade(feedbackGrade);
     const now = toNumber(nowMs, performance.now());
-    const buffApplied = activateBttlSignalBuff(ctxBattle, cmd, tier, now);
+    const enemyDriveId = getBttlCurrentEnemyDriveId(ctxBattle, now);
+    const challengeBonus = Boolean(session.disadvantageActive) && tier >= 2;
+    const buffApplied = activateBttlSignalBuff(ctxBattle, cmd, tier, now, {
+      enemyDriveId,
+      challengeBonus,
+    });
+    const faceMood = tier >= 2
+      ? (buffApplied?.advantage
+        ? "happy"
+        : (session.disadvantageActive ? "grim" : "normal"))
+      : (session.disadvantageActive ? "grim" : "normal");
     const cmdLabel = BTTL_SIGNAL_CMD_LOG_LABEL[cmd] || "SIG";
     const gradeLabel = feedbackGrade === "TIMEOUT" ? "BAD" : feedbackGrade;
     const gradeShort = getBttlSignalGradeShort(gradeLabel);
@@ -16718,10 +25567,18 @@
         ? "OVRCLK ON"
         : `${cmdLabel} ON`;
       pushBttlLog(ctxBattle, onLabel);
+      const advantageLog = buffApplied.advantage
+        ? getBttlSignalAdvantageLog(cmd, buffApplied.enemyDriveId)
+        : null;
+      if(advantageLog && buffApplied.advantage){
+        pushBttlLog(ctxBattle, advantageLog);
+      }
       ctxBattle.lastSignalProc = {
         cmd,
         grade: String(gradeLabel || "BAD").trim().toUpperCase(),
+        startedAtMs: now,
         untilMs: now + BTTL_SIGNAL_PROC_FLASH_MS,
+        faceMood,
       };
     }
     ctxBattle.signalSession = null;
@@ -16732,6 +25589,7 @@
       untilMs: now + BTTL_SIGNAL_GAME_RESULT_HOLD_MS,
       buffDurationMs: Math.max(0, Math.floor(toNumber(buffApplied?.durationMs, 0))),
       buffActive: Boolean(buffApplied),
+      faceMood,
     };
     ctxBattle.signalGlobalCooldownUntilMs = now + BTTL_SIGNAL_GCD_MS;
     const byCmd = isRecord(ctxBattle.signalModeCooldownUntilByCmd)
@@ -16791,13 +25649,15 @@
     const ad = clamp(toNumber(state.detailed?.adIntegrity, 100), 0, 100);
     const sig = clamp(toNumber(state.detailed?.signalQuality, 100), 0, 100);
     const sync = resolveSleepAdjustedSyncRate(ad, sig, state.detailed);
+    const enemyDifficultyId = resolveBttlEnemyDifficultyId(options);
+    const enemyTuning = getBttlEnemyDifficultyPreset(enemyDifficultyId);
     const allySkillLoadout = resolveBttlAllySkillLoadout();
     const enemySkillLoadout = resolveBttlEnemySkillLoadout();
     const allyHp = Math.max(0, hpNow);
     const enemyHp = clamp(
-      Math.round(Math.max(1, allyHp) * BTTL_ENEMY_HP_RATIO),
-      BTTL_ENEMY_HP_MIN,
-      BTTL_ENEMY_HP_MAX
+      Math.round(Math.max(1, allyHp) * toNumber(enemyTuning?.hpRatio, BTTL_ENEMY_HP_RATIO)),
+      Math.max(1, Math.floor(toNumber(enemyTuning?.hpMin, BTTL_ENEMY_HP_MIN))),
+      Math.max(1, Math.floor(toNumber(enemyTuning?.hpMax, BTTL_ENEMY_HP_MAX)))
     );
     const enemySta = clamp(
       Math.round(Math.max(1, enemyHp) * 0.90),
@@ -16808,6 +25668,7 @@
     const introDurationMs = getBttlStartIntroDurationMs(introType);
     const introStartedAtMs = toNumber(nowMs, performance.now());
     const introUntilMs = introStartedAtMs + introDurationMs;
+    const turnLimit = Math.max(0, Math.floor(toNumber(options?.turnLimit, 0)));
     const ctxBattle = {
       phase: BTTL_STATE.INIT,
       phaseStartedAtMs: toNumber(nowMs, performance.now()),
@@ -16823,6 +25684,7 @@
       endOutroUntilMs: 0,
       endOutroHandoffDone: false,
       turn: 0,
+      turnLimit,
       lastTickAtMs: toNumber(nowMs, performance.now()),
       actorIndex: 0, // 0: enemy, 1: ally
       rightPaneMode: BTTL_RIGHTPANE_MODE.SIGNAL_MENU,
@@ -16845,6 +25707,19 @@
       },
       lastSignalProc: null,
       lastEnemyDriveProc: null,
+      enemyPrevDriveId: "focus",
+      enemyDriveBadgePulseStartedAtMs: 0,
+      enemyDriveBadgePulseUntilMs: 0,
+      signalHintPulseUntilByCmd: {
+        boost: 0,
+        stabilize: 0,
+        calibrate: 0,
+      },
+      enemyDifficulty: enemyDifficultyId,
+      enemyTuning,
+      advBattleNodeId: String(options?.advBattleNodeId || "").trim().toLowerCase(),
+      advBattleNodeType: normalizeAdvBoardNodeType(options?.advBattleNodeType, ""),
+      advDamageReduction: clamp(toNumber(options?.advDamageReduction, 0), 0, 1),
       signalFxOkCenterUntilMs: 0,
       signalFxSuccessCenterUntilMs: 0,
       signalFxSuccessOuterRippleUntilMs: 0,
@@ -16867,7 +25742,10 @@
       finishLastNgLogAtMs: 0,
       enemyAi: createBttlEnemyAiState(nowMs),
       allyAi: createBttlAllyAiState(nowMs),
-      enemyHeavyReadyAtMs: toNumber(nowMs, performance.now()) + Math.round(getBttlHeavyTuning().cooldownMs * getBttlHeavyTuning().initialReadyRatio),
+      enemyHeavyReadyAtMs: toNumber(nowMs, performance.now()) + Math.round(
+        Math.max(300, Math.floor(toNumber(enemyTuning?.heavyCooldownMs, BTTL_HEAVY_COOLDOWN_MS))) *
+        clamp(toNumber(enemyTuning?.heavyInitialReadyRatio, BTTL_HEAVY_INITIAL_READY_RATIO), 0, 1)
+      ),
       projectileSeq: 1,
       projectiles: [],
       shortGateSlashFx: [],
@@ -16915,8 +25793,8 @@
         maxHp: enemyHp,
         sta: enemySta,
         maxSta: enemySta,
-        sig: BTTL_ENEMY_SIG,
-        sync: BTTL_ENEMY_SYNC,
+        sig: clamp(toNumber(enemyTuning?.sig, BTTL_ENEMY_SIG), 0, 100),
+        sync: clamp(toNumber(enemyTuning?.sync, BTTL_ENEMY_SYNC), 0, 100),
         breakValue: 0,
         breakMax: BTTL_BREAK_MAX,
         isBreak: false,
@@ -16924,7 +25802,10 @@
         breakRecoverResumeAtMs: 0,
         breakHighLogged: false,
         breakLastPlusLogAtMs: 0,
-        hitChance: computeBttlHitChance(BTTL_ENEMY_SIG, BTTL_ENEMY_SYNC),
+        hitChance: computeBttlHitChance(
+          clamp(toNumber(enemyTuning?.sig, BTTL_ENEMY_SIG), 0, 100),
+          clamp(toNumber(enemyTuning?.sync, BTTL_ENEMY_SYNC), 0, 100)
+        ),
         hitFlashUntilMs: 0,
         meleeHitFlashUntilMs: 0,
         knockUntilMs: 0,
@@ -17019,10 +25900,41 @@
   }
 
   function closeBttlResultLogToMenu(){
+    const session = getAdvSession();
+    const shouldReturnAdv = isRecord(session) && Boolean(session.returnFromBattle);
+    const ctxBattle = state.bttl;
+    const battleResult = String(ctxBattle?.result || "").trim().toUpperCase();
+    const map = getSelectedAdvMap(session);
+    const board = getAdvBoard(session);
+    const node = getAdvBoardNodeById(board, session?.battleNodeId) || getAdvBoardCurrentNode(board);
     state.bttl = null;
     state.bttlResultLogText = "";
     uiState.bttlResultReveal = null;
     setBttlRevealOverlayVisual(0, "black");
+    if(shouldReturnAdv && session){
+      const outcome = applyAdvBattleNodeOutcome(session, map, node, battleResult, ctxBattle);
+      const resultLines = [
+        `${getAdvBoardNodeDisplay(node?.type).label}ノード処理完了`,
+        buildAdvBoardOutcomeNotice(map, node, battleResult),
+        ...(Array.isArray(outcome?.lines) ? outcome.lines : []),
+      ];
+      session.returnFromBattle = false;
+      session.battleNodeId = "";
+      session.noticeText = String(
+        outcome?.noticeText ||
+        buildAdvBoardOutcomeNotice(map, node, battleResult)
+      ).trim();
+      session.resultPayload = {
+        title: "ADV RESULT",
+        lines: resultLines,
+      };
+      session.phase = ADV_PHASE.RESULT;
+      saveDetailedState();
+      state.screen = "adv";
+      setOverlayMode("food");
+      hideOverlayLog();
+      return;
+    }
     state.screen = "menu";
     setOverlayMode(null);
     hideOverlayLog();
@@ -17200,9 +26112,10 @@
         settleBttlResult(ctxBattle, "LOSE", nowMs);
         return;
       }
-      if(ctxBattle.turn >= BTTL_MAX_TURNS){
-        const result = enemyHp <= allyHp ? "WIN" : "LOSE";
-        settleBttlResult(ctxBattle, result, nowMs);
+      const turnLimit = Math.max(0, Math.floor(toNumber(ctxBattle.turnLimit, 0)));
+      if(turnLimit > 0 && ctxBattle.turn >= turnLimit){
+        pushBttlLog(ctxBattle, "TIME UP");
+        settleBttlResult(ctxBattle, "LOSE", nowMs);
         return;
       }
       return;
@@ -17240,7 +26153,7 @@
     ctx.lineTo(rightInner.x + rightInner.w - 3, rightInner.y + 13.5);
     ctx.stroke();
     ctx.restore();
-    const allLogs = Array.isArray(ctxBattle.logs) ? ctxBattle.logs : [];
+    const allLogs = getBttlObsVisibleLogs(ctxBattle);
     const lineGap = 7;
     const logTopY = rightInner.y + 16;
     const maxLines = Math.max(1, Math.min(BTTL_LOG_DRAW_LINES, Math.floor((rightInner.h - 18) / lineGap)));
@@ -17312,25 +26225,25 @@
       out = "敵を撃破";
     }else if(base === "LOSE"){
       out = "味方が停止";
-    }else if(base === "EN BRK+"){
+    }else if(base === "ENE BRK+" || base === "EN BRK+"){
       out = "敵BREAK上昇";
-    }else if(base === "AL BRK+"){
+    }else if(base === "YOU BRK+" || base === "AL BRK+"){
       out = "味方BREAK上昇";
-    }else if(base === "EN BRK HIGH"){
+    }else if(base === "ENE BRK HIGH" || base === "EN BRK HIGH"){
       out = "敵BREAK高";
-    }else if(base === "AL BRK HIGH"){
+    }else if(base === "YOU BRK HIGH" || base === "AL BRK HIGH"){
       out = "味方BREAK高";
-    }else if(base === "EN BREAK"){
+    }else if(base === "ENE BREAK" || base === "EN BREAK"){
       out = "敵BREAK発生";
-    }else if(base === "AL BREAK"){
+    }else if(base === "YOU BREAK" || base === "AL BREAK"){
       out = "味方BREAK発生";
-    }else if(base === "EN RECOVER"){
+    }else if(base === "ENE RECOVER" || base === "EN RECOVER"){
       out = "敵BREAK回復";
-    }else if(base === "AL RECOVER"){
+    }else if(base === "YOU RECOVER" || base === "AL RECOVER"){
       out = "味方BREAK回復";
-    }else if(base === "AL NO ATK"){
+    }else if(base === "YOU NO ATK" || base === "AL NO ATK"){
       out = "攻撃スキルが合わない";
-    }else if(base === "EN NO ATK"){
+    }else if(base === "ENE NO ATK" || base === "EN NO ATK"){
       out = "敵の攻撃は不発";
     }else if(base === BTTL_FINISH_READY_TEXT){
       out = "FINISH OK";
@@ -17362,34 +26275,24 @@
             const grade = m[2] === "SUC" ? "SUCCESS" : m[2];
             out = `${getBttlSignalCommandLabelJa(cmd)} ${getBttlSignalGradeJa(grade)}`;
           }else{
-            m = base.match(/^(AL|EN)\s+SK\s+(.+)$/);
+            m = base.match(/^(YOU|AL|ENE|EN)\s+SK\s+(.+)$/);
             if(m){
-              out = m[1] === "AL"
+              out = (m[1] === "AL" || m[1] === "YOU")
                 ? `スキル起動 ${String(m[2] || "").trim()}`
                 : `敵スキル ${String(m[2] || "").trim()}`;
             }else{
-              m = base.match(/^(AL|EN)\s+SUP\s+(.+)$/);
+              m = base.match(/^(YOU|AL|ENE|EN)\s+SUP\s+(.+)$/);
               if(m){
-                out = m[1] === "AL"
+                out = (m[1] === "AL" || m[1] === "YOU")
                   ? `補助起動 ${String(m[2] || "").trim()}`
                   : `敵補助 ${String(m[2] || "").trim()}`;
               }else{
-                m = base.match(/^AL\s+FIN\s+(.+)\s+(BAD|NEAR|OK|SUC)$/);
+                m = base.match(/^(?:YOU|AL)\s+FIN\s+(.+)\s+(BAD|NEAR|OK|SUC)$/);
                 if(m){
                   const grade = m[2] === "SUC" ? "SUCCESS" : m[2];
                   out = `必殺 ${String(m[1] || "").trim()} ${getBttlSignalGradeJa(grade)}`;
                 }else{
-            if(base === "BST ON"){
-              out = "強化同期 起動";
-            }else if(base === "STB ON"){
-              out = "安定化 起動";
-            }else if(base === "CAL ON"){
-              out = "再較正 起動";
-            }else if(base === "OVRCLK ON"){
-              out = "過駆動 起動";
-            }else{
-              out = base;
-            }
+            out = base;
                 }
               }
             }
@@ -17408,6 +26311,91 @@
     if(source.length <= 0) return "";
     const m = source.match(/^(.*)\sx\d+$/i);
     return m ? String(m[1] || "").trim() : source;
+  }
+
+  function appendBttlObsVisibleLine(out, rawLine){
+    const line = String(rawLine || "").trim();
+    if(line.length <= 0) return;
+    const m = line.match(/^(.*)\sx(\d+)$/i);
+    const base = m ? String(m[1] || "").trim() : line;
+    const count = m ? clamp(Math.floor(toNumber(m[2], 1)), 1, 99) : 1;
+    if(base.length <= 0) return;
+    if(out.length > 0){
+      const prev = String(out[out.length - 1] || "").trim();
+      const pm = prev.match(/^(.*)\sx(\d+)$/i);
+      const prevBase = pm ? String(pm[1] || "").trim() : prev;
+      const prevCount = pm ? clamp(Math.floor(toNumber(pm[2], 1)), 1, 99) : 1;
+      if(prevBase === base){
+        const nextCount = clamp(prevCount + count, 2, 99);
+        out[out.length - 1] = `${base} x${nextCount}`;
+        return;
+      }
+    }
+    out.push(count > 1 ? `${base} x${count}` : base);
+  }
+
+  function toBttlObsVisibleLine(rawText){
+    const source = String(rawText ?? "").trim();
+    if(source.length <= 0) return "";
+    const repeatMatch = source.match(/\sx(\d+)$/i);
+    const repeatCount = repeatMatch ? clamp(Math.floor(toNumber(repeatMatch[1], 1)), 1, 99) : 1;
+    const base = repeatMatch ? source.slice(0, repeatMatch.index).trim() : source;
+    if(base.length <= 0) return "";
+    if(
+      base === "BTTL START" ||
+      base === "ENCOUNT" ||
+      base === "WARNING!!" ||
+      base === "APPROACH" ||
+      base === "RETREAT" ||
+      base === "HOLD" ||
+      base === "RANGE SHORT" ||
+      base === "RANGE MID" ||
+      base === "RANGE LONG" ||
+      base === "YOU NO ATK" ||
+      base === "AL NO ATK" ||
+      base === "ENE NO ATK" ||
+      base === "EN NO ATK" ||
+      base === "YOU BRK+" ||
+      base === "AL BRK+" ||
+      base === "ENE BRK+" ||
+      base === "EN BRK+" ||
+      base === "ENE DEF DMG↓" ||
+      base === "EN DEF DMG↓" ||
+      /^AI\s+/i.test(base) ||
+      base === "AI Fallback"
+    ){
+      return "";
+    }
+    let out = base;
+    let m = base.match(/^(YOU|AL|ENE|EN)\s+SK\s+(.+)$/);
+    if(m){
+      return "";
+    }else{
+      m = base.match(/^(YOU|AL|ENE|EN)\s+SUP\s+(.+)$/);
+      if(m){
+        return "";
+      }else{
+        m = base.match(/^(?:YOU|AL)\s+FIN\s+(.+)\s+(BAD|NEAR|OK|SUC)$/);
+        if(m){
+          out = `YOU FIN ${m[2]}`;
+        }
+      }
+    }
+    if(repeatCount > 1){
+      out += ` x${repeatCount}`;
+    }
+    return out;
+  }
+
+  function getBttlObsVisibleLogs(ctxBattle){
+    const allLogs = Array.isArray(ctxBattle?.logs) ? ctxBattle.logs : [];
+    const out = [];
+    for(let i = 0; i < allLogs.length; i++){
+      const visible = toBttlObsVisibleLine(allLogs[i]);
+      if(String(visible || "").trim().length <= 0) continue;
+      appendBttlObsVisibleLine(out, visible);
+    }
+    return out;
   }
 
   function getBttlBottomNarrativeState(ctxBattle){
@@ -17559,31 +26547,31 @@
     if(base === "REACT BAD"){
       return { kind: "alert_bad", category: "alert", priority: 96 };
     }
-    if(base === "EN BRK+"){
+    if(base === "ENE BRK+" || base === "EN BRK+"){
       return { kind: "break_rise_enemy", category: "flow", priority: 78 };
     }
-    if(base === "AL BRK+"){
+    if(base === "YOU BRK+" || base === "AL BRK+"){
       return { kind: "break_rise_ally", category: "flow", priority: 82 };
     }
-    if(base === "EN BRK HIGH"){
+    if(base === "ENE BRK HIGH" || base === "EN BRK HIGH"){
       return { kind: "break_high_enemy", category: "alert", priority: 92 };
     }
-    if(base === "AL BRK HIGH"){
+    if(base === "YOU BRK HIGH" || base === "AL BRK HIGH"){
       return { kind: "break_high_ally", category: "alert", priority: 94 };
     }
-    if(base === "EN BREAK"){
+    if(base === "ENE BREAK" || base === "EN BREAK"){
       return { kind: "break_enemy", category: "alert", priority: 100 };
     }
-    if(base === "AL BREAK"){
+    if(base === "YOU BREAK" || base === "AL BREAK"){
       return { kind: "break_ally", category: "alert", priority: 100 };
     }
-    if(base === "EN RECOVER"){
+    if(base === "ENE RECOVER" || base === "EN RECOVER"){
       return { kind: "break_recover_enemy", category: "flow", priority: 86 };
     }
-    if(base === "AL RECOVER"){
+    if(base === "YOU RECOVER" || base === "AL RECOVER"){
       return { kind: "break_recover_ally", category: "flow", priority: 88 };
     }
-    if(base === "EN DEF" || base === "ENE DEF" || base === "EN DEF DMG↓"){
+    if(base === "EN DEF" || base === "ENE DEF" || base === "EN DEF DMG↓" || base === "ENE DEF DMG↓"){
       return { kind: "hint_enemy_defend", category: "hint", priority: 88 };
     }
     if(base === "ENE MISS" || base === "EN MISS"){
@@ -17600,7 +26588,7 @@
     if(m){
       return { kind: "cause_ene_dmg", category: "cause", priority: 74 };
     }
-    m = base.match(/^AL\s+FIN\s+(.+)\s+(BAD|NEAR|OK|SUC)$/);
+    m = base.match(/^(?:YOU|AL)\s+FIN\s+(.+)\s+(BAD|NEAR|OK|SUC)$/);
     if(m){
       const grade = m[2];
       if(grade === "BAD" || grade === "NEAR"){
@@ -17628,18 +26616,6 @@
         return { kind: "signal_stb_ok", category: "signal", priority: 86 };
       }
       return { kind: "signal_cal_ok", category: "signal", priority: 86 };
-    }
-    if(base === "OVRCLK ON"){
-      return { kind: "signal_ovc_ok", category: "signal", priority: 92 };
-    }
-    if(base === "BST ON"){
-      return { kind: "signal_bst_ok", category: "signal", priority: 90 };
-    }
-    if(base === "STB ON"){
-      return { kind: "signal_stb_ok", category: "signal", priority: 90 };
-    }
-    if(base === "CAL ON"){
-      return { kind: "signal_cal_ok", category: "signal", priority: 90 };
     }
     if(base === "NO STA"){
       return {
@@ -17808,20 +26784,20 @@
           return [
             `介入結果 ${resultJa}`,
             "安定化 起動",
-            `収束補正 ${secText}`,
+            `防御補正 ${secText}`,
           ];
         }
         if(resultCmd === "overclock"){
           return [
             `介入結果 ${resultJa}`,
             "過駆動 起動",
-            `接近補助 ${secText}`,
+            `突破補助 ${secText}`,
           ];
         }
         return [
           `介入結果 ${resultJa}`,
           "再較正 起動",
-          `汎用補正 ${secText}`,
+          `精度補正 ${secText}`,
         ];
       }
     }
@@ -17863,12 +26839,13 @@
   function drawBttlRightPaneSignalMenu(ctxBattle, right, rightInner){
     drawBox(rightInner.x, rightInner.y, rightInner.w, rightInner.h);
     drawText(right.x + 8, right.y + 6, "SIGNAL MENU", { scale: 1 });
-    const listX = rightInner.x + 4;
-    const textX = listX + 8;
-    const lineGap = 11;
-    const startY = rightInner.y + 15;
+    const iconSize = 14;
+    const iconX = rightInner.x + 2;
+    const textX = iconX + iconSize + 2;
+    const lineGap = 12;
     const selectedCmd = getBttlSignalSelectedCommand(ctxBattle);
     const nowMs = performance.now();
+    const startY = rightInner.y + 15;
     const globalCooldownActive = getBttlSignalGlobalCooldownRemainMs(ctxBattle, nowMs) > 0;
     for(let i = 0; i < BTTL_SIGNAL_MENU_ITEMS.length; i++){
       const item = BTTL_SIGNAL_MENU_ITEMS[i];
@@ -17880,6 +26857,23 @@
       const modeProgress = modeCooldownActive
         ? clamp(1 - (modeCooldownRemainMs / Math.max(1, modeCooldownMs)), 0, 1)
         : 0;
+      if(selected){
+        const rowBoxX = rightInner.x + 2;
+        const rowBoxY = rowY - 2;
+        const rowBoxW = Math.max(10, rightInner.w - 4);
+        const rowBoxH = 10;
+        ctx.save();
+        ctx.fillStyle = globalCooldownActive
+          ? "rgba(14,20,15,0.06)"
+          : "rgba(14,20,15,0.16)";
+        ctx.fillRect(rowBoxX, rowBoxY, rowBoxW, rowBoxH);
+        ctx.fillStyle = globalCooldownActive
+          ? "rgba(198,212,192,0.04)"
+          : "rgba(198,212,192,0.12)";
+        ctx.fillRect(rowBoxX, rowBoxY - 1, rowBoxW, 1);
+        ctx.fillRect(rowBoxX, rowBoxY + rowBoxH, rowBoxW, 1);
+        ctx.restore();
+      }
       if(modeCooldownActive){
         const barX = textX - 1;
         const barW = Math.max(4, (rightInner.x + rightInner.w - 3) - barX);
@@ -17892,15 +26886,23 @@
         ctx.fillRect(barX, barY, Math.max(1, Math.floor(barW * modeProgress)), barH);
         ctx.restore();
       }
-      if(selected){
-        drawCursorTriangle(listX, rowY + 1);
-      }
-      const fitted = fitTrnRightPaneText(item.label, right.w - 20, { scale: 1 });
+      const iconAlpha = globalCooldownActive
+        ? 0.34
+        : (selected ? 1.00 : 0.72);
+      drawBttlSignalMenuIcon(item.id, iconX, rowY - 3, iconSize, iconAlpha);
+      const fitted = getBttlSignalMenuFittedLabel(
+        item,
+        Math.max(18, (rightInner.x + rightInner.w - 4) - textX),
+        { scale: 1, letterSpacing: 0 }
+      );
       drawText(textX, rowY, fitted, {
         scale: 1,
+        letterSpacing: 0,
         color: globalCooldownActive
           ? "rgba(14,20,15,0.46)"
-          : (selected ? "rgba(14,20,15,0.95)" : "rgba(14,20,15,0.68)"),
+          : (selected
+            ? "rgba(14,20,15,0.98)"
+            : "rgba(14,20,15,0.68)"),
       });
     }
 
@@ -17923,7 +26925,7 @@
     const availableH = Math.max(0, logBoxH - 14);
     const miniLineGap = 8;
     const maxMiniLines = Math.max(1, Math.min(10, Math.floor(availableH / miniLineGap)));
-    const allLogs = Array.isArray(ctxBattle.logs) ? ctxBattle.logs : [];
+    const allLogs = getBttlObsVisibleLogs(ctxBattle);
     const miniLogs = allLogs.slice(-maxMiniLines);
     const isMiniOverflow = allLogs.length > maxMiniLines;
     if(miniLogs.length <= 0){
@@ -17960,7 +26962,8 @@
         const stabilityMax = toPositiveInt(state.stats?.stabilityMax, 10);
         const stabilityNow = clamp(toNumber(state.stats?.stability, stabilityMax), 0, stabilityMax);
         const stabilityRatio = stabilityMax > 0 ? stabilityNow / stabilityMax : 0;
-        const visualDistortion = (1 - stabilityRatio) * 3.2;
+        const disadvantageActive = Boolean(session.disadvantageActive);
+        const visualDistortion = ((1 - stabilityRatio) * 3.2) + (disadvantageActive ? 1.25 : 0);
         const bandCenterR = clamp(toNumber(session.centerR, metrics.maxR * 0.6), metrics.minR, metrics.maxR);
         const bandW = toNumber(session.bandW, 8);
         const critW = toNumber(session.critW, 4);
@@ -18046,23 +27049,74 @@
           2,
           "rgba(14,20,15,0.58)"
         );
+        if(disadvantageActive){
+          drawBttlSignalDisadvantageNoise(metrics.playRect, nowMs, session.noiseSeed);
+        }
         drawIdealRing(ringCx, ringCy, metrics.minR, 1, "rgba(14,20,15,0.20)");
         drawIdealRing(ringCx, ringCy, metrics.maxR, 1, "rgba(14,20,15,0.16)");
         drawText(metrics.footerRect.x, metrics.footerRect.y + 4, heavyWindowActive ? "C:REACT" : "A:STOP B:BACK", { scale: 1 });
         return;
       }
-      const grade = String(ctxBattle.signalResult?.grade || "").trim();
-      drawText(right.x + 8, right.y + 6, "SIG RESULT", { scale: 1 });
+      const result = isRecord(ctxBattle.signalResult) ? ctxBattle.signalResult : null;
+      const grade = String(result?.grade || "").trim();
+      const visual = getBttlSignalResultVisualProfile(grade);
+      drawText(right.x + 8, right.y + 6, visual.header, {
+        scale: 1,
+        color: visual.headerColor,
+      });
+      const midRingR = Math.round((metrics.minR + metrics.maxR) * 0.5);
       drawIdealRing(metrics.cx, metrics.cy, metrics.minR, 1, "rgba(14,20,15,0.20)");
       drawIdealRing(metrics.cx, metrics.cy, metrics.maxR, 1, "rgba(14,20,15,0.16)");
+      if(visual.grade === "BAD"){
+        drawDistortedRing(
+          metrics.cx,
+          metrics.cy,
+          midRingR,
+          1.05,
+          nowMs * 0.008,
+          visual.centerRingWidth,
+          visual.centerRingColor
+        );
+      }else{
+        drawIdealRing(metrics.cx, metrics.cy, midRingR, visual.centerRingWidth, visual.centerRingColor);
+      }
+      if(visual.innerRingColor){
+        drawIdealRing(
+          metrics.cx,
+          metrics.cy,
+          Math.max(metrics.minR + 3, midRingR + visual.innerRingOffset),
+          1,
+          visual.innerRingColor
+        );
+      }
+      if(visual.outerRingColor){
+        drawIdealRing(
+          metrics.cx,
+          metrics.cy,
+          Math.min(metrics.maxR + 10, midRingR + visual.outerRingOffset),
+          1,
+          visual.outerRingColor
+        );
+      }
       drawBttlSignalStopFx(ctxBattle, nowMs, metrics.playRect, metrics.cx, metrics.cy, metrics.minR, metrics.maxR);
+      const faceMood = String(result?.faceMood || "").trim();
+      if(faceMood.length > 0){
+        const remain01 = clamp((toNumber(result?.untilMs, 0) - nowMs) / Math.max(1, BTTL_SIGNAL_GAME_RESULT_HOLD_MS), 0, 1);
+        const pulse = Math.max(0, remain01 * 0.45);
+        drawBttlSignalFaceBadge(rightInner.x + rightInner.w - 18, rightInner.y + 5, faceMood, pulse);
+      }
       if(grade.length > 0){
-        const fitted = fitTrnRightPaneText(grade, rightInner.w - 6, { scale: 1 });
+        const gradeOpt = {
+          scale: visual.gradeScale,
+          align: "center",
+          color: visual.gradeColor,
+        };
+        const fitted = fitTrnRightPaneText(visual.grade, rightInner.w - 14, gradeOpt);
         drawText(
           rightInner.x + Math.floor(rightInner.w / 2),
           rightInner.y + Math.floor(rightInner.h / 2) - 4,
           fitted,
-          { align: "center", scale: 1 }
+          gradeOpt
         );
       }
     };
@@ -18669,7 +27723,9 @@
             : "↑↓ SELECT  A:ENTER  B:BACK";
         }
       }else if(paneMode === BTTL_RIGHTPANE_MODE.SIGNAL_GAME){
-        hudHint.textContent = "A:STOP  B:BACK";
+        hudHint.textContent = ctxBattle.signalResult
+          ? "A/B/C:SKIP"
+          : "A:STOP  B:BACK";
       }else if(paneMode === BTTL_RIGHTPANE_MODE.SIGNAL_MENU){
         const selectedCmd = getBttlSignalSelectedCommand(ctxBattle);
         const cooldownRemainMs = getBttlSignalCooldownRemainMs(ctxBattle, selectedCmd, nowMs);
@@ -18958,6 +28014,10 @@
   function applyAction(id){
     menuDeactivate();
 
+    if(id === "item"){
+      openItemScreen();
+      return;
+    }
     if(id === "food"){
       openFoodScreen();
       return;
@@ -19048,6 +28108,18 @@
       }
       return;
     }
+    if(state.screen === "adv"){
+      const session = getAdvSession();
+      if(normalizeAdvPhase(session?.phase) === ADV_PHASE.EXPLORE){
+        if(moveAdvBoardSelection(-1, session)){
+          markCursorMoved();
+        }
+      }
+      return;
+    }
+    if(state.screen === "item"){
+      return;
+    }
     if(state.screen === "status"){
       const page = setStatPage(uiState.statPage);
       if(isStatSkillPage(page)){
@@ -19116,6 +28188,18 @@
           markCursorMoved();
         }
       }
+      return;
+    }
+    if(state.screen === "adv"){
+      const session = getAdvSession();
+      if(normalizeAdvPhase(session?.phase) === ADV_PHASE.EXPLORE){
+        if(moveAdvBoardSelection(1, session)){
+          markCursorMoved();
+        }
+      }
+      return;
+    }
+    if(state.screen === "item"){
       return;
     }
     if(state.screen === "status"){
@@ -19194,6 +28278,20 @@
       }
       return;
     }
+    if(state.screen === "adv"){
+      const session = getAdvSession();
+      if(normalizeAdvPhase(session?.phase) === ADV_PHASE.MAP_SELECT){
+        if(moveAdvMapCursor(-1)){
+          showOverlayAdv();
+          markCursorMoved();
+        }
+      }else if(normalizeAdvPhase(session?.phase) === ADV_PHASE.EXPLORE){
+        if(moveAdvBoardSelection(-1, session)){
+          markCursorMoved();
+        }
+      }
+      return;
+    }
     if(state.screen === "heal"){
       if(isHealExecutionActive()){
         return;
@@ -19203,6 +28301,18 @@
           showOverlayHeal();
           markCursorMoved();
         }
+      }
+      return;
+    }
+    if(state.screen === "item"){
+      if(isItemMenuCategoryFocus()){
+        if(moveItemCategoryCursor(-1)){
+          showOverlayItem();
+          markCursorMoved();
+        }
+      }else if(moveItemMenuCursor(-1, state.detailed)){
+        showOverlayItem();
+        markCursorMoved();
       }
       return;
     }
@@ -19296,6 +28406,20 @@
       }
       return;
     }
+    if(state.screen === "adv"){
+      const session = getAdvSession();
+      if(normalizeAdvPhase(session?.phase) === ADV_PHASE.MAP_SELECT){
+        if(moveAdvMapCursor(1)){
+          showOverlayAdv();
+          markCursorMoved();
+        }
+      }else if(normalizeAdvPhase(session?.phase) === ADV_PHASE.EXPLORE){
+        if(moveAdvBoardSelection(1, session)){
+          markCursorMoved();
+        }
+      }
+      return;
+    }
     if(state.screen === "heal"){
       if(isHealExecutionActive()){
         return;
@@ -19305,6 +28429,18 @@
           showOverlayHeal();
           markCursorMoved();
         }
+      }
+      return;
+    }
+    if(state.screen === "item"){
+      if(isItemMenuCategoryFocus()){
+        if(moveItemCategoryCursor(1)){
+          showOverlayItem();
+          markCursorMoved();
+        }
+      }else if(moveItemMenuCursor(1, state.detailed)){
+        showOverlayItem();
+        markCursorMoved();
       }
       return;
     }
@@ -19456,7 +28592,7 @@
         markCursorMoved();
         return;
       }
-      const result = applyHealActionById(selectedAction.id, selectedItem?.id);
+      const result = processHeal(selectedAction.id, state.detailed, { itemId: selectedItem?.id });
       if(!result.success){
         uiState.healWarningMessage = String(result.warning || "実行不可。");
         showOverlayHeal();
@@ -19468,6 +28604,27 @@
       setHealResultPayload(result.payload);
       showOverlayHeal();
       markCursorMoved();
+      return;
+    }
+    if(state.screen === "item"){
+      if(isItemMenuCategoryFocus()){
+        const hasEntries = getItemEntriesForCategory(getSelectedItemMenuCategory(), state.detailed).length > 0;
+        if(!hasEntries){
+          uiState.itemWarningMessage = "このカテゴリの所持品がありません。";
+          showOverlayItem();
+          markCursorMoved();
+          return;
+        }
+        uiState.itemWarningMessage = "";
+        setItemMenuFocus(ITEM_MENU_FOCUS.LIST);
+        showOverlayItem();
+        markCursorMoved();
+        return;
+      }
+      const result = routeSelectedItemMenuEntry();
+      if(result?.redraw){
+        markCursorMoved();
+      }
       return;
     }
     if(state.screen === "bttl"){
@@ -19488,6 +28645,10 @@
           if(ctxBattle.finishSession){
             finishBttlFinisherGame(ctxBattle, null, nowMs);
           }
+          return;
+        }
+        if(paneMode === BTTL_RIGHTPANE_MODE.SIGNAL_GAME && ctxBattle.signalResult){
+          skipBttlSignalResultHold(ctxBattle);
           return;
         }
         if(paneMode === BTTL_RIGHTPANE_MODE.SIGNAL_MENU){
@@ -19525,8 +28686,29 @@
     }
     if(state.screen === "adv"){
       const session = getAdvSession();
-      if(normalizeAdvPhase(session?.phase) === ADV_PHASE.RESULT){
-        closeAdvScreenToMenu();
+      const phase = normalizeAdvPhase(session?.phase);
+      if(phase === ADV_PHASE.RESULT){
+        if(isRecord(session)){
+          closeAdvResultPhase(session);
+        }
+        showOverlayAdv();
+        markCursorMoved();
+        return;
+      }
+      if(phase === ADV_PHASE.EXPLORE){
+        const result = executeAdvBoardNodeSelection(performance.now(), session);
+        if(result?.transition !== "battle"){
+          showOverlayAdv();
+        }
+        if(result?.success){
+          markCursorMoved();
+        }
+        return;
+      }
+      const result = confirmAdvAction(performance.now(), session);
+      showOverlayAdv();
+      if(result?.success){
+        markCursorMoved();
       }
       return;
     }
@@ -19617,6 +28799,17 @@
       closeHealScreenToMenu();
       return;
     }
+    if(state.screen === "item"){
+      if(isItemMenuListFocus()){
+        uiState.itemWarningMessage = "";
+        setItemMenuFocus(ITEM_MENU_FOCUS.CATEGORY);
+        showOverlayItem();
+        markCursorMoved();
+        return;
+      }
+      closeItemScreenToMenu();
+      return;
+    }
     if(state.screen === "status"){
       const page = setStatPage(uiState.statPage);
       if(isStatSkillPage(page)){
@@ -19653,6 +28846,10 @@
         if(isBttlEndOutroActive(ctxBattle, nowMs)){
           return;
         }
+        if(String(ctxBattle.rightPaneMode || "") === BTTL_RIGHTPANE_MODE.SIGNAL_GAME && ctxBattle.signalResult){
+          skipBttlSignalResultHold(ctxBattle);
+          return;
+        }
         abortBttlBattle(ctxBattle, nowMs);
       }
       return;
@@ -19660,8 +28857,20 @@
     if(state.screen === "adv"){
       const session = getAdvSession();
       if(normalizeAdvPhase(session?.phase) === ADV_PHASE.RESULT){
-        closeAdvScreenToMenu();
+        if(isRecord(session)){
+          closeAdvResultPhase(session);
+        }
+        showOverlayAdv();
+        markCursorMoved();
+        return;
       }
+      if(normalizeAdvPhase(session?.phase) === ADV_PHASE.EXPLORE){
+        enterAdvMapSelect(session, `${String(getSelectedAdvMap(session)?.label || "区画")}の接続を解除した。`);
+        showOverlayAdv();
+        markCursorMoved();
+        return;
+      }
+      closeAdvScreenToMenu();
       return;
     }
     if(state.screen === "menu"){
@@ -19696,6 +28905,12 @@
     if(handleDebugMenuAlt()) return;
     if(state.screen === "heal" && isHealExecutionActive()){
       return;
+    }
+    if(state.screen === "adv"){
+      const session = getAdvSession();
+      if(normalizeAdvPhase(session?.phase) === ADV_PHASE.EXPLORE){
+        return;
+      }
     }
     if(state.screen === "status"){
       const page = setStatPage(uiState.statPage);
@@ -19733,6 +28948,10 @@
           return;
         }
         if(isBttlEndOutroActive(ctxBattle, nowMs)){
+          return;
+        }
+        if(String(ctxBattle.rightPaneMode || "") === BTTL_RIGHTPANE_MODE.SIGNAL_GAME && ctxBattle.signalResult){
+          skipBttlSignalResultHold(ctxBattle);
           return;
         }
         if(isBttlHeavyReactionWindowActive(ctxBattle, nowMs)){
@@ -19954,8 +29173,15 @@
   });
 
   canvas.addEventListener("pointerdown", (e) => {
-    if(state.screen !== "edit" || state.editor.mode !== EDITOR_MODE.EDIT) return;
     const p = logicalPointFromPointerEvent(e);
+    if(state.screen === "adv"){
+      if(handleAdvObservationPointerDown(p, e.pointerType, e.pointerId, performance.now())){
+        e.preventDefault();
+        try { canvas.setPointerCapture(e.pointerId); } catch(_err) { /* no-op */ }
+      }
+      return;
+    }
+    if(state.screen !== "edit" || state.editor.mode !== EDITOR_MODE.EDIT) return;
     if(!p) return;
     const cell = getEditorCellFromLogicalPoint(p.x, p.y);
     if(!cell) return;
@@ -19970,9 +29196,15 @@
   }, { passive: false });
 
   canvas.addEventListener("pointermove", (e) => {
+    const p = logicalPointFromPointerEvent(e);
+    if(state.screen === "adv"){
+      if(handleAdvObservationPointerMove(p, e.pointerType, e.pointerId)){
+        e.preventDefault();
+      }
+      return;
+    }
     if(state.screen !== "edit" || state.editor.mode !== EDITOR_MODE.EDIT) return;
     if(state.editor.pointerId !== e.pointerId) return;
-    const p = logicalPointFromPointerEvent(e);
     if(!p) return;
     const cell = getEditorCellFromLogicalPoint(p.x, p.y);
     if(!cell) return;
@@ -19981,6 +29213,10 @@
   }, { passive: false });
 
   function endEditorPointer(e){
+    if(state.screen === "adv"){
+      handleAdvObservationPointerUp(e.pointerId);
+      return;
+    }
     if(state.editor.pointerId !== e.pointerId) return;
     state.editor.pointerId = null;
     endHistoryBatch();
@@ -20104,7 +29340,12 @@
       ctx.fillRect(panelX + 1, panelY + 1, panelW - 2, panelH - 2);
       ctx.restore();
       drawBox(panelX, panelY, panelW, panelH);
-      showOverlayLog(String(state.trnResultLogText || "TRN RESULT x0"));
+      showOverlayLog(String(state.trnResultLogText || "TRN RESULT x0"), null, {
+        structuredResult: true,
+        title: "TRN RESULT",
+        key: `trn-result:${String(state.trnResultLogText || "TRN RESULT x0")}`,
+        nowMs,
+      });
       finalizeFrame();
       return;
     }
@@ -20123,7 +29364,12 @@
       ctx.fillRect(panelX + 1, panelY + 1, panelW - 2, panelH - 2);
       ctx.restore();
       drawBox(panelX, panelY, panelW, panelH);
-      showOverlayLog(String(state.bttlResultLogText || "BTTL RESULT"), OVERLAY_BTTL_RESULT_RECT);
+      showOverlayLog(String(state.bttlResultLogText || "BTTL RESULT"), OVERLAY_BTTL_RESULT_RECT, {
+        structuredResult: true,
+        title: "BTTL RESULT",
+        key: `bttl-result:${String(state.bttlResultLogText || "BTTL RESULT")}`,
+        nowMs,
+      });
       finalizeFrame();
       return;
     }
@@ -20227,6 +29473,11 @@
       hudHint.textContent = mode === FOOD_SCREEN_MODE.RESULT
         ? "A/B BACK"
         : (hasStock ? "↑↓ SELECT  A:USE  B:BACK" : "B:BACK");
+    }else if(state.screen === "item"){
+      hudTitle.textContent = "ITEM";
+      hudHint.textContent = isItemMenuCategoryFocus()
+        ? "↑↓ CAT  A:LIST  B:BACK"
+        : "↑↓ ITEM  A:OPEN  B:CAT";
     }else if(state.screen === "sleep"){
       hudTitle.textContent = "SLEEP";
       hudHint.textContent = "←→ LIGHT  A:APPLY  B:BACK";
@@ -20241,15 +29492,23 @@
     }else if(state.screen === "adv"){
       const session = getAdvSession();
       hudTitle.textContent = "ADV";
-      hudHint.textContent = normalizeAdvPhase(session?.phase) === ADV_PHASE.RESULT
-        ? "A/B BACK"
-        : "SEARCHING...";
+      const phase = normalizeAdvPhase(session?.phase);
+      if(phase === ADV_PHASE.EXPLORE){
+        const board = getAdvBoard(session);
+        hudHint.textContent = getAdvBoardSelectionList(board).length > 0
+          ? "D-PAD NODE  A:ENTER  B:BACK"
+          : "A/B BACK";
+      }else if(phase === ADV_PHASE.RESULT){
+        hudHint.textContent = "A/B BACK";
+      }else{
+        hudHint.textContent = "↑↓ MAP  A:ENTER  B:BACK";
+      }
     }else{
       hudTitle.textContent = state.screen.toUpperCase();
       hudHint.textContent = "A/B BACK";
     }
 
-    const overlayRect = (state.screen === "status" || state.screen === "food" || state.screen === "heal" || state.screen === "sleep" || state.screen === "adv")
+    const overlayRect = (state.screen === "status" || state.screen === "food" || state.screen === "item" || state.screen === "heal" || state.screen === "sleep" || state.screen === "adv")
       ? OVERLAY_STAT_RECT
       : OVERLAY_LOG_RECT;
     const panelX = overlayRect.x;
@@ -20269,7 +29528,12 @@
       return;
     }
     if(state.screen === "food"){
-      showOverlayFood();
+      showOverlayFood(nowMs);
+      finalizeFrame();
+      return;
+    }
+    if(state.screen === "item"){
+      showOverlayItem();
       finalizeFrame();
       return;
     }
@@ -20278,9 +29542,14 @@
       finalizeFrame();
       return;
     }
+    if(state.screen === "adv"){
+      showOverlayAdv(nowMs);
+      finalizeFrame();
+      return;
+    }
     if(state.screen === "heal"){
       updateHealExecutionSession(nowMs);
-      showOverlayHeal();
+      showOverlayHeal(nowMs);
       finalizeFrame();
       return;
     }

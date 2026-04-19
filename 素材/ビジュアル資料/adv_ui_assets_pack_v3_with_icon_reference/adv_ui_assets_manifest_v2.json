@@ -1,0 +1,72 @@
+{
+  "canvas": {
+    "w": 384,
+    "h": 288
+  },
+  "layout": {
+    "header": {
+      "x": 12,
+      "y": 8,
+      "w": 360,
+      "h": 28
+    },
+    "scan": {
+      "x": 12,
+      "y": 40,
+      "w": 360,
+      "h": 128
+    },
+    "sync": {
+      "x": 12,
+      "y": 174,
+      "w": 360,
+      "h": 74
+    },
+    "hud": {
+      "x": 12,
+      "y": 252,
+      "w": 360,
+      "h": 28
+    }
+  },
+  "frames": {
+    "header": "/mnt/data/adv_ui_frame_assets/adv_frame_header.png",
+    "scan": "/mnt/data/adv_ui_frame_assets/adv_frame_scan.png",
+    "sync": "/mnt/data/adv_ui_frame_assets/adv_frame_sync.png",
+    "hud": "/mnt/data/adv_ui_frame_assets/adv_frame_hud.png"
+  },
+  "icons": {
+    "lock": "/mnt/data/adv_ui_icon_assets/adv_icon_lock.png",
+    "sync": "/mnt/data/adv_ui_icon_assets/adv_icon_sync.png",
+    "danger": "/mnt/data/adv_ui_icon_assets/adv_icon_danger.png",
+    "interest": "/mnt/data/adv_ui_icon_assets/adv_icon_interest.png",
+    "caution": "/mnt/data/adv_ui_icon_assets/adv_icon_caution.png",
+    "reject": "/mnt/data/adv_ui_icon_assets/adv_icon_reject.png",
+    "attune": "/mnt/data/adv_ui_icon_assets/adv_icon_attune.png",
+    "observe": "/mnt/data/adv_ui_icon_assets/adv_icon_observe.png",
+    "contact": "/mnt/data/adv_ui_icon_assets/adv_icon_contact.png",
+    "collect": "/mnt/data/adv_ui_icon_assets/adv_icon_collect.png",
+    "hazard": "/mnt/data/adv_ui_icon_assets/adv_icon_hazard.png",
+    "anomaly": "/mnt/data/adv_ui_icon_assets/adv_icon_anomaly.png",
+    "scan": "/mnt/data/adv_ui_icon_assets/adv_icon_scan.png",
+    "node": "/mnt/data/adv_ui_icon_assets/adv_icon_node.png"
+  },
+  "render_split": {
+    "assets": [
+      "window_frames",
+      "small_icons"
+    ],
+    "code_draw": [
+      "scan_cursor",
+      "lock_ring",
+      "signals",
+      "noise",
+      "waveform",
+      "sync_zone",
+      "danger_zone",
+      "text",
+      "values",
+      "bars"
+    ]
+  }
+}
